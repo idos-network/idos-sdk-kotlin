@@ -48,6 +48,8 @@ fun prefixBytesLength(bytes: ByteArray): ByteArray {
 
 fun stringToBytes(s: String): ByteArray = s.toByteArray(Charsets.UTF_8)
 
+fun bytesToString(bytes: ByteArray): String = bytes.toString(Charsets.UTF_8)
+
 // https://github.com/uuidjs/uuid/blob/7844bc2cd98d171bf631965047bb267505e25318/src/parse.ts#L4
 fun convertUuidToBytes(uuid: String): ByteArray {
     var v: Long
@@ -58,28 +60,26 @@ fun convertUuidToBytes(uuid: String): ByteArray {
         ((v ushr 16) and 0xff).toByte(),
         ((v ushr 8) and 0xff).toByte(),
         (v and 0xff).toByte(),
-
         // Parse ........-####-....-....-............
         ((parseLong(uuid.substring(9, 13), 16).also { v = it }) ushr 8).toByte(),
         (v and 0xff).toByte(),
-
         // Parse ........-....-####-....-............
         ((parseLong(uuid.substring(14, 18), 16).also { v = it }) ushr 8).toByte(),
         (v and 0xff).toByte(),
-
         // Parse ........-....-....-####-............
         ((parseLong(uuid.substring(19, 23), 16).also { v = it }) ushr 8).toByte(),
         (v and 0xff).toByte(),
-
         // Parse ........-....-....-....-############
         ((parseLong(uuid.substring(24, 36), 16).also { v = it }) / 0x10000000000L and 0xff).toByte(),
         ((v / 0x100000000L) and 0xff).toByte(),
         ((v ushr 24) and 0xff).toByte(),
         ((v ushr 16) and 0xff).toByte(),
         ((v ushr 8) and 0xff).toByte(),
-        (v and 0xff).toByte()
+        (v and 0xff).toByte(),
     )
 }
 
-private fun parseLong(value: String, radix: Int): Long =
-    value.toLong(radix)
+private fun parseLong(
+    value: String,
+    radix: Int,
+): Long = value.toLong(radix)

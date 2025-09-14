@@ -26,6 +26,8 @@ dependencies {
     implementation("com.github.komputing.kethereum:eip191:0.86.0")
     implementation("com.github.komputing.kethereum:crypto:0.86.0")
     implementation("com.github.komputing.kethereum:model:0.86.0")
+    implementation("io.github.instantwebp2p:tweetnacl-java:1.1.2")
+    implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
 }
 
 application {
