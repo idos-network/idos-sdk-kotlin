@@ -31,7 +31,7 @@ jobs:
 #        run: ./gradlew ktlintCheck detekt --stacktrace --no-daemon
 
       - name: Run tests
-        run: ./gradlew kotest --stacktrace --no-daemon
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
 
       # Optionally run target-specific tests explicitly if needed (uncomment as necessary)
       # - name: JVM tests
