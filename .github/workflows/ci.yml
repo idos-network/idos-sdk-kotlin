@@ -29,6 +29,17 @@ jobs:
       - name: Lint (ktlint + detekt)
         run: ./gradlew ktlintCheck detekt --stacktrace --no-daemon
 
+      - name: Create .env for tests from GitHub Secrets
+        shell: bash
+        run: |
+          # Write .env used by dotenv-kotlin in tests. Values come from repository secrets.
+          # Use quotes to preserve spaces (e.g., mnemonic words).
+          cat > .env <<'EOF'
+          MNEMONIC_WORDS="${{ secrets.MNEMONIC_WORDS }}"
+          PASSWORD="${{ secrets.PASSWORD }}"
+          EOF
+          echo ".env created with test credentials"
+
       - name: JVM tests
         run: ./gradlew kotest --stacktrace --no-daemon
 
@@ -53,6 +64,7 @@ jobs:
   android:
     name: Android Artifact (Release)
     runs-on: macos-latest
+    if: ${{ false }} # TODO enable when needed
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -88,6 +100,7 @@ jobs:
   ios:
     name: iOS Framework (Release iosArm64)
     runs-on: macos-latest
+    if: ${{ false }} # TODO enable when needed
     steps:
       - name: Checkout
         uses: actions/checkout@v4
