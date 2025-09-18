@@ -40,13 +40,13 @@ jobs:
           echo ".env created with test credentials"
 
       - name: JVM tests
-        run: ./gradlew kotest --stacktrace --no-daemon
+        run: ./gradlew jvmTest --stacktrace --no-daemon
 
       - name: Publish Test Report (if present)
         if: always()
         uses: mikepenz/action-junit-report@v4
         with:
-          report_paths: '**/build/test-results/jvmKotest/*.xml'
+          report_paths: '**/test-results/**/TEST-*.xml'
           require_tests: false
 
       - name: Upload lint reports (if present)

@@ -51,6 +51,7 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.kotest)
+            implementation(libs.kotest.runner)
             implementation(libs.kotest.assert)
             implementation(libs.ktor.client.okhttp)
             implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
@@ -89,4 +90,12 @@ detekt {
     allRules = false
     parallel = true
     config.setFrom(files("$rootDir/detekt.yml"))
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+    reports {
+        junitXml.required.set(true)
+    }
+    systemProperty("gradle.build.dir", layout.buildDirectory.asFile.get())
 }
