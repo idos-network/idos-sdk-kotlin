@@ -30,13 +30,13 @@ jobs:
         run: ./gradlew ktlintCheck detekt --stacktrace --no-daemon
 
       - name: JVM tests
-        run: ./gradlew jvmTest --stacktrace --no-daemon
+        run: ./gradlew kotest --stacktrace --no-daemon
 
       - name: Publish Test Report (if present)
         if: always()
         uses: mikepenz/action-junit-report@v4
         with:
-          report_paths: '**/build/test-results/test/*.xml'
+          report_paths: '**/build/test-results/jvmKotest/*.xml'
           require_tests: false
 
       - name: Upload lint reports (if present)
