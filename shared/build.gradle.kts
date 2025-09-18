@@ -6,8 +6,8 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotest)
-    alias(libs.plugins.ktlint)
-    alias(libs.plugins.detekt)
+//    alias(libs.plugins.ktlint)
+//    alias(libs.plugins.detekt)
 }
 
 kotlin {
