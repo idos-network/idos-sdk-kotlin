@@ -7,7 +7,7 @@ on:
 jobs:
   build:
     name: Lint, Build and Test
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
       - name: Checkout
@@ -27,11 +27,11 @@ jobs:
         with:
           cache-read-only: false
 
-#      - name: Lint (ktlint + detekt)
-#        run: ./gradlew ktlintCheck detekt --stacktrace --no-daemon
+      - name: Lint (ktlint + detekt)
+        run: ./gradlew ktlintCheck detekt --stacktrace --no-daemon
 
       - name: Run tests
-        run: ./gradlew shared:jvmKotest --stacktrace --no-daemon
+        run: ./gradlew build --stacktrace --no-daemon
 
       # Optionally run target-specific tests explicitly if needed (uncomment as necessary)
       # - name: JVM tests

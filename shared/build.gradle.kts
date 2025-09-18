@@ -6,8 +6,8 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotest)
-//    alias(libs.plugins.ktlint)
-//    alias(libs.plugins.detekt)
+    alias(libs.plugins.ktlint)
+    alias(libs.plugins.detekt)
 }
 
 kotlin {
@@ -19,16 +19,16 @@ kotlin {
 
     jvm()
 
-    iosArm64()
-    iosSimulatorArm64()
-//    listOf(
-//    ).forEach { iosTarget ->
-//        iosTarget.binaries.framework {
-//            baseName = "idos-sdk"
-//            freeCompilerArgs += listOf("-Xbinary=bundleId=org.idos")
-//            isStatic = true
-//        }
-//    }
+    listOf(
+        iosArm64(),
+        iosSimulatorArm64(),
+    ).forEach { iosTarget ->
+        iosTarget.binaries.framework {
+            baseName = "idos-sdk"
+            freeCompilerArgs += listOf("-Xbinary=bundleId=org.idos")
+            isStatic = true
+        }
+    }
 
     sourceSets {
         commonMain.dependencies {
