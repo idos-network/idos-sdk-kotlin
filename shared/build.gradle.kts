@@ -1,5 +1,4 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -71,15 +70,11 @@ android {
     }
 }
 
-// ktlint configuration
+// ktlint configuration (minimal to avoid classpath timing issues)
 ktlint {
     android.set(false)
     outputToConsole.set(true)
     ignoreFailures.set(false)
-    reporters {
-        reporter(ReporterType.CHECKSTYLE)
-        reporter(ReporterType.PLAIN)
-    }
 }
 
 // detekt configuration
