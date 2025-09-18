@@ -29,12 +29,12 @@ object DataType {
     val Boolean = DataInfo(VarType.BOOL, isArray = false, metadata = listOf(0, 0))
     val BooleanArray = DataInfo(VarType.BOOL, isArray = true, metadata = listOf(0, 0))
 
-    fun Numeric(
+    fun numeric(
         precision: Int,
         scale: Int,
     ): DataInfo = DataInfo(VarType.NUMERIC, isArray = false, metadata = listOf(precision, scale))
 
-    fun NumericArray(
+    fun numericArray(
         precision: Int,
         scale: Int,
     ): DataInfo = DataInfo(VarType.NUMERIC, isArray = true, metadata = listOf(precision, scale))

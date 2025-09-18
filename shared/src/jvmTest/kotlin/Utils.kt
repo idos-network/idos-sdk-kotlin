@@ -13,11 +13,12 @@ data class Secrets(
 )
 
 val getSecrets = {
-    val dotenv = dotenv {
-        directory = "../"
-        ignoreIfMalformed = false
-        ignoreIfMissing = false
-    }
+    val dotenv =
+        dotenv {
+            directory = "../"
+            ignoreIfMalformed = false
+            ignoreIfMissing = false
+        }
 
     val words = dotenv["MNEMONIC_WORDS"]
     { "MNEMONIC_WORDS not found in .env file. Please copy .env.example to .env and set your mnemonic phrase." }.asClue {

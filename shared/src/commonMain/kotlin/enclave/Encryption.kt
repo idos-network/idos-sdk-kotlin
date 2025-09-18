@@ -6,7 +6,7 @@ abstract class Encryption {
         fun keyDerivation(
             password: String,
             salt: String,
-        ): ByteArray = idOSKeyDerivation.deriveKey(password, salt)
+        ): ByteArray = KeyDerivation.deriveKey(password, salt)
     }
 
     abstract fun encrypt(
@@ -21,7 +21,7 @@ abstract class Encryption {
     ): ByteArray
 
     abstract fun generateKeyPair(): KeyPair
-    
+
     abstract fun keyPairFromSecretKey(secretKey: ByteArray): KeyPair
 }
 

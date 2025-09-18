@@ -2,6 +2,7 @@
 // check github.com/idos-networks/idos-schema
 
 package org.idos.kwil.actions
+
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.idos.kwil.KwilActionClient

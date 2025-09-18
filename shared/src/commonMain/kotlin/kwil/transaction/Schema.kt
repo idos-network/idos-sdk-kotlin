@@ -17,7 +17,6 @@ typealias NamedParams = Map<String, Any?>
 // types = { $name: DataInfo.Text, $age: DataInfo.Int8, $height: DataInfo.Numeric(3, 2) }
 typealias NamedTypes = Map<String, DataInfo>
 
-
 // But for requests we have to use positional params:
 //
 // const body = {
@@ -30,7 +29,7 @@ typealias PositionalTypes = List<DataInfo>
 data class UnencodedActionPayload<T>(
     val dbid: String,
     val action: String,
-    var arguments: T?
+    var arguments: T?,
 )
 
 data class EncodedValue(
@@ -41,5 +40,5 @@ data class EncodedValue(
 data class ValidatedAction(
     val actionName: String,
     val modifiers: List<AccessModifier>,
-    val encodedActionInputs: List<List<EncodedValue>>
+    val encodedActionInputs: List<List<EncodedValue>>,
 )
