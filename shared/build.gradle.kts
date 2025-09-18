@@ -19,16 +19,16 @@ kotlin {
 
     jvm()
 
-    listOf(
-        iosArm64(),
-        iosSimulatorArm64(),
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
-            baseName = "idos-sdk"
-            freeCompilerArgs += listOf("-Xbinary=bundleId=org.idos")
-            isStatic = true
-        }
-    }
+//    listOf(
+//        iosArm64(),
+//        iosSimulatorArm64(),
+//    ).forEach { iosTarget ->
+//        iosTarget.binaries.framework {
+//            baseName = "idos-sdk"
+//            freeCompilerArgs += listOf("-Xbinary=bundleId=org.idos")
+//            isStatic = true
+//        }
+//    }
 
     sourceSets {
         commonMain.dependencies {
