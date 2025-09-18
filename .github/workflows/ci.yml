@@ -21,6 +21,9 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Validate Gradle Wrapper
         uses: gradle/wrapper-validation-action@v2
 
@@ -29,21 +32,8 @@ jobs:
         with:
           cache-read-only: false
 
-      # Ktlint formatting and style checks (does not require Gradle plugin)
-      - name: Run ktlint
-        uses: ktlint/actions/ktlint@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          reporter: github-pr-check
-          android: false
-          fail_on_error: true
-
-      # Detekt static analysis (does not require Gradle plugin)
-      - name: Run detekt
-        uses: detekt/detekt-action@v1
-        with:
-          arguments: --build-upon-default-config --all-rules --parallel --base-path .
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Lint (ktlint + detekt)
+        run: ./gradlew ktlintCheck detekt --stacktrace --no-daemon
 
       - name: Build (includes tests)
         run: ./gradlew build --stacktrace --no-daemon
@@ -61,12 +51,13 @@ jobs:
           report_paths: '**/build/test-results/test/*.xml'
           require_tests: false
 
-      - name: Upload detekt report (if present)
+      - name: Upload lint reports (if present)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: detekt-report
+          name: lint-reports
           path: |
             **/build/reports/detekt/*.html
             **/build/reports/detekt/*.xml
+            **/build/reports/ktlint/*.xml
           if-no-files-found: ignore

@@ -1,0 +1,19 @@
+detekt:
+  build:
+    maxIssues: 0
+  config:
+    validation: true
+processors:
+  active: true
+style:
+  MagicNumber:
+    active: false
+  WildcardImport:
+    active: false
+formatting:
+  active: true
+  MaximumLineLength:
+    active: true
+    maxLineLength: 120
+  ImportOrdering:
+    active: true
