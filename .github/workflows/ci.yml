@@ -33,10 +33,9 @@ jobs:
         shell: bash
         run: |
           # Write .env used by dotenv-kotlin in tests. Values come from repository secrets.
-          # Use quotes to preserve spaces (e.g., mnemonic words).
           cat > .env <<'EOF'
-          MNEMONIC_WORDS="${{ secrets.MNEMONIC_WORDS }}"
-          PASSWORD="${{ secrets.PASSWORD }}"
+          MNEMONIC_WORDS=${{ secrets.MNEMONIC_WORDS }}
+          PASSWORD=${{ secrets.PASSWORD }}
           EOF
           echo ".env created with test credentials"
 
