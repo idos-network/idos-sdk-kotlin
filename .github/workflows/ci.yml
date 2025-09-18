@@ -5,10 +5,9 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  build:
-    name: Lint, Build and Test
+  jvm:
+    name: JVM Lint and Tests
     runs-on: macos-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,16 +27,10 @@ jobs:
           cache-read-only: false
 
       - name: Lint (ktlint + detekt)
-        run: ./gradlew ktlintCheck detekt --stacktrace --no-daemon
+        run: ./gradlew jvmKtlintCheck jvmDetekt --stacktrace --no-daemon
 
-      - name: Run tests
-        run: ./gradlew build --stacktrace --no-daemon
-
-      # Optionally run target-specific tests explicitly if needed (uncomment as necessary)
-      # - name: JVM tests
-      #   run: ./gradlew jvmTest --no-daemon
-      # - name: Android unit tests
-      #   run: ./gradlew testDebugUnitTest --no-daemon
+      - name: JVM tests
+        run: ./gradlew jvmTest --stacktrace --no-daemon
 
       - name: Publish Test Report (if present)
         if: always()
@@ -56,3 +49,77 @@ jobs:
             **/build/reports/detekt/*.xml
             **/build/reports/ktlint/*.xml
           if-no-files-found: ignore
+
+  android:
+    name: Android Artifacts
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        build-type: [Debug, Release]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v2
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Assemble Android ${{ matrix.build-type }}
+        run: ./gradlew :shared:assemble${{ matrix.build-type }} --stacktrace --no-daemon
+
+      - name: Upload Android AARs (${{ matrix.build-type }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ matrix.build-type }}-aars
+          path: |
+            shared/build/outputs/aar/*.aar
+          if-no-files-found: warn
+
+  ios:
+    name: iOS Frameworks (matrix)
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        target: [iosArm64, iosSimulatorArm64]
+        build-type: [Release]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v2
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Build iOS ${{ matrix.build-type }} framework (${{ matrix.target }})
+        run: ./gradlew :shared:link${{ matrix.build-type }}Framework${{ matrix.target }} --stacktrace --no-daemon
+
+      - name: Upload iOS framework (${{ matrix.target }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-${{ matrix.target }}-${{ matrix.build-type }}-framework
+          path: |
+            shared/build/bin/${{ matrix.target }}/${{ toLower(matrix.build-type) }}Framework/*.framework
+          if-no-files-found: warn
