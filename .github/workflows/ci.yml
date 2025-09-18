@@ -53,9 +53,6 @@ jobs:
   android:
     name: Android Artifacts
     runs-on: macos-latest
-    strategy:
-      matrix:
-        build-type: [Debug, Release]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -77,24 +74,20 @@ jobs:
         with:
           cache-read-only: false
 
-      - name: Assemble Android ${{ matrix.build-type }}
-        run: ./gradlew :shared:assemble${{ matrix.build-type }} --stacktrace --no-daemon
+      - name: Assemble Android Release
+        run: ./gradlew :shared:assembleRelease --stacktrace --no-daemon
 
-      - name: Upload Android AARs (${{ matrix.build-type }})
+      - name: Upload Android AARs Release
         uses: actions/upload-artifact@v4
         with:
-          name: android-${{ matrix.build-type }}-aars
+          name: android-release-aars
           path: |
             shared/build/outputs/aar/*.aar
           if-no-files-found: warn
 
   ios:
-    name: iOS Frameworks (matrix)
+    name: iOS Framework (Release iosArm64)
     runs-on: macos-latest
-    strategy:
-      matrix:
-        target: [iosArm64, iosSimulatorArm64]
-        build-type: [Release]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -113,13 +106,13 @@ jobs:
         with:
           cache-read-only: false
 
-      - name: Build iOS ${{ matrix.build-type }} framework (${{ matrix.target }})
-        run: ./gradlew :shared:link${{ matrix.build-type }}Framework${{ matrix.target }} --stacktrace --no-daemon
+      - name: Build iOS Release framework (iosArm64)
+        run: ./gradlew :shared:linkReleaseFrameworkIosArm64 --stacktrace --no-daemon
 
-      - name: Upload iOS framework (${{ matrix.target }})
+      - name: Upload iOS framework (iosArm64)
         uses: actions/upload-artifact@v4
         with:
-          name: ios-${{ matrix.target }}-${{ matrix.build-type }}-framework
+          name: ios-iosArm64-release-framework
           path: |
-            shared/build/bin/${{ matrix.target }}/${{ toLower(matrix.build-type) }}Framework/*.framework
+            shared/build/bin/iosArm64/releaseFramework/*.framework
           if-no-files-found: warn
