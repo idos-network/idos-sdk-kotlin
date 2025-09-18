@@ -1,23 +1,24 @@
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
+ 
+### IntelliJ IDEA / Android Studio ###
+# Ignore the entire .idea directory, but keep a few project-wide settings if desired
+.idea/
+!.idea/codeStyles/
+!.idea/inspectionProfiles/
+!.idea/runConfigurations/
 *.iws
 *.iml
 *.ipr
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
+
+### Android / Native builds ###
+.externalNativeBuild/
+.cxx/
 
 ### Kotlin ###
 .kotlin
+.kotlinc/
 
 ### Eclipse ###
 .apt_generated
@@ -28,8 +29,6 @@ out/
 .springBeans
 .sts4-cache
 bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
 
 ### NetBeans ###
 /nbproject/private/
@@ -41,5 +40,19 @@ bin/
 ### VS Code ###
 .vscode/
 
-### Mac OS ###
+### macOS ###
 .DS_Store
+**/.DS_Store
+.AppleDouble
+.LSOverride
+
+### Environment files ###
+.env*
+!.env.example
+.envrc
+
+### Secrets / Certificates (do not commit real keys) ###
+*.keystore
+*.jks
+*.p12
+local.properties
