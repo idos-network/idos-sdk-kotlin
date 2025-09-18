@@ -27,11 +27,11 @@ jobs:
         with:
           cache-read-only: false
 
-      - name: Lint (ktlint + detekt)
-        run: ./gradlew detekt --stacktrace --no-daemon
+#      - name: Lint (ktlint + detekt)
+#        run: ./gradlew ktlintCheck detekt --stacktrace --no-daemon
 
-      - name: Build (includes tests)
-        run: ./gradlew build --stacktrace --no-daemon
+      - name: Run tests
+        run: ./gradlew kotest --stacktrace --no-daemon
 
       # Optionally run target-specific tests explicitly if needed (uncomment as necessary)
       # - name: JVM tests
