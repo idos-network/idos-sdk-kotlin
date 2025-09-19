@@ -1,7 +1,6 @@
 package org.idos.kwil.signer
 
 import org.idos.kwil.rpc.HexString
-import org.idos.kwil.utils.hexToBytes
 import org.kethereum.crypto.toAddress
 import org.kethereum.crypto.toECKeyPair
 import org.kethereum.crypto.toHex
@@ -17,10 +16,10 @@ class JvmEthSigner(
     private val keyPair: ECKeyPair = privateKey.toECKeyPair()
 
     override fun getIdentifier(): HexString {
-        return keyPair.toAddress().toString().substring(2) // without 0x
+        return HexString(keyPair.toAddress().toString().substring(2)) // without 0x
     }
 
-    override fun sign(msg: ByteArray): ByteArray = hexToBytes(keyPair.signWithEIP191PersonalSign(msg).toHex())
+    override fun sign(msg: ByteArray): ByteArray = keyPair.signWithEIP191PersonalSign(msg).toHex().toByteArray()
 }
 
 // Platform-specific implementation

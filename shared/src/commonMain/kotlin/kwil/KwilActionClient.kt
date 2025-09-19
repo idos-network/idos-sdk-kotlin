@@ -102,7 +102,7 @@ class KwilActionClient(
                 if (synchronous) BroadcastSyncType.COMMIT else BroadcastSyncType.SYNC,
             )
 
-        return response.txHash
+        return response.txHash.value
     }
 
     /**

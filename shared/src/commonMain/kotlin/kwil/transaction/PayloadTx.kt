@@ -1,22 +1,22 @@
 package org.idos.kwil.transaction
 
+import io.ktor.utils.io.core.toByteArray
 import kotlinx.serialization.json.Json
 import kwil.utils.sha256BytesToBytes
 import org.idos.kwil.KwilActionClient
+import org.idos.kwil.rpc.Base64String
+import org.idos.kwil.rpc.HexString
 import org.idos.kwil.rpc.PayloadType
 import org.idos.kwil.rpc.Signature
 import org.idos.kwil.rpc.Transaction
 import org.idos.kwil.rpc.TransactionBase64
 import org.idos.kwil.rpc.TransactionUint8
 import org.idos.kwil.rpc.copyAs
+import org.idos.kwil.serialization.toByteArray
 import org.idos.kwil.signer.BaseSigner
 import org.idos.kwil.signer.SignatureType
 import org.idos.kwil.utils.SerializationType
-import org.idos.kwil.utils.base64ToBytes
-import org.idos.kwil.utils.bytesToBase64
-import org.idos.kwil.utils.bytesToHex
 import org.idos.kwil.utils.encodeActionExecution
-import org.idos.kwil.utils.stringToBytes
 
 data class PayloadTxOptions(
     val payload: UnencodedActionPayload<List<List<EncodedValue>>>,
@@ -45,7 +45,7 @@ class PayloadTx(
         val preEstTxn = Transaction.createBase64()
         preEstTxn.body.payload = encodePayload(payloadType, payload)
         preEstTxn.body.type = payloadType
-        preEstTxn.sender = bytesToHex(identifier)
+        preEstTxn.sender = HexString(identifier)
 
         // estimate the cost of the transaction with the estimateCost symbol from the client
         // https://github.com/trufnetwork/kwil-js/blob/main/src/transaction/payloadTx.ts#L118
@@ -71,7 +71,7 @@ class PayloadTx(
         // add the nonce and fee to the transaction. Set the tx bytes back to uint8 so we can do the signature.
         val postEstTxn: TransactionUint8 =
             preEstTxn.copyAs(
-                payloadMapper = { base64ToBytes(encodedPayload) },
+                payloadMapper = { encodedPayload.toByteArray() },
                 senderMapper = { identifier },
                 feeMapper = { cost.price.toLong() },
             )
@@ -88,7 +88,7 @@ class PayloadTx(
     fun encodePayload(
         payloadType: PayloadType,
         payload: UnencodedActionPayload<List<List<EncodedValue>>>,
-    ): String {
+    ): Base64String {
         when (payloadType) {
             PayloadType.EXECUTE_ACTION -> return encodeActionExecution(payload)
             // TODO: https://github.com/trufnetwork/kwil-js/blob/main/src/transaction/payloadTx.ts#L96C28-L96C39
@@ -136,22 +136,22 @@ class PayloadTx(
              */
             var signatureMessage = "${description}\n\n"
             signatureMessage += "PayloadType: ${Json.encodeToString(tx.body.type).replace("\"", "")}\n"
-            signatureMessage += "PayloadDigest: ${bytesToHex(digest)}\n"
+            signatureMessage += "PayloadDigest: ${HexString(digest)}\n"
             signatureMessage += "Fee: ${tx.body.fee}\n"
             signatureMessage += "Nonce: ${tx.body.nonce}\n\n"
             signatureMessage += "Kwil Chain ID: ${tx.body.chainId}\n"
 
-            val signedMessage = signer.sign(stringToBytes(signatureMessage))
+            val signedMessage = signer.sign(signatureMessage.toByteArray())
 
             val newTx: TransactionBase64 =
                 tx.copyAs(
-                    senderMapper = { bytesToHex(requireNotNull(it)) },
-                    payloadMapper = { bytesToBase64(requireNotNull(it)) },
+                    senderMapper = { HexString(requireNotNull(it)) },
+                    payloadMapper = { Base64String(requireNotNull(it)) },
                     feeMapper = { requireNotNull(it).toString() },
                 )
             newTx.signature =
                 Signature(
-                    sig = bytesToBase64(signedMessage),
+                    sig = Base64String(signedMessage),
                     type = signer.getSignatureType(),
                 )
             newTx.serialization = SerializationType.SIGNED_MSG_CONCAT

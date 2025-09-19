@@ -16,7 +16,7 @@ sealed interface MsgData {
 @Serializable
 data class MsgBody(
     override var payload: Base64String? = null,
-    override var challenge: HexString = "",
+    override var challenge: HexString = HexString(""),
 ) : IMsgBody
 
 interface IMsgBody {
@@ -41,7 +41,7 @@ data class Message(
                 body =
                     MsgBody(
                         payload = null,
-                        challenge = "",
+                        challenge = HexString(""),
                     ),
                 authType = SignatureType.SECP256K1_PERSONAL,
                 sender = null,

@@ -17,7 +17,7 @@ class PayloadMsg(
     var signatureType: SignatureType? = null,
     var identifier: HexString? = null,
     var signer: BaseSigner? = null,
-    val signature: String? = null,
+    val signature: Base64String? = null,
 ) {
     companion object {
         fun createMsg(
@@ -55,7 +55,7 @@ class PayloadMsg(
         val message = Message.create()
 
         message.body.payload = encodeActionCall(payload)
-        message.body.challenge = challenge ?: ""
+        message.body.challenge = challenge ?: HexString("")
         message.signature = signature
 
         if (signer !== null) {
@@ -73,8 +73,8 @@ class PayloadMsg(
 }
 
 data class PayloadMsgOptions(
-    val signature: String? = null,
-    val challenge: String? = null,
+    val signature: Base64String? = null,
+    val challenge: HexString? = null,
     val signer: BaseSigner? = null,
     val identifier: HexString? = null,
     val signatureType: SignatureType? = null,

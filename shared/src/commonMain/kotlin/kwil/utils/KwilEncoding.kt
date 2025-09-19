@@ -1,10 +1,20 @@
+@file:OptIn(ExperimentalUuidApi::class)
+
 package org.idos.kwil.utils
 
 // https://github.com/trufnetwork/kwil-js/blob/main/src/utils/kwilEncoding.ts
 
+import io.ktor.utils.io.core.toByteArray
+import org.idos.kwil.rpc.Base64String
+import org.idos.kwil.serialization.prefixBytesWithLength
+import org.idos.kwil.serialization.toByteArray
+import org.idos.kwil.serialization.uint16
+import org.idos.kwil.serialization.uint16Le
+import org.idos.kwil.serialization.uint32
 import org.idos.kwil.transaction.EncodedValue
 import org.idos.kwil.transaction.UnencodedActionPayload
-import kotlin.io.encoding.Base64
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 fun concatBytes(vararg arrays: ByteArray): ByteArray {
     val size = arrays.sumOf { it.size }
@@ -20,25 +30,25 @@ fun concatBytes(vararg arrays: ByteArray): ByteArray {
 fun isDecimal(n: Number): Boolean = n.toString().contains('.')
 
 // https://github.com/trufnetwork/kwil-js/blob/main/src/utils/kwilEncoding.ts#L57
-fun encodeActionExecution(action: UnencodedActionPayload<List<List<EncodedValue>>>): String {
+fun encodeActionExecution(action: UnencodedActionPayload<List<List<EncodedValue>>>): Base64String {
     // The version of the action execution encoding used by the Kwil DB Engine
     val actionExecutionVersion = 0
 
-    val encodedVersion = numberToUint16LittleEndian(actionExecutionVersion)
-    val encodedDbId = prefixBytesLength(stringToBytes(action.dbid))
-    val encodedAction = prefixBytesLength(stringToBytes(action.action))
+    val encodedVersion = actionExecutionVersion.uint16Le()
+    val encodedDbId = action.dbid.toByteArray().prefixBytesWithLength()
+    val encodedAction = action.action.toByteArray().prefixBytesWithLength()
 
     val numArgs = action.arguments?.size ?: 0
-    val encodedNumArgs = numberToUint16LittleEndian(numArgs)
+    val encodedNumArgs = numArgs.uint16Le()
 
     var actionArguments = ByteArray(0)
     action.arguments?.forEach { encodedValues ->
-        val argLength = numberToUint16LittleEndian(encodedValues.size)
+        val argLength = encodedValues.size.uint16Le()
         var argBytes = ByteArray(0)
 
         encodedValues.forEach { value ->
             val evBytes = encodeEncodedValue(value)
-            val prefixEvBytes = prefixBytesLength(evBytes)
+            val prefixEvBytes = (evBytes)
 
             argBytes = concatBytes(argBytes, prefixEvBytes)
         }
@@ -48,7 +58,7 @@ fun encodeActionExecution(action: UnencodedActionPayload<List<List<EncodedValue>
 
     val encodedActionArguments = concatBytes(encodedNumArgs, actionArguments)
 
-    return Base64.encode(
+    return Base64String(
         concatBytes(encodedVersion, encodedDbId, encodedAction, encodedActionArguments),
     )
 }
@@ -64,7 +74,7 @@ fun encodeValue(
 
     // uuid case
     if (value is String && isUuid(value)) {
-        return encodeNotNull(convertUuidToBytes(value))
+        return encodeNotNull(Uuid.parse(value).toByteArray())
     }
 
     // null case
@@ -79,13 +89,13 @@ fun encodeValue(
 
     // decimal case
     if (value is Number && isDecimal(value)) {
-        return encodeNotNull(stringToBytes(value.toString()))
+        return encodeNotNull(value.toString().toByteArray())
     }
 
     return when (value) {
-        is String -> encodeNotNull(stringToBytes(value))
-        is Boolean -> encodeNotNull(booleanToBytes(value))
-        is Number -> encodeNotNull(numberToBytes(value))
+        is String -> encodeNotNull(value.toByteArray())
+        is Boolean -> encodeNotNull(value.toByteArray())
+        is Number -> encodeNotNull(value.toByteArray())
         else -> throw IllegalArgumentException("Unsupported type ${value::class}")
     }
 }
@@ -100,11 +110,11 @@ fun overrideValue(
 
     return when (o) {
         VarType.NULL -> encodeNull()
-        VarType.TEXT -> encodeNotNull(stringToBytes(v as String))
-        VarType.INT8 -> encodeNotNull(numberToBytes(v as Number))
-        VarType.BOOL -> encodeNotNull(booleanToBytes(v as Boolean))
-        VarType.NUMERIC -> encodeNotNull(stringToBytes(v.toString()))
-        VarType.UUID -> encodeNotNull(convertUuidToBytes(v as String))
+        VarType.TEXT -> encodeNotNull((v as String).toByteArray())
+        VarType.INT8 -> encodeNotNull((v as Number).toByteArray())
+        VarType.BOOL -> encodeNotNull((v as Boolean).toByteArray())
+        VarType.NUMERIC -> encodeNotNull(v.toString().toByteArray())
+        VarType.UUID -> encodeNotNull(Uuid.parse(v as String).toByteArray())
         VarType.BYTEA -> encodeNotNull(v as ByteArray)
         else -> throw IllegalArgumentException("invalid scalar value")
     }
@@ -122,26 +132,26 @@ fun encodeNotNull(v: ByteArray): ByteArray {
 //
 // https://github.com/trufnetwork/kwil-js/blob/4ffabc8ef583f9b0b8e71abaa7e7527c5e4f5b85/src/utils/kwilEncoding.ts#L28
 //
-fun encodeActionCall(actionCall: UnencodedActionPayload<MutableList<EncodedValue>>): String {
+fun encodeActionCall(actionCall: UnencodedActionPayload<MutableList<EncodedValue>>): Base64String {
     val actionCallVersion = 0
-    val encodedVersion = numberToUint16LittleEndian(actionCallVersion)
-    val encodedDbId = prefixBytesLength(stringToBytes(actionCall.dbid))
-    val encodedAction = prefixBytesLength(stringToBytes(actionCall.action))
+    val encodedVersion = actionCallVersion.uint16Le()
+    val encodedDbId = actionCall.dbid.toByteArray().prefixBytesWithLength()
+    val encodedAction = actionCall.action.toByteArray().prefixBytesWithLength()
 
     val numArgs = actionCall.arguments?.size ?: 0
-    val encodedNumArgs = numberToUint16LittleEndian(numArgs)
+    val encodedNumArgs = numArgs.uint16Le()
 
     var actionArguments = ByteArray(0)
     actionCall.arguments?.forEach { a ->
         val aBytes = encodeEncodedValue(a)
-        val prefixedABytes = prefixBytesLength(aBytes)
+        val prefixedABytes = aBytes.prefixBytesWithLength()
         actionArguments = concatBytes(actionArguments, prefixedABytes)
     }
 
     val encodedActionArguments = concatBytes(encodedNumArgs, actionArguments)
     val finalBytes = concatBytes(encodedVersion, encodedDbId, encodedAction, encodedActionArguments)
 
-    return Base64.encode(finalBytes)
+    return Base64String(finalBytes)
 }
 
 //
@@ -149,13 +159,13 @@ fun encodeActionCall(actionCall: UnencodedActionPayload<MutableList<EncodedValue
 //
 fun encodeDataType(dt: DataInfo): ByteArray {
     val dtVersion = 0
-    val versionBytes = numberToUint16BigEndian(dtVersion)
+    val versionBytes = dtVersion.uint16()
 
-    val nameBytes = stringToBytes(dt.name.value)
-    val nameLength = numberToUint32BigEndian(nameBytes.size.toLong())
-    val isArray = booleanToBytes(dt.isArray)
-    val metadataLength = numberToUint16BigEndian(dt.metadata?.getOrNull(0)?.toInt() ?: 0)
-    val precisionLength = numberToUint16BigEndian(dt.metadata?.getOrNull(1)?.toInt() ?: 0)
+    val nameBytes = dt.name.value.toByteArray()
+    val nameLength = nameBytes.size.toLong().uint32()
+    val isArray = dt.isArray.toByteArray()
+    val metadataLength = (dt.metadata?.getOrNull(0)?.toInt() ?: 0).uint16()
+    val precisionLength = (dt.metadata?.getOrNull(1)?.toInt() ?: 0).uint16()
 
     return concatBytes(versionBytes, nameLength, nameBytes, isArray, metadataLength, precisionLength)
 }
@@ -167,16 +177,16 @@ fun encodeEncodedValue(ev: EncodedValue): ByteArray {
 
     val evVersion = 0
     // convert evVersion to Uint16
-    val encodedVersion = numberToUint16LittleEndian(evVersion)
+    val encodedVersion = evVersion.uint16Le()
 
     // EncodedValue.type - the `encodeDataType` function to get the bytes
-    val encodedType = prefixBytesLength(encodeDataType(ev.type))
+    val encodedType = (encodeDataType(ev.type)).prefixBytesWithLength()
 
     // EncodedValue.data - first, prepend 4 bytes (uint32) for the length of bytes
-    val encodedDataLength = numberToUint16LittleEndian(ev.data.size)
+    val encodedDataLength = ev.data.size.uint16Le()
     var encodedData = concatBytes(encodedDataLength)
-    ev.data.forEach { it ->
-        encodedData = concatBytes(encodedData, prefixBytesLength(it))
+    ev.data.forEach {
+        encodedData = concatBytes(encodedData, it.prefixBytesWithLength())
     }
 
     // Contact bytes together in correct order

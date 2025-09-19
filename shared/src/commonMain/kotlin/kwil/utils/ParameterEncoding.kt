@@ -2,7 +2,6 @@ package org.idos.kwil.utils
 
 import org.idos.kwil.rpc.Base64String
 import org.idos.kwil.transaction.EncodedValue
-import kotlin.io.encoding.Base64
 
 @kotlinx.serialization.Serializable
 data class EncodedParameterValue(
@@ -130,7 +129,7 @@ fun encodeParams(params: Map<String, Any?>): Map<String, EncodedParameterValue> 
 private fun formatEncodedValueBase64(value: Any?): EncodedParameterValue =
     when (value) {
         is List<*> -> {
-            val encodedValues = value.map { Base64.encode(encodeValue(it, null)) }
+            val encodedValues = value.map { Base64String(encodeValue(it, null)) }
             EncodedParameterValue(
                 data = encodedValues,
                 type =
@@ -144,7 +143,7 @@ private fun formatEncodedValueBase64(value: Any?): EncodedParameterValue =
 
         else -> {
             EncodedParameterValue(
-                data = listOf(Base64.encode(encodeValue(value, null))),
+                data = listOf(Base64String(encodeValue(value, null))),
                 type =
                     EncodedParameterType(
                         name = getDataType(value),

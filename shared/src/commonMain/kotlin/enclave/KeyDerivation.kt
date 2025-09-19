@@ -1,7 +1,7 @@
 package org.idos.enclave
 
+import io.ktor.utils.io.core.toByteArray
 import org.idos.kwil.utils.isUuid
-import org.idos.kwil.utils.stringToBytes
 
 // https://github.com/idos-network/idos-sdk-js/blob/main/packages/utils/src/encryption/idOSKeyDerivation.ts
 abstract class KeyDerivation {
@@ -68,8 +68,8 @@ abstract class KeyDerivation {
         if (!cfg.validateSalt(salt)) throw IllegalArgumentException("Invalid salt")
 
         val normalizedPassword = cfg.normalizePassword(password)
-        val passwordBytes = stringToBytes(normalizedPassword)
-        val saltBytes = stringToBytes(salt)
+        val passwordBytes = normalizedPassword.toByteArray()
+        val saltBytes = salt.toByteArray()
 
         return scryptGenerate(passwordBytes, saltBytes, cfg.n, cfg.r, cfg.p, cfg.dkLen)
     }

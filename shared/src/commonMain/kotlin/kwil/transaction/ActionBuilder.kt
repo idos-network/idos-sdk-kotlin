@@ -1,18 +1,19 @@
 package org.idos.kwil.transaction
 
 import org.idos.kwil.KwilActionClient
+import org.idos.kwil.rpc.Base64String
+import org.idos.kwil.rpc.HexString
 import org.idos.kwil.rpc.Message
 import org.idos.kwil.rpc.PayloadMsg
 import org.idos.kwil.rpc.PayloadMsgOptions
 import org.idos.kwil.rpc.PayloadType
 import org.idos.kwil.rpc.TransactionBase64
+import org.idos.kwil.serialization.toByteArray
 import org.idos.kwil.signer.BaseSigner
 import org.idos.kwil.signer.SignatureType
 import org.idos.kwil.utils.DataInfo
 import org.idos.kwil.utils.ParamsTypes
-import org.idos.kwil.utils.bytesToHex
 import org.idos.kwil.utils.encodeValueType
-import org.idos.kwil.utils.hexToBytes
 
 // https://github.com/trufnetwork/kwil-js/blob/main/src/transaction/action.ts#L93
 
@@ -54,7 +55,7 @@ class ActionBuilder(
     ) {
         this.signer = signer
         this.signatureType = signer.getSignatureType()
-        this.identifier = hexToBytes(signer.getIdentifier())
+        this.identifier = signer.getIdentifier().toByteArray()
 
         if (signature != null) {
             this.signature = signature
@@ -109,15 +110,15 @@ class ActionBuilder(
             PayloadMsg.createMsg(
                 payload,
                 PayloadMsgOptions(
-                    challenge = challenge,
-                    signature = signature,
+                    challenge = HexString(challenge),
+                    signature = Base64String(signature),
                 ),
             )
 
         if (signer != null) {
             msg.signer = signer
             msg.signatureType = signatureType
-            msg.identifier = bytesToHex(requireNotNull(identifier))
+            msg.identifier = HexString(requireNotNull(identifier))
         }
 
         return msg.buildMsg()

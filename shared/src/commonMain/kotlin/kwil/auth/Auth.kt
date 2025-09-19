@@ -1,9 +1,9 @@
 package org.idos.kwil.auth
 
+import io.ktor.utils.io.core.toByteArray
 import org.idos.kwil.KwilActionClient
+import org.idos.kwil.rpc.Base64String
 import org.idos.kwil.signer.BaseSigner
-import org.idos.kwil.utils.bytesToBase64
-import org.idos.kwil.utils.stringToBytes
 
 // https://github.com/trufnetwork/kwil-js/blob/main/src/auth/auth.ts#L35
 class Auth(
@@ -20,13 +20,13 @@ class Auth(
 
         val msg = composeAuthMsg(authParam, domain, version, this.client.chainId)
 
-        val signature = signer.sign(stringToBytes(msg))
+        val signature = signer.sign(msg.toByteArray())
 
         // KGW rpc call
         return this.client.authn(
             authParam.nonce,
             signer.getIdentifier(),
-            bytesToBase64(signature),
+            Base64String(signature),
             signer.getSignatureType(),
         )
     }

@@ -203,13 +203,9 @@ enum class PayloadType {
     RAW_STATEMENT,
 }
 
-// Type aliases for better readability
-typealias Base64String = String
-typealias HexString = String
-
 @Serializable
 data class AccountId(
-    val identifier: String?,
+    val identifier: HexString?,
     @SerialName("key_type")
     val keyType: KeyType,
 )

@@ -11,9 +11,9 @@ import org.idos.kwil.actions.getUser
 import org.idos.kwil.actions.getWallets
 import org.idos.kwil.actions.hasProfile
 import org.idos.kwil.actions.revokeAccessGrant
+import org.idos.kwil.rpc.Base64String
+import org.idos.kwil.serialization.toByteArray
 import org.idos.kwil.signer.createEthSigner
-import org.idos.kwil.utils.base64ToBytes
-import org.idos.kwil.utils.bytesToString
 
 class ApiIntegrationTests :
     StringSpec(
@@ -39,7 +39,8 @@ class ApiIntegrationTests :
                             .toString(16),
                     )
                 val client = KwilActionClient("https://nodes.staging.idos.network", signer, chainId)
-                val accountId = "0x" + signer.getIdentifier()
+                val accountId = "0x" + signer.getIdentifier().value
+                println(accountId)
                 hasProfile(client, accountId).hasProfile shouldBe true
                 val wallets = getWallets(client)
                 val credentials = getCredentials(client).filter { it.publicNotes.isNotEmpty() }
@@ -58,8 +59,8 @@ class ApiIntegrationTests :
                         userId = profile.id,
                         secrets.password,
                     )
-                val raw = enclave.decrypt(base64ToBytes(data.content), base64ToBytes(data.encryptorPublicKey))
-                val decrypt = bytesToString(raw)
+                val raw = enclave.decrypt(Base64String(data.content).toByteArray(), Base64String(data.encryptorPublicKey).toByteArray())
+                val decrypt = raw.decodeToString()
                 decrypt.asClue { it shouldNotBe null }
 
 //        println(wallets)
