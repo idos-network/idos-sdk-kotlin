@@ -16,7 +16,7 @@ sealed interface MsgData {
 @Serializable
 data class MsgBody(
     override var payload: Base64String? = null,
-    override var challenge: HexString = ""
+    override var challenge: HexString = "",
 ) : IMsgBody
 
 interface IMsgBody {
@@ -31,34 +31,35 @@ data class Message(
     @SerialName("auth_type")
     override var authType: SignatureType = SignatureType.SIGNATURE_TYPE_INVALID,
     override var sender: HexString? = null,
-    override var signature: Base64String? = null
+    override var signature: Base64String? = null,
 ) : MsgData {
     companion object {
         // https://github.com/trufnetwork/kwil-js/blob/main/src/core/message.ts#L102
         fun create(): Message {
             // Create a new empty object
             return Message(
-                body = MsgBody(
-                    payload = null,
-                    challenge = "",
-                ),
+                body =
+                    MsgBody(
+                        payload = null,
+                        challenge = "",
+                    ),
                 authType = SignatureType.SECP256K1_PERSONAL,
                 sender = null,
                 signature = null,
             )
         }
 
-        fun copy(msg: Message): Message {
-            return Message(
-                body = MsgBody(
-                    // TODO: I am not sure about this, it's a deep copy?...
-                    payload = msg.body.payload,
-                    challenge = msg.body.challenge,
-                ),
+        fun copy(msg: Message): Message =
+            Message(
+                body =
+                    MsgBody(
+                        // TODO: I am not sure about this, it's a deep copy?...
+                        payload = msg.body.payload,
+                        challenge = msg.body.challenge,
+                    ),
                 authType = msg.authType,
                 sender = msg.sender,
                 signature = msg.signature,
             )
-        }
     }
 }

@@ -6,20 +6,21 @@ import org.idos.kwil.utils.bytesToBase64
 import org.idos.kwil.utils.stringToBytes
 
 // https://github.com/trufnetwork/kwil-js/blob/main/src/auth/auth.ts#L35
-class Auth(var client: KwilActionClient) {
-
+class Auth(
+    var client: KwilActionClient,
+) {
     // https://github.com/trufnetwork/kwil-js/blob/main/src/auth/auth.ts#L54
     suspend fun authenticateKGW(signer: BaseSigner): String? {
-        val authParam = client.authParam();
+        val authParam = client.authParam()
 
-        val domain = removeTrailingSlash(client.baseUrl);
-        val version = "1";
+        val domain = removeTrailingSlash(client.baseUrl)
+        val version = "1"
 
-        verifyAuthProperties(authParam, domain, version, this.client.chainId);
+        verifyAuthProperties(authParam, domain, version, this.client.chainId)
 
-        val msg = composeAuthMsg(authParam, domain, version, this.client.chainId);
+        val msg = composeAuthMsg(authParam, domain, version, this.client.chainId)
 
-        val signature = signer.sign(stringToBytes(msg));
+        val signature = signer.sign(stringToBytes(msg))
 
         // KGW rpc call
         return this.client.authn(
@@ -27,6 +28,6 @@ class Auth(var client: KwilActionClient) {
             signer.getIdentifier(),
             bytesToBase64(signature),
             signer.getSignatureType(),
-        );
+        )
     }
 }

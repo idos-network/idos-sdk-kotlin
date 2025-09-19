@@ -47,8 +47,11 @@ class ActionBuilder(
     var chainId: String = options.chainId
     var nonce: Int? = options.nonce
 
-
-    fun addSigner(signer: BaseSigner, signature: String? = null, challenge: String? = null) {
+    fun addSigner(
+        signer: BaseSigner,
+        signature: String? = null,
+        challenge: String? = null,
+    ) {
         this.signer = signer
         this.signatureType = signer.getSignatureType()
         this.identifier = hexToBytes(signer.getIdentifier())
@@ -76,19 +79,20 @@ class ActionBuilder(
         val signatureType = requireNotNull(signatureType) { "signatureType is required" }
         val description = requireNotNull(description) { "description is required" }
 
-        return PayloadTx.createTx(
-            kwil,
-            PayloadTxOptions(
-                payloadType = PayloadType.EXECUTE_ACTION,
-                payload = payload,
-                signer = signer,
-                signatureType = signatureType,
-                description = description,
-                chainId = chainId,
-                identifier = identifier,
-                nonce = nonce
-            )
-        ).buildTx()
+        return PayloadTx
+            .createTx(
+                kwil,
+                PayloadTxOptions(
+                    payloadType = PayloadType.EXECUTE_ACTION,
+                    payload = payload,
+                    signer = signer,
+                    signatureType = signatureType,
+                    description = description,
+                    chainId = chainId,
+                    identifier = identifier,
+                    nonce = nonce,
+                ),
+            ).buildTx()
     }
 
     // https://github.com/trufnetwork/kwil-js/blob/main/src/transaction/action.ts#L138C9-L138C17
@@ -101,11 +105,14 @@ class ActionBuilder(
 
         val payload = buildMsgPayload(privateMode, actionInputs)
 
-        val msg = PayloadMsg.createMsg(payload, PayloadMsgOptions(
-            challenge = challenge,
-            signature = signature
-        )
-        )
+        val msg =
+            PayloadMsg.createMsg(
+                payload,
+                PayloadMsgOptions(
+                    challenge = challenge,
+                    signature = signature,
+                ),
+            )
 
         if (signer != null) {
             msg.signer = signer
@@ -118,7 +125,7 @@ class ActionBuilder(
 
     private fun buildTxPayload(
         privateMode: Boolean,
-        actionInputs: List<PositionalParams>
+        actionInputs: List<PositionalParams>,
     ): UnencodedActionPayload<List<List<EncodedValue>>> {
         if (privateMode) {
             val arguments = mutableListOf<List<EncodedValue>>()
@@ -137,7 +144,9 @@ class ActionBuilder(
         val validated = validatedActionRequest(actionInputs)
 
         if (validated.modifiers.contains(AccessModifier.VIEW)) {
-            throw IllegalStateException("Action / Procedure ${validated.actionName} is a 'view' action. Please use kwil.call().")
+            throw IllegalStateException(
+                "Action / Procedure ${validated.actionName} is a 'view' action. Please use kwil.call().",
+            )
         }
 
         return UnencodedActionPayload(
@@ -153,13 +162,14 @@ class ActionBuilder(
     //
     private fun buildMsgPayload(
         privateMode: Boolean,
-        actionInputs: List<PositionalParams>
+        actionInputs: List<PositionalParams>,
     ): UnencodedActionPayload<MutableList<EncodedValue>> {
-        val payload = UnencodedActionPayload<MutableList<EncodedValue>>(
-            dbid = namespace,
-            action = actionName,
-            arguments = mutableListOf()
-        )
+        val payload =
+            UnencodedActionPayload<MutableList<EncodedValue>>(
+                dbid = namespace,
+                action = actionName,
+                arguments = mutableListOf(),
+            )
 
         // In private mode, we cannot validate the action inputs as we cannot run the selectQuery to get the schema.
         if (privateMode) {
@@ -177,32 +187,30 @@ class ActionBuilder(
         }
 
         // TODO: This is weird
-        //if (!validated.modifiers.contains(AccessModifier.VIEW)) {
+        // if (!validated.modifiers.contains(AccessModifier.VIEW)) {
         //    throw IllegalStateException("Action ${validated.actionName} is not a view only action. Please use kwil.execute().")
-        //}
+        // }
 
-        payload.arguments?.addAll(validated.encodedActionInputs.first());
+        payload.arguments?.addAll(validated.encodedActionInputs.first())
         return payload
     }
 
-    private fun validatedActionRequest(
-        actionInputs: List<PositionalParams>
-    ): ValidatedAction {
+    private fun validatedActionRequest(actionInputs: List<PositionalParams>): ValidatedAction {
         // We don't care about NamedParams, so only the 2nd part of the function is required
         // https://github.com/trufnetwork/kwil-js/blob/main/src/transaction/action.ts#L323
 
-        val encValue = mutableListOf<List<EncodedValue>>();
+        val encValue = mutableListOf<List<EncodedValue>>()
 
         actionInputs.forEach { input ->
             // TODO: This is weird...
-            val value = resolveParamTypes(input, types);
-            encValue.add(encodeValueType(value));
+            val value = resolveParamTypes(input, types)
+            encValue.add(encodeValueType(value))
         }
 
         return ValidatedAction(
             actionName = actionName,
             modifiers = emptyList(),
-            encodedActionInputs = encValue
+            encodedActionInputs = encValue,
         )
     }
 
@@ -211,30 +219,34 @@ class ActionBuilder(
     //
     private fun resolveParamTypes(
         i: PositionalParams,
-        types: List<DataInfo>?
+        types: List<DataInfo>?,
     ): List<ParamsTypes> {
-        val ret = mutableListOf<ParamsTypes>();
+        val ret = mutableListOf<ParamsTypes>()
 
         // if no types are provided, return param types with no o property
         if (types === null) {
             for (item in i) {
-                ret.add(ParamsTypes(
-                    v = item,
-                    o = null
-                ))
+                ret.add(
+                    ParamsTypes(
+                        v = item,
+                        o = null,
+                    ),
+                )
             }
         } else {
             // Handle positional params
             i.forEachIndexed { index, item ->
                 // assume that the order of the types matches the order of the parameters
-                ret.add(ParamsTypes(
-                    v = item,
-                    o = types[index]
-                ))
+                ret.add(
+                    ParamsTypes(
+                        v = item,
+                        o = types[index],
+                    ),
+                )
             }
         }
 
-        return ret;
+        return ret
     }
 
     private fun assertNotBuilding() {

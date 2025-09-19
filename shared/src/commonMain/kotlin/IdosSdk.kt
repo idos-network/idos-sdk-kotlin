@@ -7,5 +7,3 @@ package org.idos
 object IdosSdk {
     fun version(): String = "0.1.0"
 }
-
-

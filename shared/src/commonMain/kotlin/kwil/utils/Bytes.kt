@@ -1,11 +1,10 @@
 package org.idos.kwil.utils
 
-import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import kotlinx.io.writeShortLe
 import kotlinx.io.writeIntLe
+import kotlinx.io.writeShortLe
 
 // https://github.com/trufnetwork/kwil-js/blob/main/src/utils/bytes.ts
 
@@ -49,32 +48,32 @@ fun convertUuidToBytes(uuid: String): ByteArray {
     var v: Long
 
     return byteArrayOf(
-            // Parse ########-....-....-....-............
-            ((parseLong(uuid.take(8), 16).also { v = it }) ushr 24).toByte(),
-            ((v ushr 16) and 0xff).toByte(),
-            ((v ushr 8) and 0xff).toByte(),
-            (v and 0xff).toByte(),
-            // Parse ........-####-....-....-............
-            ((parseLong(uuid.substring(9, 13), 16).also { v = it }) ushr 8).toByte(),
-            (v and 0xff).toByte(),
-            // Parse ........-....-####-....-............
-            ((parseLong(uuid.substring(14, 18), 16).also { v = it }) ushr 8).toByte(),
-            (v and 0xff).toByte(),
-            // Parse ........-....-....-####-............
-            ((parseLong(uuid.substring(19, 23), 16).also { v = it }) ushr 8).toByte(),
-            (v and 0xff).toByte(),
-            // Parse ........-....-....-....-############
-            ((parseLong(uuid.substring(24, 36), 16).also { v = it }) / 0x10000000000L and 0xff)
-                    .toByte(),
-            ((v / 0x100000000L) and 0xff).toByte(),
-            ((v ushr 24) and 0xff).toByte(),
-            ((v ushr 16) and 0xff).toByte(),
-            ((v ushr 8) and 0xff).toByte(),
-            (v and 0xff).toByte(),
+        // Parse ########-....-....-....-............
+        ((parseLong(uuid.take(8), 16).also { v = it }) ushr 24).toByte(),
+        ((v ushr 16) and 0xff).toByte(),
+        ((v ushr 8) and 0xff).toByte(),
+        (v and 0xff).toByte(),
+        // Parse ........-####-....-....-............
+        ((parseLong(uuid.substring(9, 13), 16).also { v = it }) ushr 8).toByte(),
+        (v and 0xff).toByte(),
+        // Parse ........-....-####-....-............
+        ((parseLong(uuid.substring(14, 18), 16).also { v = it }) ushr 8).toByte(),
+        (v and 0xff).toByte(),
+        // Parse ........-....-....-####-............
+        ((parseLong(uuid.substring(19, 23), 16).also { v = it }) ushr 8).toByte(),
+        (v and 0xff).toByte(),
+        // Parse ........-....-....-....-############
+        ((parseLong(uuid.substring(24, 36), 16).also { v = it }) / 0x10000000000L and 0xff)
+            .toByte(),
+        ((v / 0x100000000L) and 0xff).toByte(),
+        ((v ushr 24) and 0xff).toByte(),
+        ((v ushr 16) and 0xff).toByte(),
+        ((v ushr 8) and 0xff).toByte(),
+        (v and 0xff).toByte(),
     )
 }
 
 private fun parseLong(
-        value: String,
-        radix: Int,
+    value: String,
+    radix: Int,
 ): Long = value.toLong(radix)

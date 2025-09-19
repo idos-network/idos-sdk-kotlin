@@ -5,7 +5,10 @@ import org.idos.kwil.rpc.HexString
 
 interface BaseSigner {
     fun getIdentifier(): HexString
+
     fun getSignatureType(): SignatureType
+
     fun sign(msg: ByteArray): ByteArray
+
     fun accountId(): AccountId
 }

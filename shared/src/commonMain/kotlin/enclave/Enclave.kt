@@ -1,5 +1,11 @@
 package org.idos.enclave
 
+data class PrivateEncryptionProfile(
+    val userId: String,
+    val password: String,
+    val keyPair: KeyPair,
+)
+
 // https://github.com/idos-network/idos-sdk-js/blob/main/packages/utils/src/enclave/local.ts
 class Enclave(
     var userId: String,
