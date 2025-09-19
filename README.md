@@ -1,4 +1,26 @@
-# idOS SDK kotlin
+# idOS SDK Kotlin
+
+## Testing Setup
+
+To run the tests, you need to set up your environment variables:
+
+1. Copy the example environment file:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Edit `.env` and set your mnemonic phrase & password:
+   ```
+   MNEMONIC_WORDS=your twelve or twenty four word mnemonic phrase goes here
+   PASSWORD=password
+   ```
+
+3. Run the tests:
+   ```bash
+   ./gradlew jvmTest
+   ```
+
+**Note:** Your mnemonic should be for a wallet that has an idOS profile for the integration tests to work properly.
 
 ## Signer
 

@@ -1,0 +1,7 @@
+package org.idos
+
+interface Platform {
+    val name: String
+}
+
+expect fun getPlatform(): Platform
