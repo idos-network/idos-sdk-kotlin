@@ -15,11 +15,14 @@ class JvmEthSigner(
     private val privateKey = PrivateKey(BigInteger(privateKeyHex.removePrefix("0x"), 16))
     private val keyPair: ECKeyPair = privateKey.toECKeyPair()
 
-    override fun getIdentifier(): HexString {
-        return HexString(keyPair.toAddress().toString().substring(2)) // without 0x
-    }
+    override fun getIdentifier(): HexString = HexString(keyPair.toAddress().toString().removePrefix("0x"))
 
-    override fun sign(msg: ByteArray): ByteArray = keyPair.signWithEIP191PersonalSign(msg).toHex().toByteArray()
+    override fun sign(msg: ByteArray): ByteArray =
+        keyPair
+            .signWithEIP191PersonalSign(msg)
+            .toHex()
+            .removePrefix("0x")
+            .hexToByteArray()
 }
 
 // Platform-specific implementation
