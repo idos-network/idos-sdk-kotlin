@@ -4,6 +4,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import org.idos.kwil.actions.ActionSchema
+import org.idos.kwil.actions.generated.GeneratedAction
 import org.idos.kwil.auth.Auth
 import org.idos.kwil.rpc.Action
 import org.idos.kwil.rpc.ApiClient
@@ -35,6 +36,20 @@ class KwilActionClient(
 ) : ApiClient(baseUrl, chainId) {
     private val actionsCache = mutableMapOf<String, List<Action>>()
     private var authMode: AuthenticationMode? = null
+
+    suspend inline fun <I, reified O> callActionWithResult(
+        action: GeneratedAction<I, O>,
+        input: I,
+    ): Result<List<O>> = runCatching { callAction(action, input) }
+
+    suspend inline fun <I, reified O> callAction(
+        action: GeneratedAction<I, O>,
+        input: I,
+    ): List<O> =
+        callAction(
+            actionName = action.name,
+            params = action.toNamedParams(input),
+        )
 
     /**
      * Calls an action on the kwil nodes. This similar to `GET` like request.

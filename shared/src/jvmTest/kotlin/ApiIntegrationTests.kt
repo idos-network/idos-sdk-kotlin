@@ -4,6 +4,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.idos.enclave.Enclave
 import org.idos.kwil.KwilActionClient
+import org.idos.kwil.actions.generated.main.GetAccessGrantsForCredential
+import org.idos.kwil.actions.generated.main.GetAccessGrantsForCredentialInput
 import org.idos.kwil.actions.getAccessGrantsOwned
 import org.idos.kwil.actions.getCredentialOwned
 import org.idos.kwil.actions.getCredentials
@@ -62,6 +64,12 @@ class ApiIntegrationTests :
                 val raw = enclave.decrypt(Base64String(data.content).toByteArray(), Base64String(data.encryptorPublicKey).toByteArray())
                 val decrypt = raw.decodeToString()
                 decrypt.asClue { it shouldNotBe null }
+
+                // test new structure
+                val result = client.callAction(GetAccessGrantsForCredential, GetAccessGrantsForCredentialInput(id))
+                result
+                    .onSuccess { println("found grants: $it") }
+                    .onFailure { println("failed to get grants for credential: $it") }
 
 //        println(wallets)
 //        println(credentials)
