@@ -1,5 +1,7 @@
 package org.idos.enclave
 
+import org.idos.kwil.rpc.UuidString
+
 data class PrivateEncryptionProfile(
     val userId: String,
     val password: String,
@@ -8,7 +10,7 @@ data class PrivateEncryptionProfile(
 
 // https://github.com/idos-network/idos-sdk-js/blob/main/packages/utils/src/enclave/local.ts
 class Enclave(
-    var userId: String,
+    var userId: UuidString,
     var password: String,
 ) {
     private val encryption = getEncryption()
@@ -37,12 +39,12 @@ class Enclave(
     private fun key(): PrivateEncryptionProfile {
         encryptionProfile?.let { return it }
 
-        val secretKey = Encryption.keyDerivation(password, userId)
+        val secretKey = Encryption.keyDerivation(password, userId.value)
         val kp = encryption.keyPairFromSecretKey(secretKey)
 
         this.encryptionProfile =
             PrivateEncryptionProfile(
-                userId = userId,
+                userId = userId.value,
                 password = password,
                 keyPair = kp,
             )

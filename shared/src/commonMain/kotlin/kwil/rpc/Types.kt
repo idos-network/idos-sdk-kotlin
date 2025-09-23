@@ -10,44 +10,70 @@ import kotlinx.serialization.encoding.Encoder
 import kotlin.io.encoding.Base64
 import kotlin.jvm.JvmInline
 
+interface StringValue {
+    val value: String
+}
+
 @JvmInline
 @Serializable(with = Base64StringSerializer::class)
 value class Base64String(
-    val value: String,
-) {
+    override val value: String,
+) : StringValue {
+    init {
+        require(value.isEmpty() || Base64.decode(value).isNotEmpty()) { "Invalid base64 string" }
+    }
+
     constructor(bytes: ByteArray) : this(Base64.encode(bytes))
 }
 
 @JvmInline
 @Serializable(with = HexStringSerializer::class)
 value class HexString(
-    val value: String,
-) {
+    override val value: String,
+) : StringValue {
+    val prefixedValue get() = "0x$value"
+
+    init {
+        require(value.isEmpty() || value.matches(Regex("^[0-9a-fA-F]+$"))) { "Invalid hex string" }
+    }
+
     constructor(bytes: ByteArray) : this(bytes.toHexString())
+
+    companion object {
+        fun withoutPrefix(hexString: String): HexString = HexString(hexString.removePrefix("0x"))
+    }
 }
 
-object Base64StringSerializer : KSerializer<Base64String> {
-    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("Base64String", PrimitiveKind.STRING)
+@JvmInline
+@Serializable(with = UuidStringSerializer::class)
+value class UuidString(
+    override val value: String,
+) : StringValue {
+    init {
+        require(
+            value.matches(Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\$")),
+        ) { "Invalid UUID string" }
+    }
+}
+
+open class GenericStringSerializer<T : StringValue>(
+    private val ctor: (String) -> T,
+    serialName: String,
+) : KSerializer<T> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor(serialName, PrimitiveKind.STRING)
 
     override fun serialize(
         encoder: Encoder,
-        value: Base64String,
+        value: T,
     ) {
         encoder.encodeString(value.value)
     }
 
-    override fun deserialize(decoder: Decoder): Base64String = Base64String(decoder.decodeString())
+    override fun deserialize(decoder: Decoder): T = ctor(decoder.decodeString())
 }
 
-object HexStringSerializer : KSerializer<HexString> {
-    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("HexString", PrimitiveKind.STRING)
+object Base64StringSerializer : GenericStringSerializer<Base64String>(::Base64String, "Base64String")
 
-    override fun serialize(
-        encoder: Encoder,
-        value: HexString,
-    ) {
-        encoder.encodeString(value.value)
-    }
+object HexStringSerializer : GenericStringSerializer<HexString>(::HexString, "HexString")
 
-    override fun deserialize(decoder: Decoder): HexString = HexString(decoder.decodeString())
-}
+object UuidStringSerializer : GenericStringSerializer<UuidString>(::UuidString, "UuidString")

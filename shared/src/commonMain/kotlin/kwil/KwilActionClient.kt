@@ -4,8 +4,10 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import org.idos.kwil.actions.ActionSchema
-import org.idos.kwil.actions.generated.GeneratedAction
-import org.idos.kwil.auth.Auth
+import org.idos.kwil.actions.generated.Empty
+import org.idos.kwil.actions.generated.ExecuteAction
+import org.idos.kwil.actions.generated.NoParamsAction
+import org.idos.kwil.actions.generated.ViewAction
 import org.idos.kwil.rpc.Action
 import org.idos.kwil.rpc.ApiClient
 import org.idos.kwil.rpc.AuthenticationMode
@@ -13,6 +15,7 @@ import org.idos.kwil.rpc.BroadcastResponse
 import org.idos.kwil.rpc.BroadcastSyncType
 import org.idos.kwil.rpc.CallBody
 import org.idos.kwil.rpc.CallResponse
+import org.idos.kwil.rpc.HexString
 import org.idos.kwil.rpc.Message
 import org.idos.kwil.rpc.MissingAuthenticationException
 import org.idos.kwil.rpc.QueryResponse
@@ -37,19 +40,51 @@ class KwilActionClient(
     private val actionsCache = mutableMapOf<String, List<Action>>()
     private var authMode: AuthenticationMode? = null
 
-    suspend inline fun <I, reified O> callActionWithResult(
-        action: GeneratedAction<I, O>,
-        input: I,
-    ): Result<List<O>> = runCatching { callAction(action, input) }
-
+    // todo
+    // remove calldata & message, call with action directly
+    // remove signer, should trigger error loop on UI to sign auth, keep autoauth option for jvm tests
     suspend inline fun <I, reified O> callAction(
-        action: GeneratedAction<I, O>,
+        action: ViewAction<I, O>,
         input: I,
-    ): List<O> =
-        callAction(
-            actionName = action.name,
-            params = action.toNamedParams(input),
-        )
+    ): List<O> {
+        val response =
+            call(
+                CallBody(
+                    namespace = action.namespace,
+                    name = action.name,
+                    inputs = action.toPositionalParams(input),
+                    types = action.positionalTypes,
+                ),
+                signer,
+            )
+
+        return parseQueryResponse(response.queryResult)
+    }
+
+    suspend inline fun <reified O> callAction(action: NoParamsAction<O>): List<O> = callAction(action, Empty)
+
+    // same refactor to leave out unnecessary layers as the "call"
+    // signer callback to ui, keep as is in tests
+    suspend inline fun <I> executeAction(
+        action: ExecuteAction<I>,
+        input: I,
+        synchronous: Boolean = true,
+    ): HexString {
+        val response =
+            execute(
+                CallBody(
+                    namespace = action.namespace,
+                    name = action.name,
+                    inputs = action.toPositionalParams(input),
+                    types = action.positionalTypes,
+                ),
+                signer,
+                action.description,
+                if (synchronous) BroadcastSyncType.COMMIT else BroadcastSyncType.SYNC,
+            )
+
+        return HexString(response.txHash.value)
+    }
 
     /**
      * Calls an action on the kwil nodes. This similar to `GET` like request.
