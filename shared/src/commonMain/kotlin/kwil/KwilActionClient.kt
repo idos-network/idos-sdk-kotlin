@@ -3,7 +3,6 @@ package org.idos.kwil
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
-import org.idos.kwil.actions.ActionSchema
 import org.idos.kwil.actions.Empty
 import org.idos.kwil.actions.ExecuteAction
 import org.idos.kwil.actions.NoParamsAction
@@ -86,29 +85,6 @@ class KwilActionClient(
         return HexString(response.txHash.value)
     }
 
-    /**
-     * Calls an action on the kwil nodes. This similar to `GET` like request.
-     *
-     * https://github.com/idos-network/idos-sdk-js/blob/859f2c67ace11bd879583d8c0cbf0f50c5257ba9/packages/%40core/src/kwil-infra/create-kwil-client.ts#L68
-     */
-    suspend inline fun <reified TResponse> callAction(
-        actionName: String,
-        params: NamedParams,
-    ): List<TResponse> {
-        val response =
-            call(
-                CallBody(
-                    namespace = "main",
-                    name = actionName,
-                    inputs = createActionInputs(actionName, params),
-                    types = actionTypes(actionName),
-                ),
-                signer,
-            )
-
-        return parseQueryResponse(response.queryResult)
-    }
-
     inline fun <reified TResponse> parseQueryResponse(
         queryResponse: QueryResponse,
         json: Json = Json { ignoreUnknownKeys = true },
@@ -125,33 +101,6 @@ class KwilActionClient(
                 }
             json.decodeFromJsonElement<TResponse>(obj)
         }
-    }
-
-    /**
-     * Executes an action on the kwil nodes. This similar to `POST` like request.
-     *
-     * https://github.com/idos-network/idos-sdk-js/blob/859f2c67ace11bd879583d8c0cbf0f50c5257ba9/packages/%40core/src/kwil-infra/create-kwil-client.ts#L86
-     */
-    suspend inline fun executeAction(
-        actionName: String,
-        params: NamedParams,
-        description: String,
-        synchronous: Boolean = true,
-    ): String? {
-        val response =
-            execute(
-                CallBody(
-                    namespace = "main",
-                    name = actionName,
-                    inputs = createActionInputs(actionName, params),
-                    types = actionTypes(actionName),
-                ),
-                signer,
-                description,
-                if (synchronous) BroadcastSyncType.COMMIT else BroadcastSyncType.SYNC,
-            )
-
-        return response.txHash.value
     }
 
     /**
@@ -328,33 +277,4 @@ class KwilActionClient(
         val result = query(query, jsonParams)
         return transform(result)
     }
-
-    /**
-     * Creates action inputs as a positional array based on the action schema
-     * https://github.com/idos-network/idos-sdk-js/blob/859f2c67ace11bd879583d8c0cbf0f50c5257ba9/packages/%40core/src/kwil-infra/create-kwil-client.ts#L75
-     */
-    fun createActionInputs(
-        actionName: String,
-        params: NamedParams = emptyMap(),
-    ): PositionalParams {
-        if (params.isEmpty()) {
-            return emptyList()
-        }
-
-        val schema = ActionSchema.getSchema(actionName) ?: return emptyList()
-
-        return schema.map { field ->
-            when (val value = params[field.name]) {
-                null -> null
-                false, 0, "" -> value
-                else -> value
-            }
-        }
-    }
-
-    /**
-     * Gets the parameter types for an action based on its schema
-     * https://github.com/idos-network/idos-sdk-js/blob/859f2c67ace11bd879583d8c0cbf0f50c5257ba9/packages/%40core/src/kwil-infra/create-kwil-client.ts#L75
-     */
-    fun actionTypes(actionName: String): PositionalTypes = ActionSchema.getSchema(actionName)?.map { it -> it.type } ?: emptyList()
 }

@@ -8,10 +8,10 @@ import org.idos.kwil.rpc.PayloadMsg
 import org.idos.kwil.rpc.PayloadMsgOptions
 import org.idos.kwil.rpc.PayloadType
 import org.idos.kwil.rpc.TransactionBase64
+import org.idos.kwil.serialization.DataInfo
 import org.idos.kwil.serialization.toByteArray
 import org.idos.kwil.signer.BaseSigner
 import org.idos.kwil.signer.SignatureType
-import org.idos.kwil.utils.DataInfo
 import org.idos.kwil.utils.ParamsTypes
 import org.idos.kwil.utils.encodeValueType
 

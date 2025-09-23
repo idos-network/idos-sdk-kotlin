@@ -1,6 +1,6 @@
 package org.idos.kwil.transaction
 
-import org.idos.kwil.utils.DataInfo
+import org.idos.kwil.serialization.DataInfo
 
 enum class AccessModifier {
     PUBLIC,

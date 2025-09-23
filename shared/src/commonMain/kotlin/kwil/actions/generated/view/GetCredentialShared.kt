@@ -12,7 +12,7 @@ import org.idos.kwil.transaction.PositionalParams
 import org.idos.kwil.transaction.PositionalTypes
 
 @Serializable
-data class GetCredentialOwnedResponse(
+data class GetCredentialSharedResponse(
     @SerialName("id") val id: UuidString,
     @SerialName("user_id") val userId: UuidString,
     @SerialName("public_notes") val publicNotes: String,
@@ -22,19 +22,22 @@ data class GetCredentialOwnedResponse(
     @SerialName("inserter") val inserter: String?
 )
 
-data class GetCredentialOwnedParams(
+data class GetCredentialSharedParams(
     val id: UuidString
 )
 
-object GetCredentialOwned : ViewAction<GetCredentialOwnedParams, GetCredentialOwnedResponse> {
-  override val name: String = "get_credential_owned"
+/**
+ *  As a credential copy doesn't contain PUBLIC notes, we return respective original credential PUBLIC notes
+ */
+object GetCredentialShared : ViewAction<GetCredentialSharedParams, GetCredentialSharedResponse> {
+  override val name: String = "get_credential_shared"
   override val namespace: String = "main"
 
   override val positionalTypes: PositionalTypes = listOf(
     DataType.Uuid
   )
 
-  override fun toPositionalParams(input: GetCredentialOwnedParams): PositionalParams = listOf(
+  override fun toPositionalParams(input: GetCredentialSharedParams): PositionalParams = listOf(
     input.id.value
   )
 }

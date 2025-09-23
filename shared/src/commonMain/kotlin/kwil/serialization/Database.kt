@@ -1,18 +1,16 @@
-package org.idos.kwil.utils
+package org.idos.kwil.serialization
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import org.idos.kwil.utils.VarType
 
 // https://github.com/trufnetwork/kwil-js/blob/main/src/core/database.ts#L32
-@kotlinx.serialization.Serializable
+@Serializable
 data class DataInfo(
     val name: VarType,
-    @kotlinx.serialization.SerialName("is_array")
+    @SerialName("is_array")
     val isArray: Boolean,
     val metadata: List<Int>?,
-)
-
-data class SchemaField(
-    val name: String,
-    val type: DataInfo,
-    val nullable: Boolean = false,
 )
 
 // https://github.com/trufnetwork/kwil-js/blob/main/src/core/database.ts#L32C1-L112C1

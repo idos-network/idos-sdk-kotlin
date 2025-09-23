@@ -1,5 +1,7 @@
 package org.idos.kwil.utils
 
+import org.idos.kwil.serialization.DataInfo
+
 // https://github.com/trufnetwork/kwil-js/blob/main/src/core/action.ts#L16
 data class ParamsTypes(
     val v: Any?,

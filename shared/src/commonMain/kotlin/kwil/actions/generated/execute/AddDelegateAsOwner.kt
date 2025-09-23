@@ -9,20 +9,23 @@ import org.idos.kwil.serialization.DataType
 import org.idos.kwil.transaction.PositionalParams
 import org.idos.kwil.transaction.PositionalTypes
 
-data class RevokeAccessGrantParams(
-    val id: UuidString
+data class AddDelegateAsOwnerParams(
+    val address: String,
+    val inserterId: UuidString
 )
 
-object RevokeAccessGrant : ExecuteAction<RevokeAccessGrantParams> {
-  override val name: String = "revoke_access_grant"
+object AddDelegateAsOwner : ExecuteAction<AddDelegateAsOwnerParams> {
+  override val name: String = "add_delegate_as_owner"
   override val namespace: String = "main"
-  override val description: String = "Revoke an Access Grant from idOS"
+  override val description: String = "Add a delegate as owner"
 
   override val positionalTypes: PositionalTypes = listOf(
+    DataType.Text,
     DataType.Uuid
   )
 
-  override fun toPositionalParams(input: RevokeAccessGrantParams): PositionalParams = listOf(
-    input.id.value
+  override fun toPositionalParams(input: AddDelegateAsOwnerParams): PositionalParams = listOf(
+    input.address,
+    input.inserterId.value
   )
 }

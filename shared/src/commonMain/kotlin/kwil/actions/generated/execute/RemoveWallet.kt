@@ -9,20 +9,20 @@ import org.idos.kwil.serialization.DataType
 import org.idos.kwil.transaction.PositionalParams
 import org.idos.kwil.transaction.PositionalTypes
 
-data class RevokeAccessGrantParams(
+data class RemoveWalletParams(
     val id: UuidString
 )
 
-object RevokeAccessGrant : ExecuteAction<RevokeAccessGrantParams> {
-  override val name: String = "revoke_access_grant"
+object RemoveWallet : ExecuteAction<RemoveWalletParams> {
+  override val name: String = "remove_wallet"
   override val namespace: String = "main"
-  override val description: String = "Revoke an Access Grant from idOS"
+  override val description: String = "Remove a wallet from idOS"
 
   override val positionalTypes: PositionalTypes = listOf(
     DataType.Uuid
   )
 
-  override fun toPositionalParams(input: RevokeAccessGrantParams): PositionalParams = listOf(
+  override fun toPositionalParams(input: RemoveWalletParams): PositionalParams = listOf(
     input.id.value
   )
 }

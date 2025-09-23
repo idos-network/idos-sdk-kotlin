@@ -5,11 +5,14 @@ package org.idos.kwil.actions.generated.view
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.idos.kwil.actions.NoParamsAction
+import org.idos.kwil.actions.ViewAction
 import org.idos.kwil.rpc.UuidString
+import org.idos.kwil.serialization.DataType
+import org.idos.kwil.transaction.PositionalParams
+import org.idos.kwil.transaction.PositionalTypes
 
 @Serializable
-data class GetAccessGrantsOwnedResponse(
+data class GetAccessGrantsForCredentialResponse(
     @SerialName("id") val id: UuidString,
     @SerialName("ag_owner_user_id") val agOwnerUserId: UuidString,
     @SerialName("ag_grantee_wallet_identifier") val agGranteeWalletIdentifier: String,
@@ -20,7 +23,19 @@ data class GetAccessGrantsOwnedResponse(
     @SerialName("inserter_id") val inserterId: String
 )
 
-object GetAccessGrantsOwned : NoParamsAction<GetAccessGrantsOwnedResponse>() {
+data class GetAccessGrantsForCredentialParams(
+    val credentialId: UuidString
+)
+
+object GetAccessGrantsForCredential : ViewAction<GetAccessGrantsForCredentialParams, GetAccessGrantsForCredentialResponse> {
+  override val name: String = "get_access_grants_for_credential"
   override val namespace: String = "main"
-  override val name: String = "get_access_grants_owned"
+
+  override val positionalTypes: PositionalTypes = listOf(
+    DataType.Uuid
+  )
+
+  override fun toPositionalParams(input: GetAccessGrantsForCredentialParams): PositionalParams = listOf(
+    input.credentialId.value
+  )
 }

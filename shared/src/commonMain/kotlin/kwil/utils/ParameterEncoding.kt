@@ -1,6 +1,7 @@
 package org.idos.kwil.utils
 
 import org.idos.kwil.rpc.Base64String
+import org.idos.kwil.serialization.DataInfo
 import org.idos.kwil.transaction.EncodedValue
 
 @kotlinx.serialization.Serializable

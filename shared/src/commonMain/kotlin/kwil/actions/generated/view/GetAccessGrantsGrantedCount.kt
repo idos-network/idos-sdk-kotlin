@@ -6,32 +6,29 @@ package org.idos.kwil.actions.generated.view
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.idos.kwil.actions.ViewAction
+import org.idos.kwil.rpc.UuidString
 import org.idos.kwil.serialization.DataType
 import org.idos.kwil.transaction.PositionalParams
 import org.idos.kwil.transaction.PositionalTypes
 
 @Serializable
-data class HasProfileResponse(
-    @SerialName("has_profile") val hasProfile: Boolean
+data class GetAccessGrantsGrantedCountResponse(
+    @SerialName("count") val count: Int
 )
 
-data class HasProfileParams(
-    val address: String
+data class GetAccessGrantsGrantedCountParams(
+    val userId: UuidString?
 )
 
-/**
- *  OTHER ACTIONS
- *  Should we improve it to work with near wallets too?
- */
-object HasProfile : ViewAction<HasProfileParams, HasProfileResponse> {
-  override val name: String = "has_profile"
+object GetAccessGrantsGrantedCount : ViewAction<GetAccessGrantsGrantedCountParams, GetAccessGrantsGrantedCountResponse> {
+  override val name: String = "get_access_grants_granted_count"
   override val namespace: String = "main"
 
   override val positionalTypes: PositionalTypes = listOf(
-    DataType.Text
+    DataType.Uuid
   )
 
-  override fun toPositionalParams(input: HasProfileParams): PositionalParams = listOf(
-    input.address
+  override fun toPositionalParams(input: GetAccessGrantsGrantedCountParams): PositionalParams = listOf(
+    input.userId?.value
   )
 }

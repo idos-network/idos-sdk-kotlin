@@ -4,25 +4,24 @@
 package org.idos.kwil.actions.generated.execute
 
 import org.idos.kwil.actions.ExecuteAction
-import org.idos.kwil.rpc.UuidString
 import org.idos.kwil.serialization.DataType
 import org.idos.kwil.transaction.PositionalParams
 import org.idos.kwil.transaction.PositionalTypes
 
-data class RevokeAccessGrantParams(
-    val id: UuidString
+data class DeleteDelegateAsOwnerParams(
+    val address: String
 )
 
-object RevokeAccessGrant : ExecuteAction<RevokeAccessGrantParams> {
-  override val name: String = "revoke_access_grant"
+object DeleteDelegateAsOwner : ExecuteAction<DeleteDelegateAsOwnerParams> {
+  override val name: String = "delete_delegate_as_owner"
   override val namespace: String = "main"
-  override val description: String = "Revoke an Access Grant from idOS"
+  override val description: String = "Delete a delegate from idOS"
 
   override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid
+    DataType.Text
   )
 
-  override fun toPositionalParams(input: RevokeAccessGrantParams): PositionalParams = listOf(
-    input.id.value
+  override fun toPositionalParams(input: DeleteDelegateAsOwnerParams): PositionalParams = listOf(
+    input.address
   )
 }

@@ -12,29 +12,26 @@ import org.idos.kwil.transaction.PositionalParams
 import org.idos.kwil.transaction.PositionalTypes
 
 @Serializable
-data class GetCredentialOwnedResponse(
+data class GetUserAsInserterResponse(
     @SerialName("id") val id: UuidString,
-    @SerialName("user_id") val userId: UuidString,
-    @SerialName("public_notes") val publicNotes: String,
-    @SerialName("content") val content: String,
-    @SerialName("encryptor_public_key") val encryptorPublicKey: String,
-    @SerialName("issuer_auth_public_key") val issuerAuthPublicKey: String,
-    @SerialName("inserter") val inserter: String?
+    @SerialName("recipient_encryption_public_key") val recipientEncryptionPublicKey: String,
+    @SerialName("encryption_password_store") val encryptionPasswordStore: String,
+    @SerialName("inserter") val inserter: String
 )
 
-data class GetCredentialOwnedParams(
+data class GetUserAsInserterParams(
     val id: UuidString
 )
 
-object GetCredentialOwned : ViewAction<GetCredentialOwnedParams, GetCredentialOwnedResponse> {
-  override val name: String = "get_credential_owned"
+object GetUserAsInserter : ViewAction<GetUserAsInserterParams, GetUserAsInserterResponse> {
+  override val name: String = "get_user_as_inserter"
   override val namespace: String = "main"
 
   override val positionalTypes: PositionalTypes = listOf(
     DataType.Uuid
   )
 
-  override fun toPositionalParams(input: GetCredentialOwnedParams): PositionalParams = listOf(
+  override fun toPositionalParams(input: GetUserAsInserterParams): PositionalParams = listOf(
     input.id.value
   )
 }

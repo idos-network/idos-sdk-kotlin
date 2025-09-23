@@ -6,32 +6,29 @@ package org.idos.kwil.actions.generated.view
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.idos.kwil.actions.ViewAction
+import org.idos.kwil.rpc.UuidString
 import org.idos.kwil.serialization.DataType
 import org.idos.kwil.transaction.PositionalParams
 import org.idos.kwil.transaction.PositionalTypes
 
 @Serializable
-data class HasProfileResponse(
-    @SerialName("has_profile") val hasProfile: Boolean
+data class CredentialExistAsInserterResponse(
+    @SerialName("credential_exist") val credentialExist: Boolean
 )
 
-data class HasProfileParams(
-    val address: String
+data class CredentialExistAsInserterParams(
+    val id: UuidString
 )
 
-/**
- *  OTHER ACTIONS
- *  Should we improve it to work with near wallets too?
- */
-object HasProfile : ViewAction<HasProfileParams, HasProfileResponse> {
-  override val name: String = "has_profile"
+object CredentialExistAsInserter : ViewAction<CredentialExistAsInserterParams, CredentialExistAsInserterResponse> {
+  override val name: String = "credential_exist_as_inserter"
   override val namespace: String = "main"
 
   override val positionalTypes: PositionalTypes = listOf(
-    DataType.Text
+    DataType.Uuid
   )
 
-  override fun toPositionalParams(input: HasProfileParams): PositionalParams = listOf(
-    input.address
+  override fun toPositionalParams(input: CredentialExistAsInserterParams): PositionalParams = listOf(
+    input.id.value
   )
 }

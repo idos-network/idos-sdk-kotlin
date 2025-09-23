@@ -9,20 +9,26 @@ import org.idos.kwil.serialization.DataType
 import org.idos.kwil.transaction.PositionalParams
 import org.idos.kwil.transaction.PositionalTypes
 
-data class RevokeAccessGrantParams(
-    val id: UuidString
+data class AddAttributeParams(
+    val id: UuidString,
+    val attributeKey: String,
+    val value: String
 )
 
-object RevokeAccessGrant : ExecuteAction<RevokeAccessGrantParams> {
-  override val name: String = "revoke_access_grant"
+object AddAttribute : ExecuteAction<AddAttributeParams> {
+  override val name: String = "add_attribute"
   override val namespace: String = "main"
-  override val description: String = "Revoke an Access Grant from idOS"
+  override val description: String = "Create a new attribute in your idOS profile"
 
   override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid
+    DataType.Uuid,
+    DataType.Text,
+    DataType.Text
   )
 
-  override fun toPositionalParams(input: RevokeAccessGrantParams): PositionalParams = listOf(
-    input.id.value
+  override fun toPositionalParams(input: AddAttributeParams): PositionalParams = listOf(
+    input.id.value,
+    input.attributeKey,
+    input.value
   )
 }
