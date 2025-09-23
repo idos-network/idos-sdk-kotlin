@@ -31,11 +31,10 @@ import org.idos.kwil.utils.encodeParams
 class KwilActionClient(
     baseUrl: String,
     val signer: BaseSigner,
-    val chainId: String,
-) : ApiClient(baseUrl) {
+    chainId: String,
+) : ApiClient(baseUrl, chainId) {
     private val actionsCache = mutableMapOf<String, List<Action>>()
     private var authMode: AuthenticationMode? = null
-    private var auth: Auth = Auth(this)
 
     /**
      * Calls an action on the kwil nodes. This similar to `GET` like request.
@@ -126,12 +125,8 @@ class KwilActionClient(
                 // https://github.com/trufnetwork/kwil-js/blob/4ffabc8ef583f9b0b8e71abaa7e7527c5e4f5b85/src/client/kwil.ts#L486
                 requireNotNull(this.signer)
 
-                val authenticationCookie = auth.authenticateKGW(this.signer)
-
-                // Cookie was returned
-                if (authenticationCookie != null) {
-                    this.cookie = authenticationCookie
-                }
+                // add log to mark auth attempt
+                auth.authenticateKGW(this.signer)
 
                 return this.callMethod(message)
             }

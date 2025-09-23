@@ -4,15 +4,14 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.accept
-import io.ktor.client.request.headers
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import org.idos.kwil.auth.Auth
 import org.idos.kwil.signer.SignatureType
 import kotlin.concurrent.atomics.AtomicInt
 
@@ -22,8 +21,9 @@ class MissingAuthenticationException : Exception()
 @OptIn(kotlin.concurrent.atomics.ExperimentalAtomicApi::class)
 open class ApiClient(
     val baseUrl: String = "https://nodes.staging.idos.network",
+    val chainId: String,
 ) {
-    protected var cookie: String? = null
+    protected val auth: Auth = Auth(this)
     protected var unconfirmedNonce: Boolean = false
 
     private val httpClient =
@@ -52,13 +52,11 @@ open class ApiClient(
                 params = params,
             )
 
-        val requestCookie = this.cookie ?: ""
-
         return httpClient.post("$baseUrl/rpc/v1") {
             contentType(ContentType.Application.Json)
             accept(ContentType.Application.Json)
-            headers { append(HttpHeaders.Cookie, requestCookie) }
             setBody(request)
+            auth.applyAuth(this)
         }
     }
 
@@ -150,14 +148,11 @@ open class ApiClient(
         sender: HexString,
         signature: Base64String,
         signatureType: SignatureType,
-    ): String? {
-        val response =
-            this.doRequest(
-                JSONRPCMethod.METHOD_KGW_AUTHN,
-                AuthnRequest(nonce, sender, Signature(signature, signatureType)),
-            )
-        return response.headers["Set-Cookie"]?.split(";")?.get(0)
-    }
+    ): HttpResponse =
+        this.doRequest(
+            JSONRPCMethod.METHOD_KGW_AUTHN,
+            AuthnRequest(nonce, sender, Signature(signature, signatureType)),
+        )
 
     suspend fun logout(account: Base64String): Unit = call(JSONRPCMethod.METHOD_KGW_LOGOUT, AuthnLogoutRequest(account))
 }
