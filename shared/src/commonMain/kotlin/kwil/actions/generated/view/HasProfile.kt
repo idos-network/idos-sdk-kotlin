@@ -2,7 +2,7 @@ package org.idos.kwil.actions.generated.view
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.idos.kwil.actions.generated.ViewAction
+import org.idos.kwil.actions.ViewAction
 import org.idos.kwil.transaction.PositionalParams
 import org.idos.kwil.transaction.PositionalTypes
 import org.idos.kwil.utils.DataType

@@ -2,7 +2,7 @@ package org.idos.kwil.actions.generated.view
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.idos.kwil.actions.generated.NoParamsAction
+import org.idos.kwil.actions.NoParamsAction
 import org.idos.kwil.rpc.UuidString
 
 @Serializable

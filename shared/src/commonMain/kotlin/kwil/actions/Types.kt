@@ -1,4 +1,4 @@
-package org.idos.kwil.actions.generated
+package org.idos.kwil.actions
 
 import org.idos.kwil.transaction.PositionalParams
 import org.idos.kwil.transaction.PositionalTypes

@@ -2,7 +2,7 @@ package org.idos.kwil.actions.generated.view
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.idos.kwil.actions.generated.NoParamsAction
+import org.idos.kwil.actions.NoParamsAction
 import org.idos.kwil.rpc.UuidString
 
 // -- for EVM type, address is EVM case insensitive 20 bytes address like 0x5ccbe82FEDE13aecdA449eCA4D4dE05E45861684, and public key can be any or null

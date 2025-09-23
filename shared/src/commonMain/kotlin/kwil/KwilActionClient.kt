@@ -4,10 +4,10 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import org.idos.kwil.actions.ActionSchema
-import org.idos.kwil.actions.generated.Empty
-import org.idos.kwil.actions.generated.ExecuteAction
-import org.idos.kwil.actions.generated.NoParamsAction
-import org.idos.kwil.actions.generated.ViewAction
+import org.idos.kwil.actions.Empty
+import org.idos.kwil.actions.ExecuteAction
+import org.idos.kwil.actions.NoParamsAction
+import org.idos.kwil.actions.ViewAction
 import org.idos.kwil.rpc.Action
 import org.idos.kwil.rpc.ApiClient
 import org.idos.kwil.rpc.AuthenticationMode

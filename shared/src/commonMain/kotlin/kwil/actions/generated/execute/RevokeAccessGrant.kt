@@ -1,6 +1,6 @@
 package org.idos.kwil.actions.generated.execute
 
-import org.idos.kwil.actions.generated.ExecuteAction
+import org.idos.kwil.actions.ExecuteAction
 import org.idos.kwil.rpc.UuidString
 import org.idos.kwil.transaction.PositionalParams
 import org.idos.kwil.transaction.PositionalTypes

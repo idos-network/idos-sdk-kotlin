@@ -1,9 +1,6 @@
-package org.idos.kwil.actions.generated
+package org.idos.kwil.actions
 
 import org.idos.kwil.transaction.NamedParams
-import org.idos.kwil.transaction.PositionalParams
-import org.idos.kwil.transaction.PositionalTypes
-import org.idos.kwil.utils.SchemaField
 
 /**
  * Base interface for all generated VIEW action descriptors.
@@ -22,11 +19,11 @@ interface ViewAction<in I, out O> {
      * The expected parameter types in the order they should be passed to the action.
      * This should match the parameter order in the database schema.
      */
-    val positionalTypes: PositionalTypes
+    val positionalTypes: List
 
     /**
      * Converts the strongly-typed input into a list of positional parameters
      * that can be used with the underlying [KwilActionClient].
      */
-    fun toPositionalParams(input: I): PositionalParams
+    fun toPositionalParams(input: I): NamedParams
 }
