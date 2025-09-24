@@ -13,22 +13,24 @@ import org.idos.kwil.transaction.PositionalTypes
 
 @Serializable
 data class HasLockedAccessGrantsResponse(
-    @SerialName("has") val has: Boolean
+    @SerialName("has") val has: Boolean,
 )
 
 data class HasLockedAccessGrantsParams(
-    val id: UuidString
+    val id: UuidString,
 )
 
 object HasLockedAccessGrants : ViewAction<HasLockedAccessGrantsParams, HasLockedAccessGrantsResponse> {
-  override val name: String = "has_locked_access_grants"
-  override val namespace: String = "main"
+    override val name: String = "has_locked_access_grants"
+    override val namespace: String = "main"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+        )
 
-  override fun toPositionalParams(input: HasLockedAccessGrantsParams): PositionalParams = listOf(
-    input.id.value
-  )
+    override fun toPositionalParams(input: HasLockedAccessGrantsParams): PositionalParams =
+        listOf(
+            input.id.value,
+        )
 }

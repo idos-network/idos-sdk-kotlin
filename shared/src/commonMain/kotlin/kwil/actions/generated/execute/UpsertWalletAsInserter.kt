@@ -16,31 +16,33 @@ data class UpsertWalletAsInserterParams(
     val publicKey: String,
     val walletType: String,
     val message: String,
-    val signature: String
+    val signature: String,
 )
 
 object UpsertWalletAsInserter : ExecuteAction<UpsertWalletAsInserterParams> {
-  override val name: String = "upsert_wallet_as_inserter"
-  override val namespace: String = "main"
-  override val description: String = "Add a wallet to idOS by inserter (profile creator)"
+    override val name: String = "upsert_wallet_as_inserter"
+    override val namespace: String = "main"
+    override val description: String = "Add a wallet to idOS by inserter (profile creator)"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: UpsertWalletAsInserterParams): PositionalParams = listOf(
-    input.id.value,
-    input.userId.value,
-    input.address,
-    input.publicKey,
-    input.walletType,
-    input.message,
-    input.signature
-  )
+    override fun toPositionalParams(input: UpsertWalletAsInserterParams): PositionalParams =
+        listOf(
+            input.id.value,
+            input.userId.value,
+            input.address,
+            input.publicKey,
+            input.walletType,
+            input.message,
+            input.signature,
+        )
 }

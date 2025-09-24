@@ -10,21 +10,23 @@ import org.idos.kwil.transaction.PositionalTypes
 
 data class EditPublicNotesAsIssuerParams(
     val publicNotesId: String,
-    val publicNotes: String
+    val publicNotes: String,
 )
 
 object EditPublicNotesAsIssuer : ExecuteAction<EditPublicNotesAsIssuerParams> {
-  override val name: String = "edit_public_notes_as_issuer"
-  override val namespace: String = "main"
-  override val description: String = "Edit public notes in a credential as issuer"
+    override val name: String = "edit_public_notes_as_issuer"
+    override val namespace: String = "main"
+    override val description: String = "Edit public notes in a credential as issuer"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Text,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Text,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: EditPublicNotesAsIssuerParams): PositionalParams = listOf(
-    input.publicNotesId,
-    input.publicNotes
-  )
+    override fun toPositionalParams(input: EditPublicNotesAsIssuerParams): PositionalParams =
+        listOf(
+            input.publicNotesId,
+            input.publicNotes,
+        )
 }

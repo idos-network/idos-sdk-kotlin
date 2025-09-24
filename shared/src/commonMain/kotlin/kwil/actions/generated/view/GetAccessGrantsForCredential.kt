@@ -20,22 +20,24 @@ data class GetAccessGrantsForCredentialResponse(
     @SerialName("locked_until") val lockedUntil: Int,
     @SerialName("content_hash") val contentHash: String?,
     @SerialName("inserter_type") val inserterType: String,
-    @SerialName("inserter_id") val inserterId: String
+    @SerialName("inserter_id") val inserterId: String,
 )
 
 data class GetAccessGrantsForCredentialParams(
-    val credentialId: UuidString
+    val credentialId: UuidString,
 )
 
 object GetAccessGrantsForCredential : ViewAction<GetAccessGrantsForCredentialParams, GetAccessGrantsForCredentialResponse> {
-  override val name: String = "get_access_grants_for_credential"
-  override val namespace: String = "main"
+    override val name: String = "get_access_grants_for_credential"
+    override val namespace: String = "main"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+        )
 
-  override fun toPositionalParams(input: GetAccessGrantsForCredentialParams): PositionalParams = listOf(
-    input.credentialId.value
-  )
+    override fun toPositionalParams(input: GetAccessGrantsForCredentialParams): PositionalParams =
+        listOf(
+            input.credentialId.value,
+        )
 }

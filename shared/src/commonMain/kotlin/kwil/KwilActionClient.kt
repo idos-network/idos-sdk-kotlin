@@ -21,9 +21,6 @@ import org.idos.kwil.rpc.QueryResponse
 import org.idos.kwil.signer.BaseSigner
 import org.idos.kwil.transaction.ActionBuilder
 import org.idos.kwil.transaction.ActionOptions
-import org.idos.kwil.transaction.NamedParams
-import org.idos.kwil.transaction.PositionalParams
-import org.idos.kwil.transaction.PositionalTypes
 import org.idos.kwil.utils.EncodedParameterValue
 import org.idos.kwil.utils.encodeParams
 

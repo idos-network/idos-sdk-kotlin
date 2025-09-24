@@ -20,39 +20,41 @@ data class ShareCredentialParams(
     val encryptorPublicKey: String,
     val issuerAuthPublicKey: String,
     val granteeWalletIdentifier: String,
-    val lockedUntil: Int
+    val lockedUntil: Int,
 )
 
 object ShareCredential : ExecuteAction<ShareCredentialParams> {
-  override val name: String = "share_credential"
-  override val namespace: String = "main"
-  override val description: String = "Share a credential with creating AG"
+    override val name: String = "share_credential"
+    override val namespace: String = "main"
+    override val description: String = "Share a credential with creating AG"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Int
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Int,
+        )
 
-  override fun toPositionalParams(input: ShareCredentialParams): PositionalParams = listOf(
-    input.id.value,
-    input.originalCredentialId.value,
-    input.publicNotes,
-    input.publicNotesSignature,
-    input.broaderSignature,
-    input.content,
-    input.contentHash,
-    input.encryptorPublicKey,
-    input.issuerAuthPublicKey,
-    input.granteeWalletIdentifier,
-    input.lockedUntil
-  )
+    override fun toPositionalParams(input: ShareCredentialParams): PositionalParams =
+        listOf(
+            input.id.value,
+            input.originalCredentialId.value,
+            input.publicNotes,
+            input.publicNotesSignature,
+            input.broaderSignature,
+            input.content,
+            input.contentHash,
+            input.encryptorPublicKey,
+            input.issuerAuthPublicKey,
+            input.granteeWalletIdentifier,
+            input.lockedUntil,
+        )
 }

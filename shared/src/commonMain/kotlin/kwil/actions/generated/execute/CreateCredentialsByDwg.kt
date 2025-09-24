@@ -30,59 +30,62 @@ data class CreateCredentialsByDwgParams(
     val dwgAccessGrantTimelock: String,
     val dwgNotBefore: String,
     val dwgNotAfter: String,
-    val dwgSignature: String
+    val dwgSignature: String,
 )
 
 object CreateCredentialsByDwg : ExecuteAction<CreateCredentialsByDwgParams> {
-  override val name: String = "create_credentials_by_dwg"
-  override val namespace: String = "main"
-  override val description: String = "Add original credential and copy credential with AG on behalf of a user (using delegated write grant given by the user)"
+    override val name: String = "create_credentials_by_dwg"
+    override val namespace: String = "main"
+    override val description: String =
+        "Add original credential and copy credential with AG on behalf of a user (using delegated write grant given by the user)"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Text,
-    DataType.Text,
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Text,
+            DataType.Text,
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: CreateCredentialsByDwgParams): PositionalParams = listOf(
-    input.issuerAuthPublicKey,
-    input.originalEncryptorPublicKey,
-    input.originalCredentialId.value,
-    input.originalContent,
-    input.originalPublicNotes,
-    input.originalPublicNotesSignature,
-    input.originalBroaderSignature,
-    input.copyEncryptorPublicKey,
-    input.copyCredentialId.value,
-    input.copyContent,
-    input.copyPublicNotesSignature,
-    input.copyBroaderSignature,
-    input.contentHash,
-    input.dwgOwner,
-    input.dwgGrantee,
-    input.dwgIssuerPublicKey,
-    input.dwgId.value,
-    input.dwgAccessGrantTimelock,
-    input.dwgNotBefore,
-    input.dwgNotAfter,
-    input.dwgSignature
-  )
+    override fun toPositionalParams(input: CreateCredentialsByDwgParams): PositionalParams =
+        listOf(
+            input.issuerAuthPublicKey,
+            input.originalEncryptorPublicKey,
+            input.originalCredentialId.value,
+            input.originalContent,
+            input.originalPublicNotes,
+            input.originalPublicNotesSignature,
+            input.originalBroaderSignature,
+            input.copyEncryptorPublicKey,
+            input.copyCredentialId.value,
+            input.copyContent,
+            input.copyPublicNotesSignature,
+            input.copyBroaderSignature,
+            input.contentHash,
+            input.dwgOwner,
+            input.dwgGrantee,
+            input.dwgIssuerPublicKey,
+            input.dwgId.value,
+            input.dwgAccessGrantTimelock,
+            input.dwgNotBefore,
+            input.dwgNotAfter,
+            input.dwgSignature,
+        )
 }

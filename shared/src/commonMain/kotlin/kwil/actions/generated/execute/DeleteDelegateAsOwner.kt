@@ -9,19 +9,21 @@ import org.idos.kwil.transaction.PositionalParams
 import org.idos.kwil.transaction.PositionalTypes
 
 data class DeleteDelegateAsOwnerParams(
-    val address: String
+    val address: String,
 )
 
 object DeleteDelegateAsOwner : ExecuteAction<DeleteDelegateAsOwnerParams> {
-  override val name: String = "delete_delegate_as_owner"
-  override val namespace: String = "main"
-  override val description: String = "Delete a delegate from idOS"
+    override val name: String = "delete_delegate_as_owner"
+    override val namespace: String = "main"
+    override val description: String = "Delete a delegate from idOS"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: DeleteDelegateAsOwnerParams): PositionalParams = listOf(
-    input.address
-  )
+    override fun toPositionalParams(input: DeleteDelegateAsOwnerParams): PositionalParams =
+        listOf(
+            input.address,
+        )
 }

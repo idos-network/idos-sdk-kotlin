@@ -10,19 +10,21 @@ import org.idos.kwil.transaction.PositionalParams
 import org.idos.kwil.transaction.PositionalTypes
 
 data class DeleteInserterAsOwnerParams(
-    val id: UuidString
+    val id: UuidString,
 )
 
 object DeleteInserterAsOwner : ExecuteAction<DeleteInserterAsOwnerParams> {
-  override val name: String = "delete_inserter_as_owner"
-  override val namespace: String = "main"
-  override val description: String = "Delete inserter as owner"
+    override val name: String = "delete_inserter_as_owner"
+    override val namespace: String = "main"
+    override val description: String = "Delete inserter as owner"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+        )
 
-  override fun toPositionalParams(input: DeleteInserterAsOwnerParams): PositionalParams = listOf(
-    input.id.value
-  )
+    override fun toPositionalParams(input: DeleteInserterAsOwnerParams): PositionalParams =
+        listOf(
+            input.id.value,
+        )
 }

@@ -15,29 +15,31 @@ data class CreateAgByDagForCopyParams(
     val dagDataId: UuidString,
     val dagLockedUntil: Int,
     val dagContentHash: String,
-    val dagSignature: String
+    val dagSignature: String,
 )
 
 object CreateAgByDagForCopy : ExecuteAction<CreateAgByDagForCopyParams> {
-  override val name: String = "create_ag_by_dag_for_copy"
-  override val namespace: String = "main"
-  override val description: String = "Create an Access Grant in idOS"
+    override val name: String = "create_ag_by_dag_for_copy"
+    override val namespace: String = "main"
+    override val description: String = "Create an Access Grant in idOS"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Text,
-    DataType.Text,
-    DataType.Uuid,
-    DataType.Int,
-    DataType.Text,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Text,
+            DataType.Text,
+            DataType.Uuid,
+            DataType.Int,
+            DataType.Text,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: CreateAgByDagForCopyParams): PositionalParams = listOf(
-    input.dagOwnerWalletIdentifier,
-    input.dagGranteeWalletIdentifier,
-    input.dagDataId.value,
-    input.dagLockedUntil,
-    input.dagContentHash,
-    input.dagSignature
-  )
+    override fun toPositionalParams(input: CreateAgByDagForCopyParams): PositionalParams =
+        listOf(
+            input.dagOwnerWalletIdentifier,
+            input.dagGranteeWalletIdentifier,
+            input.dagDataId.value,
+            input.dagLockedUntil,
+            input.dagContentHash,
+            input.dagSignature,
+        )
 }

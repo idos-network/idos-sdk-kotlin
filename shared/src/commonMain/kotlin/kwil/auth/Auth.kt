@@ -4,7 +4,6 @@ import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.headers
 import io.ktor.http.HttpHeaders
 import io.ktor.utils.io.core.toByteArray
-import org.idos.kwil.KwilActionClient
 import org.idos.kwil.rpc.ApiClient
 import org.idos.kwil.rpc.Base64String
 import org.idos.kwil.signer.BaseSigner

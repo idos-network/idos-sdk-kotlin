@@ -13,7 +13,7 @@ import org.idos.kwil.transaction.PositionalTypes
 
 @Serializable
 data class DagMessageResponse(
-    @SerialName("message") val message: String
+    @SerialName("message") val message: String,
 )
 
 data class DagMessageParams(
@@ -21,26 +21,28 @@ data class DagMessageParams(
     val dagGranteeWalletIdentifier: String,
     val dagDataId: UuidString,
     val dagLockedUntil: Int,
-    val dagContentHash: String
+    val dagContentHash: String,
 )
 
 object DagMessage : ViewAction<DagMessageParams, DagMessageResponse> {
-  override val name: String = "dag_message"
-  override val namespace: String = "main"
+    override val name: String = "dag_message"
+    override val namespace: String = "main"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Text,
-    DataType.Text,
-    DataType.Uuid,
-    DataType.Int,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Text,
+            DataType.Text,
+            DataType.Uuid,
+            DataType.Int,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: DagMessageParams): PositionalParams = listOf(
-    input.dagOwnerWalletIdentifier,
-    input.dagGranteeWalletIdentifier,
-    input.dagDataId.value,
-    input.dagLockedUntil,
-    input.dagContentHash
-  )
+    override fun toPositionalParams(input: DagMessageParams): PositionalParams =
+        listOf(
+            input.dagOwnerWalletIdentifier,
+            input.dagGranteeWalletIdentifier,
+            input.dagDataId.value,
+            input.dagLockedUntil,
+            input.dagContentHash,
+        )
 }

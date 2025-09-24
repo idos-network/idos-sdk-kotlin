@@ -1,7 +1,5 @@
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.shouldBe
 import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
 class DataVerificationTests :

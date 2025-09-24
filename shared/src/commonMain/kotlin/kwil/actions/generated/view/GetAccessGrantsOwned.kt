@@ -17,10 +17,10 @@ data class GetAccessGrantsOwnedResponse(
     @SerialName("locked_until") val lockedUntil: Int,
     @SerialName("content_hash") val contentHash: String?,
     @SerialName("inserter_type") val inserterType: String,
-    @SerialName("inserter_id") val inserterId: String
+    @SerialName("inserter_id") val inserterId: String,
 )
 
 object GetAccessGrantsOwned : NoParamsAction<GetAccessGrantsOwnedResponse>() {
-  override val namespace: String = "main"
-  override val name: String = "get_access_grants_owned"
+    override val namespace: String = "main"
+    override val name: String = "get_access_grants_owned"
 }

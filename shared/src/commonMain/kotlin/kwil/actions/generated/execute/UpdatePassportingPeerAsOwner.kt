@@ -13,25 +13,27 @@ data class UpdatePassportingPeerAsOwnerParams(
     val id: UuidString,
     val name: String,
     val issuerPublicKey: String,
-    val passportingServerUrlBase: String
+    val passportingServerUrlBase: String,
 )
 
 object UpdatePassportingPeerAsOwner : ExecuteAction<UpdatePassportingPeerAsOwnerParams> {
-  override val name: String = "update_passporting_peer_as_owner"
-  override val namespace: String = "main"
-  override val description: String = "Update a passporting peer as owner"
+    override val name: String = "update_passporting_peer_as_owner"
+    override val namespace: String = "main"
+    override val description: String = "Update a passporting peer as owner"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: UpdatePassportingPeerAsOwnerParams): PositionalParams = listOf(
-    input.id.value,
-    input.name,
-    input.issuerPublicKey,
-    input.passportingServerUrlBase
-  )
+    override fun toPositionalParams(input: UpdatePassportingPeerAsOwnerParams): PositionalParams =
+        listOf(
+            input.id.value,
+            input.name,
+            input.issuerPublicKey,
+            input.passportingServerUrlBase,
+        )
 }

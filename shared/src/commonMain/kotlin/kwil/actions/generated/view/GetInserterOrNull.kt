@@ -9,10 +9,10 @@ import org.idos.kwil.actions.NoParamsAction
 
 @Serializable
 data class GetInserterOrNullResponse(
-    @SerialName("name") val name: String
+    @SerialName("name") val name: String,
 )
 
 object GetInserterOrNull : NoParamsAction<GetInserterOrNullResponse>() {
-  override val namespace: String = "main"
-  override val name: String = "get_inserter_or_null"
+    override val namespace: String = "main"
+    override val name: String = "get_inserter_or_null"
 }

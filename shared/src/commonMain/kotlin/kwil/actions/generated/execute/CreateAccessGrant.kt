@@ -15,29 +15,31 @@ data class CreateAccessGrantParams(
     val lockedUntil: Int,
     val contentHash: String,
     val inserterType: String,
-    val inserterId: String
+    val inserterId: String,
 )
 
 object CreateAccessGrant : ExecuteAction<CreateAccessGrantParams> {
-  override val name: String = "create_access_grant"
-  override val namespace: String = "main"
-  override val description: String = "Create a new access grant"
+    override val name: String = "create_access_grant"
+    override val namespace: String = "main"
+    override val description: String = "Create a new access grant"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Text,
-    DataType.Uuid,
-    DataType.Int,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Text,
+            DataType.Uuid,
+            DataType.Int,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: CreateAccessGrantParams): PositionalParams = listOf(
-    input.granteeWalletIdentifier,
-    input.dataId.value,
-    input.lockedUntil,
-    input.contentHash,
-    input.inserterType,
-    input.inserterId
-  )
+    override fun toPositionalParams(input: CreateAccessGrantParams): PositionalParams =
+        listOf(
+            input.granteeWalletIdentifier,
+            input.dataId.value,
+            input.lockedUntil,
+            input.contentHash,
+            input.inserterType,
+            input.inserterId,
+        )
 }

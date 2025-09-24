@@ -16,31 +16,33 @@ data class EditCredentialParams(
     val broaderSignature: String,
     val content: String,
     val encryptorPublicKey: String,
-    val issuerAuthPublicKey: String
+    val issuerAuthPublicKey: String,
 )
 
 object EditCredential : ExecuteAction<EditCredentialParams> {
-  override val name: String = "edit_credential"
-  override val namespace: String = "main"
-  override val description: String = "Edit a credential"
+    override val name: String = "edit_credential"
+    override val namespace: String = "main"
+    override val description: String = "Edit a credential"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: EditCredentialParams): PositionalParams = listOf(
-    input.id.value,
-    input.publicNotes,
-    input.publicNotesSignature,
-    input.broaderSignature,
-    input.content,
-    input.encryptorPublicKey,
-    input.issuerAuthPublicKey
-  )
+    override fun toPositionalParams(input: EditCredentialParams): PositionalParams =
+        listOf(
+            input.id.value,
+            input.publicNotes,
+            input.publicNotesSignature,
+            input.broaderSignature,
+            input.content,
+            input.encryptorPublicKey,
+            input.issuerAuthPublicKey,
+        )
 }

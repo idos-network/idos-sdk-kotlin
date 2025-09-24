@@ -11,21 +11,23 @@ import org.idos.kwil.transaction.PositionalTypes
 
 data class AddDelegateAsOwnerParams(
     val address: String,
-    val inserterId: UuidString
+    val inserterId: UuidString,
 )
 
 object AddDelegateAsOwner : ExecuteAction<AddDelegateAsOwnerParams> {
-  override val name: String = "add_delegate_as_owner"
-  override val namespace: String = "main"
-  override val description: String = "Add a delegate as owner"
+    override val name: String = "add_delegate_as_owner"
+    override val namespace: String = "main"
+    override val description: String = "Add a delegate as owner"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Text,
-    DataType.Uuid
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Text,
+            DataType.Uuid,
+        )
 
-  override fun toPositionalParams(input: AddDelegateAsOwnerParams): PositionalParams = listOf(
-    input.address,
-    input.inserterId.value
-  )
+    override fun toPositionalParams(input: AddDelegateAsOwnerParams): PositionalParams =
+        listOf(
+            input.address,
+            input.inserterId.value,
+        )
 }

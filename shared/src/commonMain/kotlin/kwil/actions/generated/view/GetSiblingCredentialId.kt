@@ -13,22 +13,24 @@ import org.idos.kwil.transaction.PositionalTypes
 
 @Serializable
 data class GetSiblingCredentialIdResponse(
-    @SerialName("id") val id: UuidString
+    @SerialName("id") val id: UuidString,
 )
 
 data class GetSiblingCredentialIdParams(
-    val contentHash: String
+    val contentHash: String,
 )
 
 object GetSiblingCredentialId : ViewAction<GetSiblingCredentialIdParams, GetSiblingCredentialIdResponse> {
-  override val name: String = "get_sibling_credential_id"
-  override val namespace: String = "main"
+    override val name: String = "get_sibling_credential_id"
+    override val namespace: String = "main"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: GetSiblingCredentialIdParams): PositionalParams = listOf(
-    input.contentHash
-  )
+    override fun toPositionalParams(input: GetSiblingCredentialIdParams): PositionalParams =
+        listOf(
+            input.contentHash,
+        )
 }

@@ -11,21 +11,23 @@ import org.idos.kwil.transaction.PositionalTypes
 
 data class AddInserterAsOwnerParams(
     val id: UuidString,
-    val name: String
+    val name: String,
 )
 
 object AddInserterAsOwner : ExecuteAction<AddInserterAsOwnerParams> {
-  override val name: String = "add_inserter_as_owner"
-  override val namespace: String = "main"
-  override val description: String = "Add inserter as owner"
+    override val name: String = "add_inserter_as_owner"
+    override val namespace: String = "main"
+    override val description: String = "Add inserter as owner"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: AddInserterAsOwnerParams): PositionalParams = listOf(
-    input.id.value,
-    input.name
-  )
+    override fun toPositionalParams(input: AddInserterAsOwnerParams): PositionalParams =
+        listOf(
+            input.id.value,
+            input.name,
+        )
 }

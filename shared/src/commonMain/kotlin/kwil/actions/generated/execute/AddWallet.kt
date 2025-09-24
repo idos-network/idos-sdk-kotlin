@@ -14,27 +14,29 @@ data class AddWalletParams(
     val address: String,
     val publicKey: String,
     val message: String,
-    val signature: String
+    val signature: String,
 )
 
 object AddWallet : ExecuteAction<AddWalletParams> {
-  override val name: String = "add_wallet"
-  override val namespace: String = "main"
-  override val description: String = "Add a wallet to idOS"
+    override val name: String = "add_wallet"
+    override val namespace: String = "main"
+    override val description: String = "Add a wallet to idOS"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: AddWalletParams): PositionalParams = listOf(
-    input.id.value,
-    input.address,
-    input.publicKey,
-    input.message,
-    input.signature
-  )
+    override fun toPositionalParams(input: AddWalletParams): PositionalParams =
+        listOf(
+            input.id.value,
+            input.address,
+            input.publicKey,
+            input.message,
+            input.signature,
+        )
 }

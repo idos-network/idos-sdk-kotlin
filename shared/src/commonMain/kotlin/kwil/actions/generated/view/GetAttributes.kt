@@ -14,10 +14,10 @@ data class GetAttributesResponse(
     @SerialName("user_id") val userId: UuidString,
     @SerialName("attribute_key") val attributeKey: String,
     @SerialName("value") val value: String,
-    @SerialName("original_id") val originalId: UuidString
+    @SerialName("original_id") val originalId: UuidString,
 )
 
 object GetAttributes : NoParamsAction<GetAttributesResponse>() {
-  override val namespace: String = "main"
-  override val name: String = "get_attributes"
+    override val namespace: String = "main"
+    override val name: String = "get_attributes"
 }

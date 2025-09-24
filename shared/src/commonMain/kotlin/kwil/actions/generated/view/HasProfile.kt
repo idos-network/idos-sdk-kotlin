@@ -12,11 +12,11 @@ import org.idos.kwil.transaction.PositionalTypes
 
 @Serializable
 data class HasProfileResponse(
-    @SerialName("has_profile") val hasProfile: Boolean
+    @SerialName("has_profile") val hasProfile: Boolean,
 )
 
 data class HasProfileParams(
-    val address: String
+    val address: String,
 )
 
 /**
@@ -24,14 +24,16 @@ data class HasProfileParams(
  *  Should we improve it to work with near wallets too?
  */
 object HasProfile : ViewAction<HasProfileParams, HasProfileResponse> {
-  override val name: String = "has_profile"
-  override val namespace: String = "main"
+    override val name: String = "has_profile"
+    override val namespace: String = "main"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: HasProfileParams): PositionalParams = listOf(
-    input.address
-  )
+    override fun toPositionalParams(input: HasProfileParams): PositionalParams =
+        listOf(
+            input.address,
+        )
 }

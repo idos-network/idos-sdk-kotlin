@@ -12,23 +12,25 @@ import org.idos.kwil.transaction.PositionalTypes
 data class AddUserAsInserterParams(
     val id: UuidString,
     val recipientEncryptionPublicKey: String,
-    val encryptionPasswordStore: String
+    val encryptionPasswordStore: String,
 )
 
 object AddUserAsInserter : ExecuteAction<AddUserAsInserterParams> {
-  override val name: String = "add_user_as_inserter"
-  override val namespace: String = "main"
-  override val description: String = "Add a user to idOS"
+    override val name: String = "add_user_as_inserter"
+    override val namespace: String = "main"
+    override val description: String = "Add a user to idOS"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: AddUserAsInserterParams): PositionalParams = listOf(
-    input.id.value,
-    input.recipientEncryptionPublicKey,
-    input.encryptionPasswordStore
-  )
+    override fun toPositionalParams(input: AddUserAsInserterParams): PositionalParams =
+        listOf(
+            input.id.value,
+            input.recipientEncryptionPublicKey,
+            input.encryptionPasswordStore,
+        )
 }

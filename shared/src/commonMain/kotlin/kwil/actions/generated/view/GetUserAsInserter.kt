@@ -16,22 +16,24 @@ data class GetUserAsInserterResponse(
     @SerialName("id") val id: UuidString,
     @SerialName("recipient_encryption_public_key") val recipientEncryptionPublicKey: String,
     @SerialName("encryption_password_store") val encryptionPasswordStore: String,
-    @SerialName("inserter") val inserter: String
+    @SerialName("inserter") val inserter: String,
 )
 
 data class GetUserAsInserterParams(
-    val id: UuidString
+    val id: UuidString,
 )
 
 object GetUserAsInserter : ViewAction<GetUserAsInserterParams, GetUserAsInserterResponse> {
-  override val name: String = "get_user_as_inserter"
-  override val namespace: String = "main"
+    override val name: String = "get_user_as_inserter"
+    override val namespace: String = "main"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+        )
 
-  override fun toPositionalParams(input: GetUserAsInserterParams): PositionalParams = listOf(
-    input.id.value
-  )
+    override fun toPositionalParams(input: GetUserAsInserterParams): PositionalParams =
+        listOf(
+            input.id.value,
+        )
 }

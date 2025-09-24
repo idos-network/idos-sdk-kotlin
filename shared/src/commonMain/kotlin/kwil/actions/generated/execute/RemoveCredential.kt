@@ -10,19 +10,21 @@ import org.idos.kwil.transaction.PositionalParams
 import org.idos.kwil.transaction.PositionalTypes
 
 data class RemoveCredentialParams(
-    val id: UuidString
+    val id: UuidString,
 )
 
 object RemoveCredential : ExecuteAction<RemoveCredentialParams> {
-  override val name: String = "remove_credential"
-  override val namespace: String = "main"
-  override val description: String = "Remove a credential from your idOS profile"
+    override val name: String = "remove_credential"
+    override val namespace: String = "main"
+    override val description: String = "Remove a credential from your idOS profile"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+        )
 
-  override fun toPositionalParams(input: RemoveCredentialParams): PositionalParams = listOf(
-    input.id.value
-  )
+    override fun toPositionalParams(input: RemoveCredentialParams): PositionalParams =
+        listOf(
+            input.id.value,
+        )
 }

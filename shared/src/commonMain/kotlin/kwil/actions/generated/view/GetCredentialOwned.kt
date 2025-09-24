@@ -19,22 +19,24 @@ data class GetCredentialOwnedResponse(
     @SerialName("content") val content: String,
     @SerialName("encryptor_public_key") val encryptorPublicKey: String,
     @SerialName("issuer_auth_public_key") val issuerAuthPublicKey: String,
-    @SerialName("inserter") val inserter: String?
+    @SerialName("inserter") val inserter: String?,
 )
 
 data class GetCredentialOwnedParams(
-    val id: UuidString
+    val id: UuidString,
 )
 
 object GetCredentialOwned : ViewAction<GetCredentialOwnedParams, GetCredentialOwnedResponse> {
-  override val name: String = "get_credential_owned"
-  override val namespace: String = "main"
+    override val name: String = "get_credential_owned"
+    override val namespace: String = "main"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+        )
 
-  override fun toPositionalParams(input: GetCredentialOwnedParams): PositionalParams = listOf(
-    input.id.value
-  )
+    override fun toPositionalParams(input: GetCredentialOwnedParams): PositionalParams =
+        listOf(
+            input.id.value,
+        )
 }

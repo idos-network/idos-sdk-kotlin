@@ -13,7 +13,7 @@ import org.idos.kwil.transaction.PositionalTypes
 
 @Serializable
 data class DwgMessageResponse(
-    @SerialName("message") val message: String
+    @SerialName("message") val message: String,
 )
 
 data class DwgMessageParams(
@@ -23,7 +23,7 @@ data class DwgMessageParams(
     val id: UuidString,
     val accessGrantTimelock: String,
     val notUsableBefore: String,
-    val notUsableAfter: String
+    val notUsableAfter: String,
 )
 
 /**
@@ -35,26 +35,28 @@ data class DwgMessageParams(
  *  Check the format and precedence
  */
 object DwgMessage : ViewAction<DwgMessageParams, DwgMessageResponse> {
-  override val name: String = "dwg_message"
-  override val namespace: String = "main"
+    override val name: String = "dwg_message"
+    override val namespace: String = "main"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: DwgMessageParams): PositionalParams = listOf(
-    input.ownerWalletIdentifier,
-    input.granteeWalletIdentifier,
-    input.issuerPublicKey,
-    input.id.value,
-    input.accessGrantTimelock,
-    input.notUsableBefore,
-    input.notUsableAfter
-  )
+    override fun toPositionalParams(input: DwgMessageParams): PositionalParams =
+        listOf(
+            input.ownerWalletIdentifier,
+            input.granteeWalletIdentifier,
+            input.issuerPublicKey,
+            input.id.value,
+            input.accessGrantTimelock,
+            input.notUsableBefore,
+            input.notUsableAfter,
+        )
 }

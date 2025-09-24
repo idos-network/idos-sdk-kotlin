@@ -23,45 +23,47 @@ data class ShareCredentialThroughDagParams(
     val dagOwnerWalletIdentifier: String,
     val dagGranteeWalletIdentifier: String,
     val dagLockedUntil: Int,
-    val dagSignature: String
+    val dagSignature: String,
 )
 
 object ShareCredentialThroughDag : ExecuteAction<ShareCredentialThroughDagParams> {
-  override val name: String = "share_credential_through_dag"
-  override val namespace: String = "main"
-  override val description: String = "Share a credential through the DAG"
+    override val name: String = "share_credential_through_dag"
+    override val namespace: String = "main"
+    override val description: String = "Share a credential through the DAG"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text,
-    DataType.Int,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+            DataType.Int,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: ShareCredentialThroughDagParams): PositionalParams = listOf(
-    input.id.value,
-    input.userId.value,
-    input.issuerAuthPublicKey,
-    input.encryptorPublicKey,
-    input.content,
-    input.contentHash,
-    input.publicNotes,
-    input.publicNotesSignature,
-    input.broaderSignature,
-    input.originalCredentialId.value,
-    input.dagOwnerWalletIdentifier,
-    input.dagGranteeWalletIdentifier,
-    input.dagLockedUntil,
-    input.dagSignature
-  )
+    override fun toPositionalParams(input: ShareCredentialThroughDagParams): PositionalParams =
+        listOf(
+            input.id.value,
+            input.userId.value,
+            input.issuerAuthPublicKey,
+            input.encryptorPublicKey,
+            input.content,
+            input.contentHash,
+            input.publicNotes,
+            input.publicNotesSignature,
+            input.broaderSignature,
+            input.originalCredentialId.value,
+            input.dagOwnerWalletIdentifier,
+            input.dagGranteeWalletIdentifier,
+            input.dagLockedUntil,
+            input.dagSignature,
+        )
 }

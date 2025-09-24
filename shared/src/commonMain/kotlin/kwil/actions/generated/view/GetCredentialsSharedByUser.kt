@@ -19,25 +19,27 @@ data class GetCredentialsSharedByUserResponse(
     @SerialName("encryptor_public_key") val encryptorPublicKey: String,
     @SerialName("issuer_auth_public_key") val issuerAuthPublicKey: String,
     @SerialName("inserter") val inserter: String?,
-    @SerialName("original_id") val originalId: UuidString?
+    @SerialName("original_id") val originalId: UuidString?,
 )
 
 data class GetCredentialsSharedByUserParams(
     val userId: UuidString,
-    val issuerAuthPublicKey: String?
+    val issuerAuthPublicKey: String?,
 )
 
 object GetCredentialsSharedByUser : ViewAction<GetCredentialsSharedByUserParams, GetCredentialsSharedByUserResponse> {
-  override val name: String = "get_credentials_shared_by_user"
-  override val namespace: String = "main"
+    override val name: String = "get_credentials_shared_by_user"
+    override val namespace: String = "main"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: GetCredentialsSharedByUserParams): PositionalParams = listOf(
-    input.userId.value,
-    input.issuerAuthPublicKey
-  )
+    override fun toPositionalParams(input: GetCredentialsSharedByUserParams): PositionalParams =
+        listOf(
+            input.userId.value,
+            input.issuerAuthPublicKey,
+        )
 }

@@ -10,19 +10,21 @@ import org.idos.kwil.transaction.PositionalParams
 import org.idos.kwil.transaction.PositionalTypes
 
 data class RemoveWalletParams(
-    val id: UuidString
+    val id: UuidString,
 )
 
 object RemoveWallet : ExecuteAction<RemoveWalletParams> {
-  override val name: String = "remove_wallet"
-  override val namespace: String = "main"
-  override val description: String = "Remove a wallet from idOS"
+    override val name: String = "remove_wallet"
+    override val namespace: String = "main"
+    override val description: String = "Remove a wallet from idOS"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+        )
 
-  override fun toPositionalParams(input: RemoveWalletParams): PositionalParams = listOf(
-    input.id.value
-  )
+    override fun toPositionalParams(input: RemoveWalletParams): PositionalParams =
+        listOf(
+            input.id.value,
+        )
 }

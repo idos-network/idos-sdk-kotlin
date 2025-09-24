@@ -12,23 +12,25 @@ import org.idos.kwil.transaction.PositionalTypes
 data class UpdateUserPubKeyAsInserterParams(
     val id: UuidString,
     val recipientEncryptionPublicKey: String,
-    val encryptionPasswordStore: String
+    val encryptionPasswordStore: String,
 )
 
 object UpdateUserPubKeyAsInserter : ExecuteAction<UpdateUserPubKeyAsInserterParams> {
-  override val name: String = "update_user_pub_key_as_inserter"
-  override val namespace: String = "main"
-  override val description: String = "Update user's encryption key and password store in idOS as inserter (profile creator)"
+    override val name: String = "update_user_pub_key_as_inserter"
+    override val namespace: String = "main"
+    override val description: String = "Update user's encryption key and password store in idOS as inserter (profile creator)"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: UpdateUserPubKeyAsInserterParams): PositionalParams = listOf(
-    input.id.value,
-    input.recipientEncryptionPublicKey,
-    input.encryptionPasswordStore
-  )
+    override fun toPositionalParams(input: UpdateUserPubKeyAsInserterParams): PositionalParams =
+        listOf(
+            input.id.value,
+            input.recipientEncryptionPublicKey,
+            input.encryptionPasswordStore,
+        )
 }

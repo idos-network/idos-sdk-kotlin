@@ -20,13 +20,13 @@ data class GetAccessGrantsGrantedResponse(
     @SerialName("locked_until") val lockedUntil: Int,
     @SerialName("content_hash") val contentHash: String?,
     @SerialName("inserter_type") val inserterType: String,
-    @SerialName("inserter_id") val inserterId: String
+    @SerialName("inserter_id") val inserterId: String,
 )
 
 data class GetAccessGrantsGrantedParams(
     val userId: UuidString?,
     val page: Int,
-    val size: Int
+    val size: Int,
 )
 
 /**
@@ -35,18 +35,20 @@ data class GetAccessGrantsGrantedParams(
  *  Ordering is consistent because we use height as first ordering parameter
  */
 object GetAccessGrantsGranted : ViewAction<GetAccessGrantsGrantedParams, GetAccessGrantsGrantedResponse> {
-  override val name: String = "get_access_grants_granted"
-  override val namespace: String = "main"
+    override val name: String = "get_access_grants_granted"
+    override val namespace: String = "main"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Int,
-    DataType.Int
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Int,
+            DataType.Int,
+        )
 
-  override fun toPositionalParams(input: GetAccessGrantsGrantedParams): PositionalParams = listOf(
-    input.userId?.value,
-    input.page,
-    input.size
-  )
+    override fun toPositionalParams(input: GetAccessGrantsGrantedParams): PositionalParams =
+        listOf(
+            input.userId?.value,
+            input.page,
+            input.size,
+        )
 }

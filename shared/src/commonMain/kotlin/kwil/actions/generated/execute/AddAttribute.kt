@@ -12,23 +12,25 @@ import org.idos.kwil.transaction.PositionalTypes
 data class AddAttributeParams(
     val id: UuidString,
     val attributeKey: String,
-    val value: String
+    val value: String,
 )
 
 object AddAttribute : ExecuteAction<AddAttributeParams> {
-  override val name: String = "add_attribute"
-  override val namespace: String = "main"
-  override val description: String = "Create a new attribute in your idOS profile"
+    override val name: String = "add_attribute"
+    override val namespace: String = "main"
+    override val description: String = "Create a new attribute in your idOS profile"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: AddAttributeParams): PositionalParams = listOf(
-    input.id.value,
-    input.attributeKey,
-    input.value
-  )
+    override fun toPositionalParams(input: AddAttributeParams): PositionalParams =
+        listOf(
+            input.id.value,
+            input.attributeKey,
+            input.value,
+        )
 }

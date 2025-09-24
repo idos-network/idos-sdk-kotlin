@@ -12,23 +12,25 @@ import org.idos.kwil.transaction.PositionalTypes
 data class EditAttributeParams(
     val id: UuidString,
     val attributeKey: String,
-    val value: String
+    val value: String,
 )
 
 object EditAttribute : ExecuteAction<EditAttributeParams> {
-  override val name: String = "edit_attribute"
-  override val namespace: String = "main"
-  override val description: String = "Edit an existing attribute"
+    override val name: String = "edit_attribute"
+    override val namespace: String = "main"
+    override val description: String = "Edit an existing attribute"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: EditAttributeParams): PositionalParams = listOf(
-    input.id.value,
-    input.attributeKey,
-    input.value
-  )
+    override fun toPositionalParams(input: EditAttributeParams): PositionalParams =
+        listOf(
+            input.id.value,
+            input.attributeKey,
+            input.value,
+        )
 }

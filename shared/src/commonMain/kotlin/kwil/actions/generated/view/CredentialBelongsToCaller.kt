@@ -13,22 +13,24 @@ import org.idos.kwil.transaction.PositionalTypes
 
 @Serializable
 data class CredentialBelongsToCallerResponse(
-    @SerialName("belongs") val belongs: Boolean
+    @SerialName("belongs") val belongs: Boolean,
 )
 
 data class CredentialBelongsToCallerParams(
-    val id: UuidString
+    val id: UuidString,
 )
 
 object CredentialBelongsToCaller : ViewAction<CredentialBelongsToCallerParams, CredentialBelongsToCallerResponse> {
-  override val name: String = "credential_belongs_to_caller"
-  override val namespace: String = "main"
+    override val name: String = "credential_belongs_to_caller"
+    override val namespace: String = "main"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+        )
 
-  override fun toPositionalParams(input: CredentialBelongsToCallerParams): PositionalParams = listOf(
-    input.id.value
-  )
+    override fun toPositionalParams(input: CredentialBelongsToCallerParams): PositionalParams =
+        listOf(
+            input.id.value,
+        )
 }

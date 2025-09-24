@@ -13,22 +13,24 @@ import org.idos.kwil.transaction.PositionalTypes
 
 @Serializable
 data class CredentialExistAsInserterResponse(
-    @SerialName("credential_exist") val credentialExist: Boolean
+    @SerialName("credential_exist") val credentialExist: Boolean,
 )
 
 data class CredentialExistAsInserterParams(
-    val id: UuidString
+    val id: UuidString,
 )
 
 object CredentialExistAsInserter : ViewAction<CredentialExistAsInserterParams, CredentialExistAsInserterResponse> {
-  override val name: String = "credential_exist_as_inserter"
-  override val namespace: String = "main"
+    override val name: String = "credential_exist_as_inserter"
+    override val namespace: String = "main"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+        )
 
-  override fun toPositionalParams(input: CredentialExistAsInserterParams): PositionalParams = listOf(
-    input.id.value
-  )
+    override fun toPositionalParams(input: CredentialExistAsInserterParams): PositionalParams =
+        listOf(
+            input.id.value,
+        )
 }

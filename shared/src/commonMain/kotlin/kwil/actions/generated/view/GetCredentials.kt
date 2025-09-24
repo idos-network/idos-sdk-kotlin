@@ -15,10 +15,10 @@ data class GetCredentialsResponse(
     @SerialName("public_notes") val publicNotes: String,
     @SerialName("issuer_auth_public_key") val issuerAuthPublicKey: String,
     @SerialName("inserter") val inserter: String?,
-    @SerialName("original_id") val originalId: UuidString?
+    @SerialName("original_id") val originalId: UuidString?,
 )
 
 object GetCredentials : NoParamsAction<GetCredentialsResponse>() {
-  override val namespace: String = "main"
-  override val name: String = "get_credentials"
+    override val namespace: String = "main"
+    override val name: String = "get_credentials"
 }

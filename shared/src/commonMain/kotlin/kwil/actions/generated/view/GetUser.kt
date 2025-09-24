@@ -12,10 +12,10 @@ import org.idos.kwil.rpc.UuidString
 data class GetUserResponse(
     @SerialName("id") val id: UuidString,
     @SerialName("recipient_encryption_public_key") val recipientEncryptionPublicKey: String,
-    @SerialName("encryption_password_store") val encryptionPasswordStore: String
+    @SerialName("encryption_password_store") val encryptionPasswordStore: String,
 )
 
 object GetUser : NoParamsAction<GetUserResponse>() {
-  override val namespace: String = "main"
-  override val name: String = "get_user"
+    override val namespace: String = "main"
+    override val name: String = "get_user"
 }

@@ -13,22 +13,24 @@ import org.idos.kwil.transaction.PositionalTypes
 
 @Serializable
 data class GetAccessGrantsGrantedCountResponse(
-    @SerialName("count") val count: Int
+    @SerialName("count") val count: Int,
 )
 
 data class GetAccessGrantsGrantedCountParams(
-    val userId: UuidString?
+    val userId: UuidString?,
 )
 
 object GetAccessGrantsGrantedCount : ViewAction<GetAccessGrantsGrantedCountParams, GetAccessGrantsGrantedCountResponse> {
-  override val name: String = "get_access_grants_granted_count"
-  override val namespace: String = "main"
+    override val name: String = "get_access_grants_granted_count"
+    override val namespace: String = "main"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+        )
 
-  override fun toPositionalParams(input: GetAccessGrantsGrantedCountParams): PositionalParams = listOf(
-    input.userId?.value
-  )
+    override fun toPositionalParams(input: GetAccessGrantsGrantedCountParams): PositionalParams =
+        listOf(
+            input.userId?.value,
+        )
 }

@@ -11,21 +11,23 @@ import org.idos.kwil.transaction.PositionalTypes
 
 data class AddPeerToClubAsOwnerParams(
     val passportingClubId: UuidString,
-    val passportingPeerId: UuidString
+    val passportingPeerId: UuidString,
 )
 
 object AddPeerToClubAsOwner : ExecuteAction<AddPeerToClubAsOwnerParams> {
-  override val name: String = "add_peer_to_club_as_owner"
-  override val namespace: String = "main"
-  override val description: String = "Add a peer to a passporting club as owner"
+    override val name: String = "add_peer_to_club_as_owner"
+    override val namespace: String = "main"
+    override val description: String = "Add a peer to a passporting club as owner"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Uuid
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Uuid,
+        )
 
-  override fun toPositionalParams(input: AddPeerToClubAsOwnerParams): PositionalParams = listOf(
-    input.passportingClubId.value,
-    input.passportingPeerId.value
-  )
+    override fun toPositionalParams(input: AddPeerToClubAsOwnerParams): PositionalParams =
+        listOf(
+            input.passportingClubId.value,
+            input.passportingPeerId.value,
+        )
 }

@@ -13,25 +13,27 @@ data class ShareAttributeParams(
     val id: UuidString,
     val originalAttributeId: UuidString,
     val attributeKey: String,
-    val value: String
+    val value: String,
 )
 
 object ShareAttribute : ExecuteAction<ShareAttributeParams> {
-  override val name: String = "share_attribute"
-  override val namespace: String = "main"
-  override val description: String = "Share an attribute"
+    override val name: String = "share_attribute"
+    override val namespace: String = "main"
+    override val description: String = "Share an attribute"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: ShareAttributeParams): PositionalParams = listOf(
-    input.id.value,
-    input.originalAttributeId.value,
-    input.attributeKey,
-    input.value
-  )
+    override fun toPositionalParams(input: ShareAttributeParams): PositionalParams =
+        listOf(
+            input.id.value,
+            input.originalAttributeId.value,
+            input.attributeKey,
+            input.value,
+        )
 }

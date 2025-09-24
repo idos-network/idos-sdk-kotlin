@@ -15,13 +15,13 @@ data class GetPassportingPeersResponse(
     @SerialName("issuer_public_key") val issuerPublicKey: String,
     @SerialName("passporting_server_url_base") val passportingServerUrlBase: String,
     @SerialName("club_id") val clubId: UuidString,
-    @SerialName("club_name") val clubName: String
+    @SerialName("club_name") val clubName: String,
 )
 
 /**
  *  get clubs the peer belongs to
  */
 object GetPassportingPeers : NoParamsAction<GetPassportingPeersResponse>() {
-  override val namespace: String = "main"
-  override val name: String = "get_passporting_peers"
+    override val namespace: String = "main"
+    override val name: String = "get_passporting_peers"
 }

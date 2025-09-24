@@ -10,19 +10,21 @@ import org.idos.kwil.transaction.PositionalParams
 import org.idos.kwil.transaction.PositionalTypes
 
 data class RemoveAttributeParams(
-    val id: UuidString
+    val id: UuidString,
 )
 
 object RemoveAttribute : ExecuteAction<RemoveAttributeParams> {
-  override val name: String = "remove_attribute"
-  override val namespace: String = "main"
-  override val description: String = "Remove an existing attribute"
+    override val name: String = "remove_attribute"
+    override val namespace: String = "main"
+    override val description: String = "Remove an existing attribute"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+        )
 
-  override fun toPositionalParams(input: RemoveAttributeParams): PositionalParams = listOf(
-    input.id.value
-  )
+    override fun toPositionalParams(input: RemoveAttributeParams): PositionalParams =
+        listOf(
+            input.id.value,
+        )
 }

@@ -13,25 +13,27 @@ data class AddAttributeAsInserterParams(
     val id: UuidString,
     val userId: UuidString,
     val attributeKey: String,
-    val value: String
+    val value: String,
 )
 
 object AddAttributeAsInserter : ExecuteAction<AddAttributeAsInserterParams> {
-  override val name: String = "add_attribute_as_inserter"
-  override val namespace: String = "main"
-  override val description: String = "Add a new attribute as inserter"
+    override val name: String = "add_attribute_as_inserter"
+    override val namespace: String = "main"
+    override val description: String = "Add a new attribute as inserter"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: AddAttributeAsInserterParams): PositionalParams = listOf(
-    input.id.value,
-    input.userId.value,
-    input.attributeKey,
-    input.value
-  )
+    override fun toPositionalParams(input: AddAttributeAsInserterParams): PositionalParams =
+        listOf(
+            input.id.value,
+            input.userId.value,
+            input.attributeKey,
+            input.value,
+        )
 }

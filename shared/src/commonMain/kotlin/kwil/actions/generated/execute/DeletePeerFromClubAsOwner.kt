@@ -11,21 +11,23 @@ import org.idos.kwil.transaction.PositionalTypes
 
 data class DeletePeerFromClubAsOwnerParams(
     val passportingClubId: UuidString,
-    val passportingPeerId: UuidString
+    val passportingPeerId: UuidString,
 )
 
 object DeletePeerFromClubAsOwner : ExecuteAction<DeletePeerFromClubAsOwnerParams> {
-  override val name: String = "delete_peer_from_club_as_owner"
-  override val namespace: String = "main"
-  override val description: String = "Delete a peer from a passporting club as owner"
+    override val name: String = "delete_peer_from_club_as_owner"
+    override val namespace: String = "main"
+    override val description: String = "Delete a peer from a passporting club as owner"
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Uuid
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Uuid,
+        )
 
-  override fun toPositionalParams(input: DeletePeerFromClubAsOwnerParams): PositionalParams = listOf(
-    input.passportingClubId.value,
-    input.passportingPeerId.value
-  )
+    override fun toPositionalParams(input: DeletePeerFromClubAsOwnerParams): PositionalParams =
+        listOf(
+            input.passportingClubId.value,
+            input.passportingPeerId.value,
+        )
 }

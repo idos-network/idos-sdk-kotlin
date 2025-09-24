@@ -17,33 +17,35 @@ data class UpsertCredentialAsInserterParams(
     val content: String,
     val publicNotes: String,
     val publicNotesSignature: String,
-    val broaderSignature: String
+    val broaderSignature: String,
 )
 
 object UpsertCredentialAsInserter : ExecuteAction<UpsertCredentialAsInserterParams> {
-  override val name: String = "upsert_credential_as_inserter"
-  override val namespace: String = "main"
-  override val description: String = "Add or update a credential in idOS on behalf of a user by permissioned profile creator (inserter) "
+    override val name: String = "upsert_credential_as_inserter"
+    override val namespace: String = "main"
+    override val description: String = "Add or update a credential in idOS on behalf of a user by permissioned profile creator (inserter) "
 
-  override val positionalTypes: PositionalTypes = listOf(
-    DataType.Uuid,
-    DataType.Uuid,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text,
-    DataType.Text
-  )
+    override val positionalTypes: PositionalTypes =
+        listOf(
+            DataType.Uuid,
+            DataType.Uuid,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+            DataType.Text,
+        )
 
-  override fun toPositionalParams(input: UpsertCredentialAsInserterParams): PositionalParams = listOf(
-    input.id.value,
-    input.userId.value,
-    input.issuerAuthPublicKey,
-    input.encryptorPublicKey,
-    input.content,
-    input.publicNotes,
-    input.publicNotesSignature,
-    input.broaderSignature
-  )
+    override fun toPositionalParams(input: UpsertCredentialAsInserterParams): PositionalParams =
+        listOf(
+            input.id.value,
+            input.userId.value,
+            input.issuerAuthPublicKey,
+            input.encryptorPublicKey,
+            input.content,
+            input.publicNotes,
+            input.publicNotesSignature,
+            input.broaderSignature,
+        )
 }
