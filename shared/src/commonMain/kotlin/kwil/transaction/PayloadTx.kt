@@ -120,7 +120,7 @@ class PayloadTx(
             )
         }
 
-        fun signTx(
+        suspend fun signTx(
             tx: TransactionUint8,
             signer: BaseSigner,
             description: String,

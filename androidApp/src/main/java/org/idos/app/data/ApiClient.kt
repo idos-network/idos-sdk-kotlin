@@ -8,20 +8,6 @@ import kotlin.time.Duration.Companion.milliseconds
 
 // Placeholder external API client using suspend functions
 class ApiClient {
-    suspend fun fetchCredentials(): List<Credential> {
-        Timber.d("fetch credentials")
-        delay(300.milliseconds) // simulate latency
-        if (Math.random() < 0.5) {
-            Timber.d("Throw!!!!")
-            throw Exception("Failed to fetch credentials")
-        }
-        return listOf(
-            Credential("PoP", "human", "approved", "idOS", 0),
-            Credential("kyc", "plus+liveness+phoneNumber+email+idos", "approved", "Fractal ID", 0),
-            Credential("PoP", "human", "approved", "idOS", 0),
-        )
-    }
-
     suspend fun fetchWallets(): List<Wallet> {
         Timber.d("fetch wallets")
         delay(300.milliseconds)

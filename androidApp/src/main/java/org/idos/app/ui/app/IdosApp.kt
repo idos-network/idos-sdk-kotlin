@@ -1,21 +1,47 @@
 package org.idos.app.ui.app
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VpnKey
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,18 +55,42 @@ import org.idos.app.ui.screens.settings.SettingsScreen
 import org.idos.app.ui.screens.wallets.WalletsScreen
 import org.koin.androidx.compose.koinViewModel
 
+@Composable
+fun LoadingScreen() {
+    Surface(
+        color = MaterialTheme.colorScheme.background,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            CircularProgressIndicator()
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Loading wallet...", style = MaterialTheme.typography.bodyLarge)
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IdosApp(
     viewModel: IdosAppViewModel = koinViewModel()
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    if (state.isLoading) {
+        return LoadingScreen()
+    }
+
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
-    val uiState by viewModel.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val route = if (uiState.isConnected) NavRoute.Credentials else NavRoute.Mnemonic
+    val route = if (state.isConnected) NavRoute.Credentials else NavRoute.Mnemonic
     val currentRoute = navBackStackEntry?.destination?.route ?: route.route
 
     // Update title based on current route
@@ -49,16 +99,16 @@ fun IdosApp(
     }
 
     // Filter out Mnemonic route if wallet is connected
-    val filteredRoutes = remember(uiState.ethAddress) {
-        if (uiState.isConnected) {
+    val filteredRoutes = remember(state.ethAddress) {
+        if (state.isConnected) {
             NavRoute.all.value.filter { it != NavRoute.Mnemonic }
         } else {
             NavRoute.all.value.filter { it !in listOf(NavRoute.Credentials, NavRoute.Wallets) }
         }
     }
 
-    LaunchedEffect(uiState.isConnected) {
-        val targetRoute = if (uiState.isConnected) {
+    LaunchedEffect(state.isConnected) {
+        val targetRoute = if (state.isConnected) {
             NavRoute.Credentials.route
         } else {
             NavRoute.Mnemonic.route
@@ -79,19 +129,25 @@ fun IdosApp(
     ModalNavigationDrawer(
         drawerState = drawerState, drawerContent = {
             DrawerContent(
-                currentRoute = currentRoute, ethAddress = uiState.ethAddress, onDisconnect = {
-                    scope.launch { drawerState.close() }
-                    viewModel.disconnectWallet()
+                currentRoute = currentRoute,
+                ethAddress = state.ethAddress,
+                onDisconnect = {
+                    scope.launch {
+                        drawerState.close()
+                        viewModel.disconnectWallet()
+                    }
                 }, onNavigate = { route ->
                     if (route != currentRoute) {
-                        navController.navigate(route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+                        scope.launch {
+                            drawerState.close()
+                            navController.navigate(route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            launchSingleTop = true
-                            restoreState = true
                         }
-                        scope.launch { drawerState.close() }
                     }
                 }, routes = filteredRoutes
             )
@@ -99,16 +155,14 @@ fun IdosApp(
         Scaffold(
             topBar = {
                 TopAppBar(title = {
-                    Text(
-                        text = title, maxLines = 1, overflow = TextOverflow.Ellipsis
-                    )
+                    Text(text = title)
                 }, navigationIcon = {
                     IconButton(
                         onClick = {
                             scope.launch {
                                 if (drawerState.isClosed) drawerState.open() else drawerState.close()
                             }
-                        }, modifier = Modifier.padding(horizontal = 12.dp)
+                        },
                     ) {
                         Icon(
                             imageVector = Icons.Default.Menu, contentDescription = "Menu"
@@ -117,7 +171,11 @@ fun IdosApp(
                 })
             }) { innerPadding ->
             NavHost(
-                navController = navController, startDestination = currentRoute, modifier = Modifier.padding(innerPadding)
+                navController = navController,
+                startDestination = currentRoute,
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .consumeWindowInsets(innerPadding)
             ) {
                 composable(NavRoute.Credentials.route) { CredentialsScreen() }
                 composable(NavRoute.Wallets.route) { WalletsScreen() }

@@ -33,27 +33,16 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.ktor.client.core)
-            implementation("io.ktor:ktor-client-content-negotiation:3.2.3")
-            implementation("io.ktor:ktor-serialization-kotlinx-json:3.2.3")
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.io)
             implementation(project.dependencies.platform("org.kotlincrypto.hash:bom:0.7.1"))
             implementation("org.kotlincrypto.hash:sha2")
         }
 
         androidMain.dependencies {
-            api("com.github.komputing:kethereum:0.86.0") {
-                // Exclude SpongyCastle implementation since we're using BouncyCastle
-                exclude(group = "com.github.komputing.kethereum", module = "crypto_impl_spongycastle")
-                // Include only the English wordlist
-                exclude(group = "com.github.komputing.kethereum", module = "bip39_wordlist_es")
-                exclude(group = "com.github.komputing.kethereum", module = "bip39_wordlist_fr")
-                exclude(group = "com.github.komputing.kethereum", module = "bip39_wordlist_it")
-                exclude(group = "com.github.komputing.kethereum", module = "bip39_wordlist_ja")
-                exclude(group = "com.github.komputing.kethereum", module = "bip39_wordlist_ko")
-                exclude(group = "com.github.komputing.kethereum", module = "bip39_wordlist_zh-Hans")
-                exclude(group = "com.github.komputing.kethereum", module = "bip39_wordlist_zh-Hant")
-            }
+            implementation(libs.ktor.client.okhttp)
         }
 
         jvmMain.dependencies {

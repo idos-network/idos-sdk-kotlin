@@ -8,7 +8,7 @@ interface BaseSigner {
 
     fun getSignatureType(): SignatureType
 
-    fun sign(msg: ByteArray): ByteArray
+    suspend fun sign(msg: ByteArray): ByteArray
 
     fun accountId(): AccountId
 }

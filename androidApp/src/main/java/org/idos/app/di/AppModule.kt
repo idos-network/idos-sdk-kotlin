@@ -1,44 +1,57 @@
 package org.idos.app.di
 
 import org.idos.app.data.ApiClient
+import org.idos.app.data.DataProvider
 import org.idos.app.data.repository.CredentialsRepository
 import org.idos.app.data.repository.CredentialsRepositoryImpl
 import org.idos.app.data.repository.WalletRepository
 import org.idos.app.data.repository.WalletRepositoryImpl
+import org.idos.app.security.EthSigner
 import org.idos.app.security.KeyManager
 import org.idos.app.ui.app.IdosAppViewModel
 import org.idos.app.ui.screens.credentials.CredentialsViewModel
 import org.idos.app.ui.screens.mnemonic.MnemonicViewModel
 import org.idos.app.ui.screens.settings.SettingsViewModel
 import org.idos.app.ui.screens.wallets.WalletsViewModel
+import org.idos.kwil.signer.BaseSigner
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
-val networkModule = module {
-    single { ApiClient() }
-}
+const val STAGING_URL = "https://nodes.staging.idos.network"
+const val STAGING_CHAIN_ID = "idos-staging"
 
-val repositoryModule = module {
-    single<CredentialsRepository> { CredentialsRepositoryImpl(get()) }
-    single<WalletRepository> { WalletRepositoryImpl(get()) }
-}
+val networkModule =
+    module {
+        single { ApiClient() }
+        single { DataProvider(STAGING_URL, get(), STAGING_CHAIN_ID) }
+    }
 
-val viewModelModule = module {
-    viewModel { IdosAppViewModel(get()) }
-    viewModel { CredentialsViewModel(get()) }
-    viewModel { WalletsViewModel(get()) }
-    viewModel { SettingsViewModel() }
-    viewModel { MnemonicViewModel(get()) }
-}
+val repositoryModule =
+    module {
+        single<CredentialsRepository> { CredentialsRepositoryImpl(get()) }
+        single<WalletRepository> { WalletRepositoryImpl(get()) }
+    }
 
-val securityModule = module {
-    single { KeyManager(androidContext()) }
-}
+val viewModelModule =
+    module {
+        viewModel { IdosAppViewModel(get()) }
+        viewModel { CredentialsViewModel(get()) }
+        viewModel { WalletsViewModel(get()) }
+        viewModel { SettingsViewModel() }
+        viewModel { MnemonicViewModel(get()) }
+    }
 
-val appModule = listOf(
-    networkModule,
-    repositoryModule,
-    viewModelModule,
-    securityModule
-)
+val securityModule =
+    module {
+        single { KeyManager(androidContext()) }
+        single<BaseSigner> { EthSigner(get()) }
+    }
+
+val appModule =
+    listOf(
+        networkModule,
+        repositoryModule,
+        viewModelModule,
+        securityModule,
+    )

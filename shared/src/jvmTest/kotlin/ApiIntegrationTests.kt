@@ -13,7 +13,7 @@ import org.idos.kwil.actions.hasUserProfile
 import org.idos.kwil.actions.revokeAccessGrant
 import org.idos.kwil.rpc.Base64String
 import org.idos.kwil.serialization.toByteArray
-import org.idos.kwil.signer.createEthSigner
+import org.idos.kwil.signer.JvmEthSigner
 
 class ApiIntegrationTests :
     StringSpec(
@@ -23,7 +23,7 @@ class ApiIntegrationTests :
             "should get chain info" {
                 val secret = getSecrets()
                 val signer =
-                    createEthSigner(
+                    JvmEthSigner(
                         secret.keyPair.privateKey.key
                             .toString(16),
                     )
@@ -34,7 +34,7 @@ class ApiIntegrationTests :
             "should get wallets" {
                 val secrets = getSecrets()
                 val signer =
-                    createEthSigner(
+                    JvmEthSigner(
                         secrets.keyPair.privateKey.key
                             .toString(16),
                     )

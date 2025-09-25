@@ -1,6 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import java.util.Properties
 import java.io.FileInputStream
+import java.util.Properties
 
 fun getEnvProperties(filePath: String): Properties {
     val properties = Properties()
@@ -25,16 +25,26 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.kotlinCompose)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 android {
     namespace = "org.idos.app"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
+    compileSdk =
+        libs.versions.android.compileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
         applicationId = "org.idos.app"
-        minSdk = libs.versions.android.minSdk.get().toInt()
-        targetSdk = libs.versions.android.targetSdk.get().toInt()
+        minSdk =
+            libs.versions.android.minSdk
+                .get()
+                .toInt()
+        targetSdk =
+            libs.versions.android.targetSdk
+                .get()
+                .toInt()
         versionCode = 1
         versionName = "1.0"
 
@@ -63,7 +73,7 @@ android {
 
 kotlin {
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_11)   // Use typed enum instead of string
+        jvmTarget.set(JvmTarget.JVM_11) // Use typed enum instead of string
     }
 }
 
@@ -87,12 +97,21 @@ dependencies {
     implementation(libs.androidx.foundation)
 
     // Security
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
-    implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
+    implementation(libs.security.crypto)
+    implementation(libs.security.crypto.ktx)
+
+    implementation(libs.kethereum.model)
+    implementation(libs.kethereum.bip32)
+    implementation(libs.kethereum.bip39)
+    implementation(libs.kethereum.sign)
+    implementation(libs.kethereum.crypto)
+    implementation(libs.kethereum.crypto.impl)
 
     // Koin
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
+
+    implementation(libs.kotlinx.serialization.json)
 
     implementation(project(":shared"))
 
@@ -104,5 +123,3 @@ dependencies {
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
 }
-
-
