@@ -41,6 +41,21 @@ kotlin {
             implementation("org.kotlincrypto.hash:sha2")
         }
 
+        androidMain.dependencies {
+            api("com.github.komputing:kethereum:0.86.0") {
+                // Exclude SpongyCastle implementation since we're using BouncyCastle
+                exclude(group = "com.github.komputing.kethereum", module = "crypto_impl_spongycastle")
+                // Include only the English wordlist
+                exclude(group = "com.github.komputing.kethereum", module = "bip39_wordlist_es")
+                exclude(group = "com.github.komputing.kethereum", module = "bip39_wordlist_fr")
+                exclude(group = "com.github.komputing.kethereum", module = "bip39_wordlist_it")
+                exclude(group = "com.github.komputing.kethereum", module = "bip39_wordlist_ja")
+                exclude(group = "com.github.komputing.kethereum", module = "bip39_wordlist_ko")
+                exclude(group = "com.github.komputing.kethereum", module = "bip39_wordlist_zh-Hans")
+                exclude(group = "com.github.komputing.kethereum", module = "bip39_wordlist_zh-Hant")
+            }
+        }
+
         jvmMain.dependencies {
             implementation("com.github.InstantWebP2P:tweetnacl-java:1.1.2")
             implementation("org.bouncycastle:bcprov-jdk15on:1.70")
