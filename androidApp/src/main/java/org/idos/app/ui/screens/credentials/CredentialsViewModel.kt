@@ -4,13 +4,20 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import org.idos.app.data.model.Credential
 import org.idos.app.data.repository.CredentialsRepository
+import org.idos.app.navigation.NavRoute
+import org.idos.app.navigation.NavigationCommand
+import org.idos.app.navigation.NavigationManager
 import org.idos.app.ui.screens.base.BaseViewModel
 import timber.log.Timber
 
 // Events that can be triggered from the UI
 sealed class CredentialsEvent {
     object LoadCredentials : CredentialsEvent()
-    data class CredentialSelected(val credential: Credential) : CredentialsEvent()
+
+    data class CredentialSelected(
+        val credential: Credential,
+    ) : CredentialsEvent()
+
     object ClearError : CredentialsEvent()
 }
 
@@ -22,9 +29,9 @@ data class CredentialsUiState(
 )
 
 class CredentialsViewModel(
-    private val credentialsRepository: CredentialsRepository
+    private val credentialsRepository: CredentialsRepository,
+    private val navigationManager: NavigationManager,
 ) : BaseViewModel<CredentialsUiState, CredentialsEvent>() {
-
     override fun initialState(): CredentialsUiState = CredentialsUiState()
 
     override fun onEvent(event: CredentialsEvent) {
@@ -47,7 +54,7 @@ class CredentialsViewModel(
                 updateState {
                     copy(
                         isLoading = false,
-                        error = "Failed to load credentials: ${e.message}"
+                        error = "Failed to load credentials: ${e.message}",
                     )
                 }
             }
@@ -55,8 +62,13 @@ class CredentialsViewModel(
     }
 
     private fun onCredentialSelected(credential: Credential) {
-        // Handle credential selection
-        // This could navigate to a detail screen or perform an action
+        viewModelScope.launch {
+            navigationManager.navigate(
+                NavigationCommand.NavigateToRoute(
+                    NavRoute.CredentialDetail.createRoute(credential.id),
+                ),
+            )
+        }
     }
 
     private fun clearError() {

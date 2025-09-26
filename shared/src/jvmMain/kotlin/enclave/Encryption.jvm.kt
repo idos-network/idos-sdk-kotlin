@@ -1,61 +1,67 @@
 package org.idos.enclave
 
 import com.iwebpp.crypto.TweetNaclFast
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.security.SecureRandom
 
 class JvmEncryption : Encryption() {
     private val random = SecureRandom()
 
-    override fun encrypt(
+    override suspend fun encrypt(
         message: ByteArray,
         receiverPublicKey: ByteArray,
-    ): Pair<ByteArray, ByteArray> {
-        val nonce = ByteArray(TweetNaclFast.Box.nonceLength)
-        random.nextBytes(nonce)
+    ): Pair<ByteArray, ByteArray> =
+        withContext(Dispatchers.IO) {
+            val nonce = ByteArray(TweetNaclFast.Box.nonceLength)
+            random.nextBytes(nonce)
 
-        val ephKeyPair = TweetNaclFast.Box.keyPair()
+            val ephKeyPair = TweetNaclFast.Box.keyPair()
 
-        val box = TweetNaclFast.Box(receiverPublicKey, ephKeyPair.secretKey)
+            val box = TweetNaclFast.Box(receiverPublicKey, ephKeyPair.secretKey)
 
-        val encrypted =
-            box.box(message, nonce)
-                ?: throw IllegalStateException("Couldn't encrypt")
+            val encrypted =
+                box.box(message, nonce)
+                    ?: throw IllegalStateException("Couldn't encrypt")
 
-        val fullMessage = ByteArray(nonce.size + encrypted.size)
-        System.arraycopy(nonce, 0, fullMessage, 0, nonce.size)
-        System.arraycopy(encrypted, 0, fullMessage, nonce.size, encrypted.size)
+            val fullMessage = ByteArray(nonce.size + encrypted.size)
+            System.arraycopy(nonce, 0, fullMessage, 0, nonce.size)
+            System.arraycopy(encrypted, 0, fullMessage, nonce.size, encrypted.size)
 
-        return fullMessage to ephKeyPair.publicKey
-    }
+            fullMessage to ephKeyPair.publicKey
+        }
 
-    override fun decrypt(
+    override suspend fun decrypt(
         fullMessage: ByteArray,
         keyPair: KeyPair,
         senderPublicKey: ByteArray,
-    ): ByteArray {
-        val nonceLen = TweetNaclFast.Box.nonceLength
+    ): ByteArray =
+        withContext(Dispatchers.IO) {
+            val nonceLen = TweetNaclFast.Box.nonceLength
 
-        val nonce = fullMessage.copyOfRange(0, nonceLen)
-        val cipherText = fullMessage.copyOfRange(nonceLen, fullMessage.size)
+            val nonce = fullMessage.copyOfRange(0, nonceLen)
+            val cipherText = fullMessage.copyOfRange(nonceLen, fullMessage.size)
 
-        val box = TweetNaclFast.Box(senderPublicKey, keyPair.secretKey)
+            val box = TweetNaclFast.Box(senderPublicKey, keyPair.secretKey)
 
-        val decrypted =
-            box.open(cipherText, nonce)
-                ?: throw IllegalStateException("Couldn't decrypt")
+            val decrypted =
+                box.open(cipherText, nonce)
+                    ?: throw IllegalStateException("Couldn't decrypt")
 
-        return decrypted
-    }
+            decrypted
+        }
 
-    override fun generateKeyPair(): KeyPair {
-        val naclKeyPair = TweetNaclFast.Box.keyPair()
-        return TweetNaclKeyPair(naclKeyPair)
-    }
+    override suspend fun generateKeyPair(): KeyPair =
+        withContext(Dispatchers.IO) {
+            val naclKeyPair = TweetNaclFast.Box.keyPair()
+            TweetNaclKeyPair(naclKeyPair)
+        }
 
-    override fun keyPairFromSecretKey(secretKey: ByteArray): KeyPair {
-        val naclKeyPair = TweetNaclFast.Box.keyPair_fromSecretKey(secretKey)
-        return TweetNaclKeyPair(naclKeyPair)
-    }
+    override suspend fun keyPairFromSecretKey(secretKey: ByteArray): KeyPair =
+        withContext(Dispatchers.IO) {
+            val naclKeyPair = TweetNaclFast.Box.keyPair_fromSecretKey(secretKey)
+            TweetNaclKeyPair(naclKeyPair)
+        }
 }
 
 // Wrapper class to implement our KeyPair interface
@@ -67,4 +73,4 @@ class TweetNaclKeyPair(
 }
 
 // Platform-specific implementation
-actual fun getEncryption(): Encryption = JvmEncryption()
+actual fun getEncryption(context: Any?): Encryption = JvmEncryption()

@@ -9,20 +9,20 @@ abstract class Encryption {
         ): ByteArray = KeyDerivation.deriveKey(password, salt)
     }
 
-    abstract fun encrypt(
+    abstract suspend fun encrypt(
         message: ByteArray,
         receiverPublicKey: ByteArray,
     ): Pair<ByteArray, ByteArray>
 
-    abstract fun decrypt(
+    abstract suspend fun decrypt(
         fullMessage: ByteArray,
         keyPair: KeyPair,
         senderPublicKey: ByteArray,
     ): ByteArray
 
-    abstract fun generateKeyPair(): KeyPair
+    abstract suspend fun generateKeyPair(): KeyPair
 
-    abstract fun keyPairFromSecretKey(secretKey: ByteArray): KeyPair
+    abstract suspend fun keyPairFromSecretKey(secretKey: ByteArray): KeyPair
 }
 
 // Common interface for KeyPair to abstract away platform-specific implementations
@@ -32,4 +32,4 @@ interface KeyPair {
 }
 
 // Get platform-specific encryption implementation
-expect fun getEncryption(): Encryption
+expect fun getEncryption(context: Any? = null): Encryption

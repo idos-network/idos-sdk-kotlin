@@ -10,16 +10,16 @@ data class PrivateEncryptionProfile(
 
 // https://github.com/idos-network/idos-sdk-js/blob/main/packages/utils/src/enclave/local.ts
 class Enclave(
+    private val encryption: Encryption,
     var userId: UuidString,
     var password: String,
 ) {
-    private val encryption = getEncryption()
     var encryptionProfile: PrivateEncryptionProfile? = null
 
     /**
      * Decrypt credentials content
      */
-    fun decrypt(
+    suspend fun decrypt(
         message: ByteArray,
         senderPublicKey: ByteArray,
     ): ByteArray {
@@ -31,12 +31,12 @@ class Enclave(
         )
     }
 
-    fun encrypt(
+    suspend fun encrypt(
         message: ByteArray,
         receiverPublicKey: ByteArray,
     ): Pair<ByteArray, ByteArray> = encryption.encrypt(message, receiverPublicKey)
 
-    private fun key(): PrivateEncryptionProfile {
+    private suspend fun key(): PrivateEncryptionProfile {
         encryptionProfile?.let { return it }
 
         val secretKey = Encryption.keyDerivation(password, userId.value)

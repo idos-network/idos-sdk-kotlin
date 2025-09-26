@@ -42,9 +42,7 @@ import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CredentialsScreen(
-    viewModel: CredentialsViewModel = koinViewModel()
-) {
+fun CredentialsScreen(viewModel: CredentialsViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -55,7 +53,7 @@ fun CredentialsScreen(
             coroutineScope.launch {
                 snackbarHostState.showSnackbar(
                     message = error,
-                    duration = SnackbarDuration.Short
+                    duration = SnackbarDuration.Short,
                 )
                 viewModel.onEvent(CredentialsEvent.ClearError)
             }
@@ -73,7 +71,7 @@ fun CredentialsScreen(
         PullToRefreshBox(
             modifier = Modifier.fillMaxSize(),
             isRefreshing = state.isLoading,
-            onRefresh = { viewModel.onEvent(CredentialsEvent.LoadCredentials) }
+            onRefresh = { viewModel.onEvent(CredentialsEvent.LoadCredentials) },
         ) {
             if (state.credentials.isEmpty()) {
                 EmptyView(
@@ -84,9 +82,9 @@ fun CredentialsScreen(
                             imageVector = Icons.Default.CreditCard,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
-                    }
+                    },
                 )
             } else {
                 CredentialsList(
@@ -107,12 +105,12 @@ private fun CredentialsList(
 ) {
     LazyColumn(
         modifier = Modifier.padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         items(credentials) { credential ->
             CredentialCard(
                 credential = credential,
-                onClick = { onCredentialClick(credential) }
+                onClick = { onCredentialClick(credential) },
             )
         }
     }
@@ -122,56 +120,58 @@ private fun CredentialsList(
 @Composable
 private fun CredentialCard(
     credential: Credential,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Card(
         onClick = onClick,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column {
                     Text(
-                        text = credential.type,
-                        style = MaterialTheme.typography.titleMedium
+                        text = credential.notes.type,
+                        style = MaterialTheme.typography.titleMedium,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = credential.issuer,
-                        style = MaterialTheme.typography.bodyMedium
+                        text = credential.notes.issuer,
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                 }
                 Icon(
                     imageVector = Icons.Default.CreditCard,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Button(
                     onClick = { /* Handle copy action */ },
-                    modifier = Modifier.padding(end = 8.dp)
+                    modifier = Modifier.padding(end = 8.dp),
                 ) {
                     Text("Copy")
                 }
                 Button(
-                    onClick = { /* Handle details action */ }
+                    onClick = { /* Handle details action */ },
                 ) {
                     Text("Details")
                 }
@@ -179,4 +179,3 @@ private fun CredentialCard(
         }
     }
 }
-

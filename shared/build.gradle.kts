@@ -43,6 +43,14 @@ kotlin {
 
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
+            // NaCl for Android
+            implementation("com.goterl:lazysodium-android:5.0.1@aar")
+            implementation("net.java.dev.jna:jna:5.8.0@aar")
+            // AndroidX Security with StrongBox support
+            implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
+            // Bouncy Castle for SCrypt implementation (matching JVM version)
+            implementation(libs.bcprov.jdk15to18)
+//            implementation("org.bouncycastle:bcprov-jdk15on:1.70")
         }
 
         jvmMain.dependencies {

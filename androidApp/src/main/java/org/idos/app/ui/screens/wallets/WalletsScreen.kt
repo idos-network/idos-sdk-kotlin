@@ -3,35 +3,24 @@ package org.idos.app.ui.screens.wallets
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Wallet
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.pullToRefresh
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import org.idos.app.R
 import org.idos.app.data.model.Wallet
-import org.idos.app.nav.NavRoute
 import org.idos.app.ui.screens.base.BaseScreen
 import org.idos.app.ui.screens.base.EmptyView
-import org.idos.app.ui.screens.base.LoadingView
 import org.idos.app.ui.screens.base.spacing
 import org.koin.androidx.compose.koinViewModel
-import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WalletsScreen(
-    viewModel: WalletsViewModel = koinViewModel()
-) {
+fun WalletsScreen(viewModel: WalletsViewModel = koinViewModel()) {
     val state = viewModel.state.collectAsState().value
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -42,7 +31,7 @@ fun WalletsScreen(
             coroutineScope.launch {
                 snackbarHostState.showSnackbar(
                     message = error,
-                    duration = SnackbarDuration.Short
+                    duration = SnackbarDuration.Short,
                 )
                 viewModel.onEvent(WalletsEvent.ClearError)
             }
@@ -60,7 +49,7 @@ fun WalletsScreen(
         PullToRefreshBox(
             modifier = Modifier.fillMaxSize(),
             isRefreshing = state.isLoading,
-            onRefresh = { viewModel.onEvent(WalletsEvent.LoadWallets) }
+            onRefresh = { viewModel.onEvent(WalletsEvent.LoadWallets) },
         ) {
             if (state.wallets.isEmpty()) {
                 EmptyView(
@@ -71,15 +60,15 @@ fun WalletsScreen(
                             imageVector = Icons.Default.Wallet,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
-                    }
+                    },
                 )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
-                    contentPadding = PaddingValues(MaterialTheme.spacing.medium)
+                    contentPadding = PaddingValues(MaterialTheme.spacing.medium),
                 ) {
                     items(state.wallets) { wallet ->
                         WalletCard(wallet = wallet)
@@ -95,27 +84,29 @@ fun WalletsScreen(
 private fun WalletCard(wallet: Wallet) {
     Card(
         onClick = { /* Handle wallet selection */ },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-        ),
-        modifier = Modifier.fillMaxWidth()
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(MaterialTheme.spacing.medium),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(MaterialTheme.spacing.medium),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = Icons.Default.Wallet,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.padding(8.dp))
             Text(
                 text = wallet.address,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
             )
         }
     }

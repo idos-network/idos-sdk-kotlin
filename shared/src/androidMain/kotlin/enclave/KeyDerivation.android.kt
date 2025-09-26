@@ -1,10 +1,10 @@
 package org.idos.enclave
 
-// TODO: Implement Android-specific key derivation using appropriate crypto libraries
+import org.bouncycastle.crypto.generators.SCrypt
+import java.text.Normalizer
+
 class AndroidKeyDerivation : KeyDerivation() {
-    override fun normalizeString(input: String): String {
-        TODO("Android string normalization implementation not yet available")
-    }
+    override fun normalizeString(input: String): String = Normalizer.normalize(input, Normalizer.Form.NFKC)
 
     override fun scryptGenerate(
         passwordBytes: ByteArray,
@@ -13,9 +13,13 @@ class AndroidKeyDerivation : KeyDerivation() {
         r: Int,
         p: Int,
         dkLen: Int,
-    ): ByteArray {
-        TODO("Android scrypt implementation not yet available")
-    }
+    ): ByteArray =
+        try {
+            // Use Bouncy Castle's SCrypt implementation
+            SCrypt.generate(passwordBytes, saltBytes, n, r, p, dkLen)
+        } catch (e: Exception) {
+            throw IllegalStateException("Failed to generate key with SCrypt", e)
+        }
 }
 
 // Platform-specific implementation
