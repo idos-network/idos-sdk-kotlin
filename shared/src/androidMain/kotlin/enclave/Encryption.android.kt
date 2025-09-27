@@ -7,6 +7,7 @@ import androidx.security.crypto.MasterKey
 import com.goterl.lazysodium.LazySodiumAndroid
 import com.goterl.lazysodium.SodiumAndroid
 import com.goterl.lazysodium.interfaces.SecretBox
+import com.goterl.lazysodium.utils.Key
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -141,11 +142,10 @@ class AndroidEncryption(
 
     override suspend fun keyPairFromSecretKey(secretKey: ByteArray): KeyPair {
         // Generate a new key pair and return it with the provided secret key
-        // Note: This is a simplified implementation - in a real app, you'd want to validate the secret key
-        val keyPair = sodium.cryptoBoxSeedKeypair(secretKey)
+        val pubkey = sodium.cryptoScalarMultBase(Key.fromBytes(secretKey))
         return object : KeyPair {
-            override val publicKey: ByteArray = keyPair.publicKey.asBytes
-            override val secretKey: ByteArray = keyPair.secretKey.asBytes
+            override val publicKey: ByteArray = pubkey.asBytes
+            override val secretKey: ByteArray = secretKey
         }
     }
 

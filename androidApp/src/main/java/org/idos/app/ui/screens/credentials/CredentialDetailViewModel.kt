@@ -1,9 +1,10 @@
 package org.idos.app.ui.screens.credentials
 
-import `EnclaveFactory.android`
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import org.idos.app.data.DataProvider
 import org.idos.app.data.model.CredentialDetail
 import org.idos.app.data.repository.CredentialsRepository
@@ -23,7 +24,7 @@ sealed class CredentialDetailState {
 
     data class Success(
         val credential: CredentialDetail,
-        val decryptedContent: String,
+        val decryptedContent: JsonElement,
     ) : CredentialDetailState()
 
     data class Error(
@@ -62,7 +63,7 @@ class CredentialDetailViewModel(
     private fun loadCredential(credentialId: UuidString) {
         viewModelScope.launch {
             try {
-                updateState { CredentialDetailState.Loading }
+//                updateState { CredentialDetailState.Loading }
 
                 // Fetch credential details
                 val credential =
@@ -71,7 +72,8 @@ class CredentialDetailViewModel(
                         .collect { detail ->
                             // In a real app, you would decrypt the content here
                             val decryptedContent = decryptCredential(detail)
-                            updateState { CredentialDetailState.Success(detail, decryptedContent) }
+                            val json = Json.parseToJsonElement(decryptedContent)
+                            updateState { CredentialDetailState.Success(detail, json) }
                         }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load credential")

@@ -19,11 +19,11 @@ import androidx.compose.ui.unit.dp
 fun BaseScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState? = null,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Surface(
         color = MaterialTheme.colorScheme.background,
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
@@ -34,12 +34,13 @@ fun BaseScreen(
                 },
                 content = { padding ->
                     Box(
-                        modifier = Modifier
-                             .padding(padding)
+                        modifier =
+                            Modifier
+                                .padding(padding),
                     ) {
                         content()
                     }
-                }
+                },
             )
         }
     }
@@ -50,7 +51,8 @@ val MaterialTheme.spacing: Spacing
     @Composable get() = Spacing()
 
 class Spacing(
+    val extraSmall: Dp = 8.dp,
     val small: Dp = 8.dp,
     val medium: Dp = 16.dp,
-    val large: Dp = 24.dp
+    val large: Dp = 24.dp,
 )

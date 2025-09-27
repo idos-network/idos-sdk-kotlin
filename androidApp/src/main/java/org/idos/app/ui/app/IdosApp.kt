@@ -60,7 +60,6 @@ import org.idos.app.ui.screens.wallets.WalletsScreen
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
-import timber.log.Timber
 
 @Composable
 fun LoadingScreen() {
