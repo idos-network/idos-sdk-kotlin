@@ -7,6 +7,7 @@ import androidx.security.crypto.EncryptedFile
 import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -48,15 +49,14 @@ class KeyManager(
 
     // SharedPreferences keys
     private val prefs: SharedPreferences by lazy {
-        context.getSharedPreferences("idos_wallet_prefs", Context.MODE_PRIVATE)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
-    private val keyAddress = "cached_address"
 
     init {
         scope.launch {
             try {
                 // Try to load from SharedPreferences first for faster UI
-                val cachedAddress = prefs.getString(keyAddress, "") ?: ""
+                val cachedAddress = prefs.getString(KEY_ADDRESS, "") ?: ""
                 if (cachedAddress.isNotEmpty()) {
                     _address.value = ConnectedAddress(cachedAddress)
                     Timber.d("Loaded cached address: $cachedAddress")
@@ -69,21 +69,21 @@ class KeyManager(
                     if (address != _address.value) {
                         _address.value = address
                         // Update cache
-                        prefs.edit { putString(keyAddress, address.address) }
+                        prefs.edit { putString(KEY_ADDRESS, address.address) }
                         Timber.d("Updated address from storage: $address")
                     }
                 } ?: run {
                     // Clear cache if no key is stored
                     if (_address.value !is NoAddress) {
                         _address.value = NoAddress
-                        prefs.edit { remove(keyAddress) }
+                        prefs.edit { remove(KEY_ADDRESS) }
                         Timber.d("Cleared address - no key found in storage")
                     }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load stored key")
                 // Clear cache on error
-                prefs.edit { remove(keyAddress) }
+                prefs.edit { remove(KEY_ADDRESS) }
                 _address.value = NoAddress
             }
         }
@@ -113,20 +113,20 @@ class KeyManager(
                 // Store the key securely
                 storeKey(key)
                 // cache it but do not trigger new state yet
-                prefs.edit { putString(keyAddress, address) }
+                prefs.edit { putString(KEY_ADDRESS, address) }
                 Timber.d("Generated and stored new key with address: $address")
                 address
             } catch (e: Exception) {
                 Timber.e(e, "Failed to generate key")
                 // Clear cache on error
-                prefs.edit { remove(keyAddress) }
+                prefs.edit { remove(KEY_ADDRESS) }
                 throw KeyGenerationException("Failed to generate key", e)
             }
         }
 
     suspend fun notifyAddress() {
         withContext(Dispatchers.IO) {
-            val address = prefs.getString(keyAddress, "") ?: ""
+            val address = prefs.getString(KEY_ADDRESS, "") ?: ""
             _address.value = ConnectedAddress(address)
         }
     }
@@ -138,8 +138,10 @@ class KeyManager(
      * @throws KeyStorageException If the key storage fails.
      */
     @Throws(KeyStorageException::class)
-    private fun storeKey(keyData: ByteArray) {
+    private suspend fun storeKey(keyData: ByteArray) {
         try {
+            Timber.d("Storing key to storage")
+//            return
             val keyFile = File(context.filesDir, KEY_FILE_NAME)
 
             val encryptedFile =
@@ -149,7 +151,8 @@ class KeyManager(
                         keyFile,
                         masterKey,
                         EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB,
-                    ).build()
+                    ).setKeysetAlias(MASTER_KEY_ALIAS)
+                    .build()
 
             encryptedFile.openFileOutput().use { outputStream ->
                 outputStream.write(keyData)
@@ -170,6 +173,7 @@ class KeyManager(
     suspend fun getStoredKey(): ByteArray? =
         withContext(Dispatchers.IO) {
             try {
+                Timber.d("Reading key from storage")
                 val keyFile = File(context.filesDir, KEY_FILE_NAME)
                 if (!keyFile.exists()) {
                     return@withContext null
@@ -182,7 +186,8 @@ class KeyManager(
                             keyFile,
                             masterKey,
                             EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB,
-                        ).build()
+                        ).setKeysetAlias(MASTER_KEY_ALIAS)
+                        .build()
 
                 ByteArrayOutputStream().use { outputStream ->
                     encryptedFile.openFileInput().use { inputStream ->
@@ -209,13 +214,13 @@ class KeyManager(
                 keyFile.delete()
             }
             // Clear the cached address
-            prefs.edit { remove(keyAddress) }
+            prefs.edit { remove(KEY_ADDRESS) }
             _address.value = NoAddress
             Timber.d("Cleared stored keys and cached address")
         } catch (e: Exception) {
             Timber.e(e, "Failed to clear stored keys")
             // Clear cache even if other operations fail
-            prefs.edit { remove(keyAddress) }
+            prefs.edit { remove(KEY_ADDRESS) }
             throw KeyStorageException("Failed to clear stored keys", e)
         }
     }
@@ -223,6 +228,8 @@ class KeyManager(
     companion object {
         private const val MASTER_KEY_ALIAS = "idos_secure_key_master"
         private const val KEY_FILE_NAME = "secure_key_data"
+        private const val KEY_ADDRESS = "cached_address"
+        private const val PREFS_NAME = "idos_key_manager"
     }
 }
 

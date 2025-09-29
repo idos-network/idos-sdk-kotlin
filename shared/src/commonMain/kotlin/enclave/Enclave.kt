@@ -1,20 +1,40 @@
 package org.idos.enclave
 
+import kotlinx.serialization.Serializable
+import org.idos.getCurrentTimeMillis
 import org.idos.kwil.rpc.UuidString
 
-data class PrivateEncryptionProfile(
-    val userId: String,
-    val password: String,
-    val keyPair: KeyPair,
+@Serializable
+data class KeyMetadata(
+    val userId: UuidString,
+    val expiredAt: Long,
+    val createdAt: Long = getCurrentTimeMillis(),
+    val lastUsedAt: Long = getCurrentTimeMillis(),
 )
+
+sealed class EnclaveError(
+    message: String,
+) : Exception(message)
+
+object KeyExpiredError : EnclaveError("Key expired")
+
+object NoKeyError : EnclaveError("No key present, generate first")
 
 // https://github.com/idos-network/idos-sdk-js/blob/main/packages/utils/src/enclave/local.ts
 class Enclave(
     private val encryption: Encryption,
-    var userId: UuidString,
-    var password: String,
+    private val storage: MetadataStorage,
 ) {
-    var encryptionProfile: PrivateEncryptionProfile? = null
+    suspend fun generateKey(
+        userId: UuidString,
+        password: String,
+        expiration: Long,
+    ) {
+        val now = getCurrentTimeMillis()
+        val meta = KeyMetadata(userId, now + expiration)
+        encryption.generateKey(userId, password)
+        storage.store(meta)
+    }
 
     /**
      * Decrypt credentials content
@@ -23,10 +43,10 @@ class Enclave(
         message: ByteArray,
         senderPublicKey: ByteArray,
     ): ByteArray {
-        val profile = this.key()
+        expirationCheck()
+
         return encryption.decrypt(
             message,
-            profile.keyPair,
             senderPublicKey,
         )
     }
@@ -34,21 +54,20 @@ class Enclave(
     suspend fun encrypt(
         message: ByteArray,
         receiverPublicKey: ByteArray,
-    ): Pair<ByteArray, ByteArray> = encryption.encrypt(message, receiverPublicKey)
+    ): Pair<ByteArray, ByteArray> {
+        expirationCheck()
+        return encryption.encrypt(message, receiverPublicKey)
+    }
 
-    private suspend fun key(): PrivateEncryptionProfile {
-        encryptionProfile?.let { return it }
+    private suspend fun expirationCheck() {
+        val meta = storage.get() ?: throw NoKeyError
 
-        val secretKey = Encryption.keyDerivation(password, userId.value)
-        val kp = encryption.keyPairFromSecretKey(secretKey)
+        if (meta.expiredAt < getCurrentTimeMillis()) {
+            encryption.deleteKey()
+            storage.store(meta.copy(expiredAt = 0)) // Mark as expired in storage
+            throw KeyExpiredError
+        }
 
-        this.encryptionProfile =
-            PrivateEncryptionProfile(
-                userId = userId.value,
-                password = password,
-                keyPair = kp,
-            )
-
-        return requireNotNull(encryptionProfile)
+        storage.store(meta.copy(lastUsedAt = getCurrentTimeMillis()))
     }
 }

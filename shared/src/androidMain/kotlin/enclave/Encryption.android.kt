@@ -1,7 +1,6 @@
 package org.idos.enclave
 
 import android.content.Context
-import android.security.keystore.KeyProperties
 import androidx.security.crypto.EncryptedFile
 import androidx.security.crypto.MasterKey
 import com.goterl.lazysodium.LazySodiumAndroid
@@ -9,9 +8,11 @@ import com.goterl.lazysodium.SodiumAndroid
 import com.goterl.lazysodium.interfaces.SecretBox
 import com.goterl.lazysodium.utils.Key
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import org.idos.kwil.rpc.UuidString
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.security.KeyStore
@@ -30,22 +31,14 @@ class AndroidEncryption(
     private val sodium = LazySodiumAndroid(SodiumAndroid())
     private val mutex = Mutex()
 
-    // Key aliases for Android Keystore
     private companion object {
-        private const val KEY_ALIAS = "idos_nacl_keypair"
-        private const val KEYSTORE_PROVIDER = "AndroidKeyStore"
-        private const val KEY_ALGORITHM = KeyProperties.KEY_ALGORITHM_AES
-        private const val KEY_SIZE = 256
-        private const val KEYSTORE_ALIAS = "idos_nacl_keystore"
-    }
-
-    private val keyStore: KeyStore by lazy {
-        KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
+        private const val MASTER_KEY_ALIAS = "idos_enclave_master"
+        private const val KEY_FILENAME = "encrypted_key"
     }
 
     private val masterKey: MasterKey by lazy {
         MasterKey
-            .Builder(context)
+            .Builder(context, MASTER_KEY_ALIAS)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .setRequestStrongBoxBacked(true) // Use StrongBox if available
             .build()
@@ -63,8 +56,9 @@ class AndroidEncryption(
                             SecureRandom().nextBytes(bytes)
                         }
 
-                    // Generate ephemeral key pair for this encryption
-                    val ephKeyPair = sodium.cryptoBoxKeypair()
+                    val key = retrieveSecretKey()
+                    checkNotNull(key) { "secret key retrieval failed" }
+                    val pubkey = sodium.cryptoScalarMultBase(Key.fromBytes(key)).asBytes
 
                     // Encrypt the message
                     val ciphertext = ByteArray(message.size + SecretBox.MACBYTES)
@@ -75,16 +69,15 @@ class AndroidEncryption(
                             message.size.toLong(),
                             nonce,
                             receiverPublicKey,
-                            ephKeyPair.secretKey.asBytes,
+                            key,
                         )
+                    key.fill(0)
 
-                    if (!success) {
-                        throw IllegalStateException("Encryption failed")
-                    }
+                    check(success) { "Encryption failed" }
 
                     // Combine nonce and ciphertext
                     val fullMessage = nonce + ciphertext
-                    fullMessage to ephKeyPair.publicKey.asBytes
+                    fullMessage to pubkey
                 } catch (e: Exception) {
                     throw IllegalStateException("Encryption failed", e)
                 }
@@ -93,15 +86,15 @@ class AndroidEncryption(
 
     override suspend fun decrypt(
         fullMessage: ByteArray,
-        keyPair: KeyPair,
         senderPublicKey: ByteArray,
     ): ByteArray =
         withContext(Dispatchers.IO) {
             mutex.withLock {
                 try {
-                    if (fullMessage.size <= SecretBox.NONCEBYTES) {
-                        throw IllegalArgumentException("Invalid message format")
-                    }
+                    require(fullMessage.size > SecretBox.NONCEBYTES) { "Invalid message format" }
+
+                    val key = retrieveSecretKey()
+                    checkNotNull(key) { "No secret key found" }
 
                     val nonce = fullMessage.copyOfRange(0, SecretBox.NONCEBYTES)
                     val ciphertext = fullMessage.copyOfRange(SecretBox.NONCEBYTES, fullMessage.size)
@@ -114,12 +107,11 @@ class AndroidEncryption(
                             ciphertext.size.toLong(),
                             nonce,
                             senderPublicKey,
-                            keyPair.secretKey,
+                            key,
                         )
+                    key.fill(0)
 
-                    if (!success) {
-                        throw IllegalStateException("Decryption failed")
-                    }
+                    check(success) { "Decryption failed" }
 
                     plaintext
                 } catch (e: Exception) {
@@ -128,78 +120,80 @@ class AndroidEncryption(
             }
         }
 
-    override suspend fun generateKeyPair(): KeyPair {
-        val keyPair = sodium.cryptoBoxKeypair()
-
-        // Store the secret key securely
-        storeSecretKey(keyPair.secretKey.asBytes)
-
-        return object : KeyPair {
-            override val publicKey: ByteArray = keyPair.publicKey.asBytes
-            override val secretKey: ByteArray = keyPair.secretKey.asBytes
+    override suspend fun generateKey(
+        userId: UuidString,
+        password: String,
+    ) {
+        withContext(Dispatchers.IO) {
+            val secretKey = keyDerivation(password, userId.value)
+            storeSecretKey(secretKey)
+            secretKey.fill(0)
         }
     }
 
-    override suspend fun keyPairFromSecretKey(secretKey: ByteArray): KeyPair {
-        // Generate a new key pair and return it with the provided secret key
-        val pubkey = sodium.cryptoScalarMultBase(Key.fromBytes(secretKey))
-        return object : KeyPair {
-            override val publicKey: ByteArray = pubkey.asBytes
-            override val secretKey: ByteArray = secretKey
-        }
-    }
-
-    private suspend fun storeSecretKey(secretKey: ByteArray) {
-        try {
-            // Store the secret key in Android's encrypted file storage
-            val file = File("${android.os.Environment.getDataDirectory()}/encrypted_nacl_key")
-
-            val encryptedFile =
-                EncryptedFile
-                    .Builder(
-                        context,
-                        file,
-                        masterKey,
-                        EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB,
-                    ).build()
-
-            encryptedFile.openFileOutput().use { outputStream ->
-                outputStream.write(secretKey)
-                outputStream.flush()
-            }
-        } catch (e: Exception) {
-            throw IllegalStateException("Failed to store secret key", e)
-        }
-    }
-
-    private suspend fun retrieveSecretKey(): ByteArray? {
-        return try {
-            val file = File("${android.os.Environment.getDataDirectory()}/encrypted_nacl_key")
-            if (!file.exists()) return null
-
-            val encryptedFile =
-                EncryptedFile
-                    .Builder(
-                        context,
-                        file,
-                        masterKey,
-                        EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB,
-                    ).build()
-
-            ByteArrayOutputStream().use { outputStream ->
-                encryptedFile.openFileInput().use { inputStream ->
-                    inputStream.copyTo(outputStream)
+    override suspend fun deleteKey() {
+        withContext(Dispatchers.IO) {
+            try {
+                val file = File(context.filesDir, KEY_FILENAME)
+                if (file.exists()) {
+                    file.delete()
                 }
-                outputStream.toByteArray()
+            } catch (e: Exception) {
+                null
             }
-        } catch (e: Exception) {
-            null
         }
     }
-}
 
-// Platform-specific implementation
-actual fun getEncryption(context: Any?): Encryption {
-    require(context is Context) { "Android Encryption requires an Android Context" }
-    return AndroidEncryption(context)
+    private suspend fun storeSecretKey(secretKey: ByteArray) =
+        withContext(Dispatchers.IO) {
+            try {
+                // Store the secret key in Android's encrypted file storage
+                val file = File(context.filesDir, KEY_FILENAME)
+
+                val encryptedFile =
+                    EncryptedFile
+                        .Builder(
+                            context,
+                            file,
+                            masterKey,
+                            EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB,
+                        ).setKeysetAlias(MASTER_KEY_ALIAS)
+                        .build()
+
+                encryptedFile.openFileOutput().use { outputStream ->
+                    outputStream.write(secretKey)
+                    outputStream.flush()
+                }
+                secretKey.fill(0)
+            } catch (e: Exception) {
+                throw IllegalStateException("Failed to store secret key", e)
+            }
+        }
+
+    private suspend fun retrieveSecretKey(): ByteArray? =
+        withContext(Dispatchers.IO) {
+            try {
+                val file = File(context.filesDir, KEY_FILENAME)
+                if (!file.exists()) throw NoKeyError
+
+                val encryptedFile =
+                    EncryptedFile
+                        .Builder(
+                            context,
+                            file,
+                            masterKey,
+                            EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB,
+                        ).setKeysetAlias(MASTER_KEY_ALIAS)
+                        .build()
+
+                ByteArrayOutputStream().use { outputStream ->
+                    encryptedFile.openFileInput().use { inputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                    outputStream.toByteArray()
+                }
+            } catch (e: Exception) {
+                throw IllegalStateException("Failed to retrieve secret key", e)
+            }
+        }
 }

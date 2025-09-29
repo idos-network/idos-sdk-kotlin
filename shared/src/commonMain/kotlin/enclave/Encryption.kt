@@ -1,5 +1,7 @@
 package org.idos.enclave
 
+import org.idos.kwil.rpc.UuidString
+
 // https://github.com/idos-network/idos-sdk-js/blob/main/packages/utils/src/encryption/index.ts
 abstract class Encryption {
     companion object {
@@ -16,20 +18,13 @@ abstract class Encryption {
 
     abstract suspend fun decrypt(
         fullMessage: ByteArray,
-        keyPair: KeyPair,
         senderPublicKey: ByteArray,
     ): ByteArray
 
-    abstract suspend fun generateKeyPair(): KeyPair
+    abstract suspend fun generateKey(
+        userId: UuidString,
+        password: String,
+    )
 
-    abstract suspend fun keyPairFromSecretKey(secretKey: ByteArray): KeyPair
+    abstract suspend fun deleteKey()
 }
-
-// Common interface for KeyPair to abstract away platform-specific implementations
-interface KeyPair {
-    val publicKey: ByteArray
-    val secretKey: ByteArray
-}
-
-// Get platform-specific encryption implementation
-expect fun getEncryption(context: Any? = null): Encryption

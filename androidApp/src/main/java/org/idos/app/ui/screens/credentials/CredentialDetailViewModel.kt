@@ -18,6 +18,8 @@ import org.idos.kwil.rpc.Base64String
 import org.idos.kwil.rpc.UuidString
 import org.idos.kwil.serialization.toByteArray
 import timber.log.Timber
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 
 sealed class CredentialDetailState {
     data object Loading : CredentialDetailState()
@@ -48,7 +50,7 @@ class CredentialDetailViewModel(
     private val credentialsRepository: CredentialsRepository,
     private val navigationManager: NavigationManager,
     private val dataProvider: DataProvider,
-    private val encryption: AndroidEncryption,
+    private val enclave: Enclave,
     savedStateHandle: SavedStateHandle,
 ) : BaseViewModel<CredentialDetailState, CredentialDetailEvent>() {
     private val credentialId: UuidString =
@@ -84,7 +86,8 @@ class CredentialDetailViewModel(
 
     private suspend fun decryptCredential(data: CredentialDetail): String {
         val user = dataProvider.getUser()
-        val enclave = Enclave(encryption, user.id, "heslo")
+        // todo add dialog to re-generate
+        enclave.generateKey(user.id, "heslo", 30.seconds.inWholeMilliseconds)
         val content = Base64String(data.content).toByteArray()
         val pubkey = Base64String(data.encryptorPublicKey).toByteArray()
         val raw = enclave.decrypt(content, pubkey)

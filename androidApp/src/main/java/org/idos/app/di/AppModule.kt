@@ -18,6 +18,10 @@ import org.idos.app.ui.screens.mnemonic.MnemonicViewModel
 import org.idos.app.ui.screens.settings.SettingsViewModel
 import org.idos.app.ui.screens.wallets.WalletsViewModel
 import org.idos.enclave.AndroidEncryption
+import org.idos.enclave.AndroidMetadataStorage
+import org.idos.enclave.Enclave
+import org.idos.enclave.Encryption
+import org.idos.enclave.MetadataStorage
 import org.idos.kwil.rpc.UuidString
 import org.idos.kwil.signer.BaseSigner
 import org.koin.android.ext.koin.androidContext
@@ -64,9 +68,11 @@ val navigationModule =
 
 val securityModule =
     module {
-        single { KeyManager(androidContext()) }
-        single { AndroidEncryption(androidContext()) }
+        single<Encryption> { AndroidEncryption(androidContext()) }
+        single<MetadataStorage> { AndroidMetadataStorage(androidContext()) }
+        single { Enclave(get(), get()) }
         single<BaseSigner> { EthSigner(get()) }
+        single { KeyManager(androidContext()) }
     }
 
 val appModule =

@@ -1,8 +1,11 @@
 package org.idos.app.ui.screens.base
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -21,27 +24,26 @@ fun BaseScreen(
     snackbarHostState: SnackbarHostState? = null,
     content: @Composable () -> Unit,
 ) {
-    Surface(
-        color = MaterialTheme.colorScheme.background,
-        modifier = modifier.fillMaxSize(),
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Scaffold(
-                snackbarHost = {
-                    if (snackbarHostState != null) {
-                        SnackbarHost(hostState = snackbarHostState)
-                    }
-                },
-                content = { padding ->
-                    Box(
-                        modifier =
-                            Modifier
-                                .padding(padding),
-                    ) {
-                        content()
-                    }
-                },
-            )
+    Scaffold(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.systemBars),
+        containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = {
+            if (snackbarHostState != null) {
+                SnackbarHost(hostState = snackbarHostState)
+            }
+        },
+        contentWindowInsets = WindowInsets(0),
+    ) { padding ->
+        Box(
+            modifier =
+                Modifier
+                    .padding(padding)
+                    .fillMaxSize(),
+        ) {
+            content()
         }
     }
 }
