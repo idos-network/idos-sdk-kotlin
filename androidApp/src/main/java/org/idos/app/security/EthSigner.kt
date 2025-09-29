@@ -1,5 +1,6 @@
 package org.idos.app.security
 
+import org.idos.app.data.StorageManager
 import org.idos.kwil.rpc.HexString
 import org.kethereum.bip32.toKey
 import org.kethereum.bip39.model.MnemonicWords
@@ -12,11 +13,12 @@ import org.kethereum.model.PrivateKey
 
 class EthSigner(
     private val keyManager: KeyManager,
+    private val storageManager: StorageManager,
 ) : org.idos.kwil.signer.EthSigner() {
     override fun getIdentifier(): HexString {
-        val ethPubKey = (keyManager.address.value as? ConnectedAddress)?.address ?: ""
-        // maybe throw if we don't have the key ?
-        return HexString.withoutPrefix(ethPubKey)
+        val address = storageManager.getStoredWallet()
+        requireNotNull(address)
+        return address
     }
 
     override suspend fun sign(msg: ByteArray): ByteArray =
@@ -33,17 +35,12 @@ class EthSigner(
         } ?: byteArrayOf()
 
     companion object {
-        fun String.mnemonicToKeypair(derivationPath: String = "m/44'/60'/0'/0/47"): Pair<ByteArray, String> {
+        fun String.mnemonicToKeypair(derivationPath: String = "m/44'/60'/0'/0/47"): ByteArray {
             val mnemonic = MnemonicWords(this)
             val seed = mnemonic.toSeed("")
             val key = seed.toKey(derivationPath)
-            return Pair(
-                key.keyPair.privateKey.key
-                    .toByteArray(),
-                key.keyPair.publicKey
-                    .toAddress()
-                    .hex,
-            )
+            return key.keyPair.privateKey.key
+                .toByteArray()
         }
 
         fun ByteArray.privateToAddress() =

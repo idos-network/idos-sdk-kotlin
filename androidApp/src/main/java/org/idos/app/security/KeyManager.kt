@@ -1,94 +1,41 @@
 package org.idos.app.security
 
 import android.content.Context
-import android.content.SharedPreferences
-import androidx.core.content.edit
 import androidx.security.crypto.EncryptedFile
 import androidx.security.crypto.MasterKey
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.idos.app.security.EthSigner.Companion.privateToAddress
-import org.koin.core.component.KoinComponent
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.security.KeyStore
 
 /**
- * A secure key manager that handles the generation, storage, and retrieval of cryptographic keys
+ * Exception thrown when there is an error during key generation.
+ */
+class KeyGenerationException(
+    message: String,
+    cause: Throwable? = null,
+) : Exception(message, cause)
+
+/**
+ * Exception thrown when there is an error during key storage operations.
+ */
+class KeyStorageException(
+    message: String,
+    cause: Throwable? = null,
+) : Exception(message, cause)
+
+/**
+ * A secure key manager that handles only the generation, storage, and retrieval of cryptographic keys
  * using Android's StrongBox hardware security module when available.
  *
- * This class provides a simple interface for generating secure keys, storing them in an
- * encrypted file, and retrieving them when needed. All operations are performed asynchronously
- * using coroutines.
- *
- * @property context The application context used for file operations and key storage.
+ * This class handles ONLY key operations - no address caching or user data.
  */
-
-sealed class Address
-
-data class ConnectedAddress(
-    val address: String,
-) : Address()
-
-object NoAddress : Address()
-
-object LoadingAddress : Address()
-
 class KeyManager(
     private val context: Context,
-) : KoinComponent {
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
-    private val _address = MutableStateFlow<Address>(LoadingAddress)
-    val address = _address.asStateFlow()
-
-    // SharedPreferences keys
-    private val prefs: SharedPreferences by lazy {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    }
-
-    init {
-        scope.launch {
-            try {
-                // Try to load from SharedPreferences first for faster UI
-                val cachedAddress = prefs.getString(KEY_ADDRESS, "") ?: ""
-                if (cachedAddress.isNotEmpty()) {
-                    _address.value = ConnectedAddress(cachedAddress)
-                    Timber.d("Loaded cached address: $cachedAddress")
-                }
-
-                // Then verify with the actual key storage
-                getStoredKey()?.let {
-                    val address = ConnectedAddress(it.privateToAddress())
-                    it.fill(0)
-                    if (address != _address.value) {
-                        _address.value = address
-                        // Update cache
-                        prefs.edit { putString(KEY_ADDRESS, address.address) }
-                        Timber.d("Updated address from storage: $address")
-                    }
-                } ?: run {
-                    // Clear cache if no key is stored
-                    if (_address.value !is NoAddress) {
-                        _address.value = NoAddress
-                        prefs.edit { remove(KEY_ADDRESS) }
-                        Timber.d("Cleared address - no key found in storage")
-                    }
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load stored key")
-                // Clear cache on error
-                prefs.edit { remove(KEY_ADDRESS) }
-                _address.value = NoAddress
-            }
-        }
-    }
-
+) {
+    // Master key for encrypted storage
     private val masterKey: MasterKey by lazy {
         MasterKey
             .Builder(context, MASTER_KEY_ALIAS)
@@ -99,49 +46,29 @@ class KeyManager(
 
     /**
      * Generates a new secure key and stores it in the encrypted storage.
-     *
-     * @return The generated key as a byte array.
-     * @throws KeyGenerationException If the key generation or storage fails.
+     * Returns the address derived from the key.
      */
     @Throws(KeyGenerationException::class)
-    suspend fun generateAndStoreKey(
-        key: ByteArray,
-        address: String,
-    ): String =
+    suspend fun generateAndStoreKey(key: ByteArray) =
         withContext(Dispatchers.IO) {
             try {
                 // Store the key securely
                 storeKey(key)
-                // cache it but do not trigger new state yet
-                prefs.edit { putString(KEY_ADDRESS, address) }
-                Timber.d("Generated and stored new key with address: $address")
-                address
+
+                Timber.d("Generated and stored new key with address")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to generate key")
-                // Clear cache on error
-                prefs.edit { remove(KEY_ADDRESS) }
                 throw KeyGenerationException("Failed to generate key", e)
             }
         }
 
-    suspend fun notifyAddress() {
-        withContext(Dispatchers.IO) {
-            val address = prefs.getString(KEY_ADDRESS, "") ?: ""
-            _address.value = ConnectedAddress(address)
-        }
-    }
-
     /**
      * Stores the provided key data in an encrypted file.
-     *
-     * @param keyData The key data to store.
-     * @throws KeyStorageException If the key storage fails.
      */
     @Throws(KeyStorageException::class)
-    private suspend fun storeKey(keyData: ByteArray) {
+    private fun storeKey(keyData: ByteArray) {
         try {
-            Timber.d("Storing key to storage")
-//            return
+            Timber.d("Storing key to encrypted storage")
             val keyFile = File(context.filesDir, KEY_FILE_NAME)
 
             val encryptedFile =
@@ -167,13 +94,12 @@ class KeyManager(
 
     /**
      * Retrieves the stored key from the encrypted storage.
-     *
-     * @return The stored key as a byte array, or null if no key is stored.
+     * Used by EthSigner for signing operations.
      */
     suspend fun getStoredKey(): ByteArray? =
         withContext(Dispatchers.IO) {
             try {
-                Timber.d("Reading key from storage")
+                Timber.d("Reading key from encrypted storage")
                 val keyFile = File(context.filesDir, KEY_FILE_NAME)
                 if (!keyFile.exists()) {
                     return@withContext null
@@ -203,8 +129,6 @@ class KeyManager(
 
     /**
      * Clears the stored key from the encrypted storage.
-     *
-     * @throws KeyStorageException If the key deletion fails.
      */
     @Throws(KeyStorageException::class)
     fun clearStoredKeys() {
@@ -213,44 +137,24 @@ class KeyManager(
             if (keyFile.exists()) {
                 keyFile.delete()
             }
-            // Clear the cached address
-            prefs.edit { remove(KEY_ADDRESS) }
-            _address.value = NoAddress
-            Timber.d("Cleared stored keys and cached address")
+            Timber.d("Cleared stored keys")
         } catch (e: Exception) {
             Timber.e(e, "Failed to clear stored keys")
-            // Clear cache even if other operations fail
-            prefs.edit { remove(KEY_ADDRESS) }
             throw KeyStorageException("Failed to clear stored keys", e)
         }
     }
 
+    /**
+     * Checks if a key exists in storage
+     */
+    suspend fun hasStoredKey(): Boolean =
+        withContext(Dispatchers.IO) {
+            val keyFile = File(context.filesDir, KEY_FILE_NAME)
+            keyFile.exists()
+        }
+
     companion object {
         private const val MASTER_KEY_ALIAS = "idos_secure_key_master"
         private const val KEY_FILE_NAME = "secure_key_data"
-        private const val KEY_ADDRESS = "cached_address"
-        private const val PREFS_NAME = "idos_key_manager"
     }
 }
-
-/**
- * Exception thrown when there is an error during key generation.
- *
- * @property message The detail message
- * @property cause The cause of this exception
- */
-class KeyGenerationException(
-    message: String,
-    cause: Throwable? = null,
-) : Exception(message, cause)
-
-/**
- * Exception thrown when there is an error during key storage operations.
- *
- * @property message The detail message
- * @property cause The cause of this exception
- */
-class KeyStorageException(
-    message: String,
-    cause: Throwable? = null,
-) : Exception(message, cause)

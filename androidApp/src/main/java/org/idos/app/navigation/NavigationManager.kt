@@ -11,6 +11,10 @@ import kotlinx.coroutines.flow.collect
 import org.koin.core.component.KoinComponent
 import timber.log.Timber
 
+enum class Screen(val route: String) {
+    Mnemonic("mnemonic")
+}
+
 @Stable
 class NavigationManager : KoinComponent {
     private val _navigationCommands = MutableSharedFlow<NavigationCommand>(extraBufferCapacity = 10)
@@ -18,6 +22,18 @@ class NavigationManager : KoinComponent {
 
     suspend fun navigate(command: NavigationCommand) {
         _navigationCommands.emit(command)
+    }
+
+    suspend fun navigateTo(route: String, builder: NavOptionsBuilder.() -> Unit = {}) {
+        navigate(NavigationCommand.NavigateToRoute(route, builder))
+    }
+
+    suspend fun navigateTo(screen: Screen, builder: NavOptionsBuilder.() -> Unit = {}) {
+        navigate(NavigationCommand.NavigateToRoute(screen.route, builder))
+    }
+
+    suspend fun navigateUp() {
+        navigate(NavigationCommand.NavigateUp)
     }
 
     @Composable

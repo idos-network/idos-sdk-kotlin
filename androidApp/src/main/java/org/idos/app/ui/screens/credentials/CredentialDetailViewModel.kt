@@ -52,7 +52,7 @@ class CredentialDetailViewModel(
     dataProvider: DataProvider,
     enclave: Enclave,
     savedStateHandle: SavedStateHandle,
-) : BaseEnclaveViewModel<CredentialDetailState, CredentialDetailEvent>(enclave, dataProvider) {
+) : BaseEnclaveViewModel<CredentialDetailState, CredentialDetailEvent>(enclave, dataProvider, navigationManager) {
     val credentialId: UuidString =
         requireNotNull(
             savedStateHandle.get<String>(NavRoute.CredentialDetail.CREDENTIAL_ID_ARG),

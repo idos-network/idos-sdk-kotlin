@@ -5,6 +5,8 @@ import org.idos.kwil.actions.getCredentialOwned
 import org.idos.kwil.actions.getCredentials
 import org.idos.kwil.actions.getUser
 import org.idos.kwil.actions.getWallets
+import org.idos.kwil.actions.hasUserProfile
+import org.idos.kwil.rpc.HexString
 import org.idos.kwil.rpc.UuidString
 import org.idos.kwil.signer.BaseSigner
 
@@ -22,4 +24,6 @@ class DataProvider(
     suspend fun getCredential(id: UuidString) = client.getCredentialOwned(id)
 
     suspend fun getUser() = client.getUser()
+
+    suspend fun hasUserProfile(address: HexString) = client.hasUserProfile(address.prefixedValue)
 }

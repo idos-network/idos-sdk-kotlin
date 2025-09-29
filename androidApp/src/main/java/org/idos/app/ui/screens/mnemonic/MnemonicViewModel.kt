@@ -3,6 +3,8 @@ package org.idos.app.ui.screens.mnemonic
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import org.idos.app.BuildConfig
+import org.idos.app.data.repository.NoProfileException
+import org.idos.app.data.repository.UserRepository
 import org.idos.app.security.EthSigner.Companion.mnemonicToKeypair
 import org.idos.app.security.KeyManager
 import org.idos.app.ui.screens.base.BaseViewModel
@@ -39,6 +41,7 @@ data class MnemonicState(
 
 class MnemonicViewModel(
     private val keyManager: KeyManager,
+    private val userRepository: UserRepository,
 ) : BaseViewModel<MnemonicState, MnemonicEvent>() {
     override fun initialState(): MnemonicState {
         val initialWords =
@@ -97,16 +100,30 @@ class MnemonicViewModel(
         viewModelScope.launch {
             try {
                 updateState { copy(isLoading = true, error = null) }
+
+                // Step 1: Generate mnemonic and derive key pair
                 val words = currentState.words.joinToString(" ")
-                val (key, address) = words.mnemonicToKeypair()
-                val pubkey = keyManager.generateAndStoreKey(key, address)
-                key.fill(0)
-                Timber.d("Generated wallet - Public Key: $pubkey")
+                val key = words.mnemonicToKeypair()
+
+                // Step 2: Store key in KeyManager
+                keyManager.generateAndStoreKey(key)
+                key.fill(0) // Clear key from memory
+                Timber.d("Generated wallet")
+
+                // Step 3: Use UserRepository to fetch profile and store combined data
 
                 updateState {
                     copy(
                         isLoading = false,
                         isSuccess = true,
+                    )
+                }
+            } catch (e: NoProfileException) {
+                Timber.w(e, "User profile does not exist")
+                updateState {
+                    copy(
+                        isLoading = false,
+                        error = "Profile not found. Please create your profile first.",
                     )
                 }
             } catch (e: Exception) {
@@ -122,7 +139,9 @@ class MnemonicViewModel(
     }
 
     private fun resetSuccess() {
-        updateState { copy(isSuccess = false) }
-        viewModelScope.launch { keyManager.notifyAddress() }
+        viewModelScope.launch {
+            updateState { copy(isSuccess = false) }
+            userRepository.fetchAndStoreUser()
+        }
     }
 }

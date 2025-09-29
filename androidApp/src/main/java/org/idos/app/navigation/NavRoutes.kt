@@ -18,12 +18,8 @@ sealed class NavRoute(
 
         data object Settings : DrawerRoute("settings", "Settings")
 
-        data object Mnemonic : DrawerRoute("mnemonic", "Import Mnemonic")
-
         companion object {
-            val login by lazy { listOf(Settings, Mnemonic) }
-            val connected by lazy { listOf(Credentials, Wallets, Settings) }
-            val all by lazy { listOf(Credentials, Wallets, Settings, Mnemonic) }
+            val all by lazy { listOf(Credentials, Wallets, Settings) }
         }
     }
 

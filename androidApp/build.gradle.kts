@@ -55,6 +55,7 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            buildConfigField("String", "MNEMONIC_WORDS", "\"\"")
         }
         debug {
             val devMnemonic = envProps.getProperty("MNEMONIC_WORDS") ?: ""
@@ -99,6 +100,9 @@ dependencies {
     // Security
     implementation(libs.security.crypto)
     implementation(libs.security.crypto.ktx)
+
+    // Splash Screen
+    implementation("androidx.core:core-splashscreen:1.0.1")
 
     implementation(libs.kethereum.model)
     implementation(libs.kethereum.bip32)

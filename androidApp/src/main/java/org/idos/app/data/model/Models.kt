@@ -1,5 +1,7 @@
 package org.idos.app.data.model
 
+import kotlinx.serialization.Serializable
+import org.idos.kwil.rpc.HexString
 import org.idos.kwil.rpc.UuidString
 
 data class Credential(
@@ -24,4 +26,11 @@ data class CredentialDetail(
 data class Wallet(
     val address: String,
     val network: String,
+)
+
+@Serializable
+data class UserModel(
+    val id: UuidString,
+    val walletAddress: HexString,
+    val lastUpdated: Long = System.currentTimeMillis(),
 )

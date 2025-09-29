@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 import org.idos.app.data.DataProvider
+import org.idos.app.navigation.NavigationCommand
+import org.idos.app.navigation.NavigationManager
 import org.idos.enclave.*
 import timber.log.Timber
 import kotlin.random.Random
@@ -17,6 +19,7 @@ import kotlin.time.Duration
 abstract class BaseEnclaveViewModel<State : Any, Event>(
     private val enclave: Enclave,
     private val dataProvider: DataProvider,
+    private val navigationManager: NavigationManager,
 ) : BaseViewModel<State, Event>() {
     private val _enclaveUiState = MutableStateFlow<EnclaveUiState>(EnclaveUiState.Loading)
     val enclaveUiState: StateFlow<EnclaveUiState> = _enclaveUiState.asStateFlow()
@@ -67,7 +70,7 @@ abstract class BaseEnclaveViewModel<State : Any, Event>(
         _enclaveUiState.value = EnclaveUiState.Loading
         viewModelScope.launch {
             try {
-                require(Random.nextBoolean()) { "test" }
+//                require(Random.nextBoolean()) { "test" }
                 // Check if enclave has a valid key without performing encryption
                 enclave.hasValidKey()
 
@@ -116,6 +119,14 @@ abstract class BaseEnclaveViewModel<State : Any, Event>(
      * Override this in child ViewModels to handle the dismissal appropriately
      */
     protected open fun onKeyGenerationDismissed() {
-        _enclaveUiState.value = EnclaveUiState.Error("Encryption key is required to continue", canRetry = true)
+        viewModelScope.launch {
+            val err = EnclaveUiState.Error("Encryption key is required to continue", canRetry = true)
+            if (_enclaveUiState.value != err) {
+                _enclaveUiState.value = err
+            } else {
+                _enclaveUiState.value = EnclaveUiState.Loading
+                navigationManager.navigate(NavigationCommand.NavigateUp)
+            }
+        }
     }
 }

@@ -152,6 +152,7 @@ private fun EnclaveUiOverlay(
 
         is EnclaveUiState.Loading,
         is EnclaveUiState.Available,
+        is EnclaveUiState.Close,
         -> {
             // No overlay needed
         }

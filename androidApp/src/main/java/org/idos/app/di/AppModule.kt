@@ -1,19 +1,23 @@
 package org.idos.app.di
 
-import `EnclaveFactory.android`
 import androidx.lifecycle.SavedStateHandle
+import kotlinx.serialization.json.Json
 import org.idos.app.data.ApiClient
 import org.idos.app.data.DataProvider
+import org.idos.app.data.StorageManager
 import org.idos.app.data.repository.CredentialsRepository
 import org.idos.app.data.repository.CredentialsRepositoryImpl
+import org.idos.app.data.repository.UserRepository
+import org.idos.app.data.repository.UserRepositoryImpl
 import org.idos.app.data.repository.WalletRepository
 import org.idos.app.data.repository.WalletRepositoryImpl
 import org.idos.app.navigation.NavigationManager
 import org.idos.app.security.EthSigner
 import org.idos.app.security.KeyManager
-import org.idos.app.ui.app.IdosAppViewModel
+import org.idos.app.ui.dashboard.DashboardViewModel
 import org.idos.app.ui.screens.credentials.CredentialDetailViewModel
 import org.idos.app.ui.screens.credentials.CredentialsViewModel
+import org.idos.app.ui.screens.login.LoginViewModel
 import org.idos.app.ui.screens.mnemonic.MnemonicViewModel
 import org.idos.app.ui.screens.settings.SettingsViewModel
 import org.idos.app.ui.screens.wallets.WalletsViewModel
@@ -22,7 +26,6 @@ import org.idos.enclave.AndroidMetadataStorage
 import org.idos.enclave.Enclave
 import org.idos.enclave.Encryption
 import org.idos.enclave.MetadataStorage
-import org.idos.kwil.rpc.UuidString
 import org.idos.kwil.signer.BaseSigner
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -33,23 +36,27 @@ const val STAGING_CHAIN_ID = "idos-staging"
 
 val networkModule =
     module {
+        single { Json { ignoreUnknownKeys = true } }
         single { ApiClient() }
         single { DataProvider(STAGING_URL, get(), STAGING_CHAIN_ID) }
+        single { StorageManager(androidContext(), get()) }
     }
 
 val repositoryModule =
     module {
         single<CredentialsRepository> { CredentialsRepositoryImpl(get()) }
         single<WalletRepository> { WalletRepositoryImpl(get()) }
+        single<UserRepository> { UserRepositoryImpl(get(), get(), get()) }
     }
 
 val viewModelModule =
     module {
-        viewModel { IdosAppViewModel(get()) }
+        viewModel { DashboardViewModel(get()) }
+        viewModel { LoginViewModel(get(), get()) }
         viewModel { CredentialsViewModel(get(), get()) }
         viewModel { WalletsViewModel(get()) }
         viewModel { SettingsViewModel() }
-        viewModel { MnemonicViewModel(get()) }
+        viewModel { MnemonicViewModel(get(), get()) }
         viewModel { (savedStateHandle: SavedStateHandle) ->
             CredentialDetailViewModel(
                 credentialsRepository = get(),
@@ -71,8 +78,8 @@ val securityModule =
         single<Encryption> { AndroidEncryption(androidContext()) }
         single<MetadataStorage> { AndroidMetadataStorage(androidContext()) }
         single { Enclave(get(), get()) }
-        single<BaseSigner> { EthSigner(get()) }
         single { KeyManager(androidContext()) }
+        single<BaseSigner> { EthSigner(get(), get()) }
     }
 
 val appModule =

@@ -8,6 +8,8 @@ import kotlin.time.Duration.Companion.seconds
 sealed class EnclaveUiState {
     data object Loading : EnclaveUiState()
 
+    data object Close : EnclaveUiState()
+
     data class Available(
         val enclave: Enclave,
     ) : EnclaveUiState()
