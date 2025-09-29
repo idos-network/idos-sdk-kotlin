@@ -37,6 +37,10 @@ class AndroidMetadataStorage(
         }
     }
 
+    override suspend fun delete() {
+        prefs.edit().remove(KEY_METADATA).apply()
+    }
+
     companion object {
         private const val KEY_METADATA = "key_metadata"
     }

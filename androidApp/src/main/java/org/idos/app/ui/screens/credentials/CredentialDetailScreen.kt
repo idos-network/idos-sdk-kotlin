@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -26,7 +27,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -38,6 +41,9 @@ import androidx.compose.ui.unit.dp
 import kotlinx.serialization.json.*
 import org.idos.app.data.model.CredentialDetail
 import org.idos.app.ui.screens.base.BaseScreen
+import org.idos.app.ui.screens.base.EnclaveEvent
+import org.idos.app.ui.screens.base.EnclaveUiState
+import org.idos.app.ui.screens.base.KeyGenerationDialog
 import org.idos.app.ui.screens.base.spacing
 import timber.log.Timber
 
@@ -45,39 +51,109 @@ import timber.log.Timber
 @Composable
 fun CredentialDetailScreen(viewModel: CredentialDetailViewModel) {
     val state by viewModel.state.collectAsState()
+    val enclaveUiState by viewModel.enclaveUiState.collectAsState()
 
     BaseScreen {
-        AnimatedContent(
-            targetState = state,
-            transitionSpec = {
-                fadeIn(animationSpec = tween(300)) togetherWith
-                    fadeOut(animationSpec = tween(150))
-            },
-        ) {
-            when (it) {
-                is CredentialDetailState.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-
-                is CredentialDetailState.Success -> {
-                    CredentialDetailContent(
-                        credential = it.credential,
-                        decryptedContent = it.decryptedContent,
-                    )
-                }
-
-                is CredentialDetailState.Error -> {
-                    ErrorState(
-                        message = it.message,
-                        onRetry = { viewModel.onEvent(CredentialDetailEvent.LoadCredential) },
-                    )
+        when (val it = state) {
+            is CredentialDetailState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
                 }
             }
+
+            is CredentialDetailState.Success -> {
+                CredentialDetailContent(
+                    credential = it.credential,
+                    decryptedContent = it.decryptedContent,
+                )
+            }
+
+            is CredentialDetailState.Error -> {
+                ErrorState(
+                    message = it.message,
+                    onRetry = { viewModel.onEvent(CredentialDetailEvent.Retry) },
+                    onReset = { viewModel.onEvent(CredentialDetailEvent.ResetKey) },
+                )
+            }
+        }
+    }
+
+    // Enclave UI overlay (key generation dialog, etc.)
+    EnclaveUiOverlay(
+        enclaveUiState = enclaveUiState,
+        onEnclaveEvent = viewModel::onEnclaveEvent,
+    )
+}
+
+@Composable
+private fun EnclaveUiOverlay(
+    enclaveUiState: EnclaveUiState,
+    onEnclaveEvent: (EnclaveEvent) -> Unit,
+) {
+    Timber.d("*********enclave ui state is $enclaveUiState")
+
+    when (enclaveUiState) {
+        is EnclaveUiState.RequiresKey,
+        is EnclaveUiState.Generating,
+        is EnclaveUiState.KeyGenerationError,
+        -> {
+            val isGenerating = enclaveUiState is EnclaveUiState.Generating
+            val error = (enclaveUiState as? EnclaveUiState.KeyGenerationError)?.message
+
+            KeyGenerationDialog(
+                onGenerateKey = { password, expiration ->
+                    onEnclaveEvent(EnclaveEvent.GenerateKey(password, expiration))
+                },
+                onDismiss = {
+                    if (!isGenerating) {
+                        onEnclaveEvent(EnclaveEvent.Dismiss)
+                    }
+                },
+                isGenerating = isGenerating,
+                error = error,
+            )
+        }
+
+        is EnclaveUiState.Error -> {
+            // Show error dialog for general enclave errors
+            AlertDialog(
+                onDismissRequest = {
+                    if (enclaveUiState.canRetry) {
+                        onEnclaveEvent(EnclaveEvent.Retry)
+                    }
+                },
+                title = {
+                    Text("Enclave Error")
+                },
+                text = {
+                    Text(enclaveUiState.message)
+                },
+                confirmButton = {
+                    if (enclaveUiState.canRetry) {
+                        Button(
+                            onClick = { onEnclaveEvent(EnclaveEvent.Retry) },
+                        ) {
+                            Text("Retry")
+                        }
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { onEnclaveEvent(EnclaveEvent.Dismiss) },
+                    ) {
+                        Text("Cancel")
+                    }
+                },
+            )
+        }
+
+        is EnclaveUiState.Loading,
+        is EnclaveUiState.Available,
+        -> {
+            // No overlay needed
         }
     }
 }
@@ -338,11 +414,12 @@ private fun CredentialInfoItem(
 private fun ErrorState(
     message: String,
     onRetry: () -> Unit,
+    onReset: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium, Alignment.CenterVertically),
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
@@ -355,10 +432,15 @@ private fun ErrorState(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium),
         )
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
         Button(onClick = onRetry) {
             Text("Retry")
+        }
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
+        Button(onClick = onReset) {
+            Text("Reset Key")
         }
     }
 }

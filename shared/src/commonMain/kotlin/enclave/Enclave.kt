@@ -32,8 +32,14 @@ class Enclave(
     ) {
         val now = getCurrentTimeMillis()
         val meta = KeyMetadata(userId, now + expiration)
+        encryption.deleteKey()
         encryption.generateKey(userId, password)
         storage.store(meta)
+    }
+
+    suspend fun deleteKey() {
+        encryption.deleteKey()
+        storage.delete()
     }
 
     /**
@@ -43,7 +49,8 @@ class Enclave(
         message: ByteArray,
         senderPublicKey: ByteArray,
     ): ByteArray {
-        expirationCheck()
+        val meta = expirationCheck()
+        storage.store(meta.copy(lastUsedAt = getCurrentTimeMillis()))
 
         return encryption.decrypt(
             message,
@@ -55,19 +62,29 @@ class Enclave(
         message: ByteArray,
         receiverPublicKey: ByteArray,
     ): Pair<ByteArray, ByteArray> {
-        expirationCheck()
+        val meta = expirationCheck()
+        storage.store(meta.copy(lastUsedAt = getCurrentTimeMillis()))
+
         return encryption.encrypt(message, receiverPublicKey)
     }
 
-    private suspend fun expirationCheck() {
+    /**
+     * Check if the enclave has a valid (non-expired) key without performing encryption
+     * Throws NoKeyError if no key exists, KeyExpiredError if key is expired
+     */
+    suspend fun hasValidKey() {
+        expirationCheck()
+    }
+
+    private suspend fun expirationCheck(): KeyMetadata {
         val meta = storage.get() ?: throw NoKeyError
 
         if (meta.expiredAt < getCurrentTimeMillis()) {
             encryption.deleteKey()
-            storage.store(meta.copy(expiredAt = 0)) // Mark as expired in storage
+            storage.delete()
             throw KeyExpiredError
         }
 
-        storage.store(meta.copy(lastUsedAt = getCurrentTimeMillis()))
+        return meta
     }
 }

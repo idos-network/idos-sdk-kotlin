@@ -11,15 +11,13 @@ import org.idos.app.data.repository.CredentialsRepository
 import org.idos.app.navigation.NavRoute
 import org.idos.app.navigation.NavigationCommand
 import org.idos.app.navigation.NavigationManager
-import org.idos.app.ui.screens.base.BaseViewModel
-import org.idos.enclave.AndroidEncryption
+import org.idos.app.ui.screens.base.BaseEnclaveViewModel
 import org.idos.enclave.Enclave
+import org.idos.enclave.KeyExpiredError
 import org.idos.kwil.rpc.Base64String
 import org.idos.kwil.rpc.UuidString
 import org.idos.kwil.serialization.toByteArray
 import timber.log.Timber
-import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.seconds
 
 sealed class CredentialDetailState {
     data object Loading : CredentialDetailState()
@@ -39,6 +37,8 @@ sealed class CredentialDetailEvent {
 
     data object Retry : CredentialDetailEvent()
 
+    data object ResetKey : CredentialDetailEvent()
+
     data object CopyToClipboard : CredentialDetailEvent()
 
     data object ShareCredential : CredentialDetailEvent()
@@ -49,34 +49,33 @@ sealed class CredentialDetailEvent {
 class CredentialDetailViewModel(
     private val credentialsRepository: CredentialsRepository,
     private val navigationManager: NavigationManager,
-    private val dataProvider: DataProvider,
-    private val enclave: Enclave,
+    dataProvider: DataProvider,
+    enclave: Enclave,
     savedStateHandle: SavedStateHandle,
-) : BaseViewModel<CredentialDetailState, CredentialDetailEvent>() {
-    private val credentialId: UuidString =
+) : BaseEnclaveViewModel<CredentialDetailState, CredentialDetailEvent>(enclave, dataProvider) {
+    val credentialId: UuidString =
         requireNotNull(
             savedStateHandle.get<String>(NavRoute.CredentialDetail.CREDENTIAL_ID_ARG),
         ).let { UuidString(it) }
 
     init {
-        loadCredential(credentialId)
+        loadCredential()
     }
 
-    private fun loadCredential(credentialId: UuidString) {
-        viewModelScope.launch {
+    private fun loadCredential() {
+        requireEnclave { enclave ->
+            Timber.d("action triggered")
             try {
-//                updateState { CredentialDetailState.Loading }
+                updateState { CredentialDetailState.Loading }
 
-                // Fetch credential details
-                val credential =
-                    credentialsRepository
-                        .getCredential(credentialId)
-                        .collect { detail ->
-                            // In a real app, you would decrypt the content here
-                            val decryptedContent = decryptCredential(detail)
-                            val json = Json.parseToJsonElement(decryptedContent)
-                            updateState { CredentialDetailState.Success(detail, json) }
-                        }
+                credentialsRepository
+                    .getCredential(credentialId)
+                    .collect { detail ->
+                        val decryptedContent = decryptCredential(detail, enclave)
+                        val json = Json.parseToJsonElement(decryptedContent)
+                        updateState { CredentialDetailState.Success(detail, json) }
+                    }
+            } catch (e: KeyExpiredError) {
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load credential")
                 updateState { CredentialDetailState.Error("Failed to load credential: ${e.message}") }
@@ -84,10 +83,10 @@ class CredentialDetailViewModel(
         }
     }
 
-    private suspend fun decryptCredential(data: CredentialDetail): String {
-        val user = dataProvider.getUser()
-        // todo add dialog to re-generate
-        enclave.generateKey(user.id, "heslo", 30.seconds.inWholeMilliseconds)
+    suspend fun decryptCredential(
+        data: CredentialDetail,
+        enclave: Enclave,
+    ): String {
         val content = Base64String(data.content).toByteArray()
         val pubkey = Base64String(data.encryptorPublicKey).toByteArray()
         val raw = enclave.decrypt(content, pubkey)
@@ -98,11 +97,12 @@ class CredentialDetailViewModel(
 
     override fun onEvent(event: CredentialDetailEvent) {
         when (event) {
-            is CredentialDetailEvent.LoadCredential -> loadCredential(credentialId)
-            is CredentialDetailEvent.Retry -> loadCredential(credentialId)
+            is CredentialDetailEvent.LoadCredential -> loadCredential()
+            is CredentialDetailEvent.Retry -> loadCredential()
             is CredentialDetailEvent.CopyToClipboard -> handleCopyToClipboard()
             is CredentialDetailEvent.ShareCredential -> handleShareCredential()
             is CredentialDetailEvent.Back -> onBackClick()
+            is CredentialDetailEvent.ResetKey -> deleteKey()
         }
     }
 

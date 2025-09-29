@@ -4,4 +4,6 @@ interface MetadataStorage {
     suspend fun store(meta: KeyMetadata)
 
     suspend fun get(): KeyMetadata?
+
+    suspend fun delete()
 }
