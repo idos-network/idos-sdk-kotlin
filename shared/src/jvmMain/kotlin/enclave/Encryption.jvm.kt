@@ -5,7 +5,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.security.SecureRandom
 
-class JvmEncryption : Encryption() {
+class JvmEncryption(
+    storage: SecureStorage = JvmSecureStorage(),
+) : Encryption(storage) {
     private val random = SecureRandom()
 
     override suspend fun encrypt(
@@ -16,9 +18,9 @@ class JvmEncryption : Encryption() {
             val nonce = ByteArray(TweetNaclFast.Box.nonceLength)
             random.nextBytes(nonce)
 
-            val ephKeyPair = TweetNaclFast.Box.keyPair()
-
-            val box = TweetNaclFast.Box(receiverPublicKey, ephKeyPair.secretKey)
+            val secret = getSecretKey()
+            val keypair = TweetNaclFast.Box.keyPair_fromSecretKey(secret)
+            val box = TweetNaclFast.Box(receiverPublicKey, keypair.secretKey)
 
             val encrypted =
                 box.box(message, nonce)
@@ -28,12 +30,12 @@ class JvmEncryption : Encryption() {
             System.arraycopy(nonce, 0, fullMessage, 0, nonce.size)
             System.arraycopy(encrypted, 0, fullMessage, nonce.size, encrypted.size)
 
-            fullMessage to ephKeyPair.publicKey
+            secret.fill(0)
+            fullMessage to keypair.publicKey
         }
 
     override suspend fun decrypt(
         fullMessage: ByteArray,
-        keyPair: KeyPair,
         senderPublicKey: ByteArray,
     ): ByteArray =
         withContext(Dispatchers.IO) {
@@ -42,35 +44,35 @@ class JvmEncryption : Encryption() {
             val nonce = fullMessage.copyOfRange(0, nonceLen)
             val cipherText = fullMessage.copyOfRange(nonceLen, fullMessage.size)
 
-            val box = TweetNaclFast.Box(senderPublicKey, keyPair.secretKey)
+            val secret = getSecretKey()
+            val box = TweetNaclFast.Box(senderPublicKey, secret)
 
             val decrypted =
                 box.open(cipherText, nonce)
                     ?: throw IllegalStateException("Couldn't decrypt")
 
+            secret.fill(0)
             decrypted
         }
 
-    override suspend fun generateKeyPair(): KeyPair =
-        withContext(Dispatchers.IO) {
-            val naclKeyPair = TweetNaclFast.Box.keyPair()
-            TweetNaclKeyPair(naclKeyPair)
-        }
-
-    override suspend fun keyPairFromSecretKey(secretKey: ByteArray): KeyPair =
-        withContext(Dispatchers.IO) {
-            val naclKeyPair = TweetNaclFast.Box.keyPair_fromSecretKey(secretKey)
-            TweetNaclKeyPair(naclKeyPair)
-        }
+    override suspend fun publicKey(secret: ByteArray): ByteArray {
+        val keypair = TweetNaclFast.Box.keyPair_fromSecretKey(secret)
+        return keypair.publicKey
+    }
 }
 
-// Wrapper class to implement our KeyPair interface
-class TweetNaclKeyPair(
-    private val naclKeyPair: TweetNaclFast.Box.KeyPair,
-) : KeyPair {
-    override val publicKey: ByteArray = naclKeyPair.publicKey
-    override val secretKey: ByteArray = naclKeyPair.secretKey
-}
+// Simple in-memory storage for JVM
+class JvmSecureStorage : SecureStorage {
+    private var key: ByteArray? = null
 
-// Platform-specific implementation
-actual fun getEncryption(context: Any?): Encryption = JvmEncryption()
+    override suspend fun storeKey(key: ByteArray) {
+        this.key = key.copyOf()
+    }
+
+    override suspend fun retrieveKey(): ByteArray? = key?.copyOf()
+
+    override suspend fun deleteKey() {
+        key?.fill(0)
+        key = null
+    }
+}

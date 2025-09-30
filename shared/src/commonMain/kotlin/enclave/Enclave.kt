@@ -2,11 +2,13 @@ package org.idos.enclave
 
 import kotlinx.serialization.Serializable
 import org.idos.getCurrentTimeMillis
+import org.idos.kwil.rpc.HexString
 import org.idos.kwil.rpc.UuidString
 
 @Serializable
 data class KeyMetadata(
     val userId: UuidString,
+    val publicKey: HexString,
     val expiredAt: Long,
     val createdAt: Long = getCurrentTimeMillis(),
     val lastUsedAt: Long = getCurrentTimeMillis(),
@@ -30,10 +32,10 @@ class Enclave(
         password: String,
         expiration: Long,
     ) {
-        val now = getCurrentTimeMillis()
-        val meta = KeyMetadata(userId, now + expiration)
         encryption.deleteKey()
-        encryption.generateKey(userId, password)
+        val pubkey = encryption.generateKey(userId, password)
+        val now = getCurrentTimeMillis()
+        val meta = KeyMetadata(userId, HexString(pubkey), now + expiration)
         storage.store(meta)
     }
 

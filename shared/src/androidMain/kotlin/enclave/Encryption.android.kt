@@ -5,44 +5,30 @@ import androidx.security.crypto.EncryptedFile
 import androidx.security.crypto.MasterKey
 import com.goterl.lazysodium.LazySodiumAndroid
 import com.goterl.lazysodium.SodiumAndroid
+import com.goterl.lazysodium.interfaces.Box
 import com.goterl.lazysodium.interfaces.SecretBox
 import com.goterl.lazysodium.utils.Key
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import org.idos.kwil.rpc.UuidString
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.security.KeyStore
 import java.security.SecureRandom
 
 /**
  * Android implementation of [Encryption] using NaCl with StrongBox support.
- * Uses LazySodium (libsodium) for cryptographic operations and Android's
- * StrongBox hardware security module when available.
+ * Uses LazySodium (libsodium) for cryptographic operations.
  *
- * @param context The Android context used for secure key storage
+ * @param storage The secure storage implementation for key persistence
  */
 class AndroidEncryption(
-    private val context: Context,
-) : Encryption() {
-    private val sodium = LazySodiumAndroid(SodiumAndroid())
+    storage: SecureStorage,
+) : Encryption(storage) {
+    constructor(context: Context) : this(AndroidSecureStorage(context))
+
+    private val sodium by lazy { LazySodiumAndroid(SodiumAndroid()) }
     private val mutex = Mutex()
-
-    private companion object {
-        private const val MASTER_KEY_ALIAS = "idos_enclave_master"
-        private const val KEY_FILENAME = "encrypted_key"
-    }
-
-    private val masterKey: MasterKey by lazy {
-        MasterKey
-            .Builder(context, MASTER_KEY_ALIAS)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .setRequestStrongBoxBacked(true) // Use StrongBox if available
-            .build()
-    }
 
     override suspend fun encrypt(
         message: ByteArray,
@@ -52,16 +38,15 @@ class AndroidEncryption(
             mutex.withLock {
                 try {
                     val nonce =
-                        ByteArray(SecretBox.NONCEBYTES).also { bytes ->
+                        ByteArray(Box.NONCEBYTES).also { bytes ->
                             SecureRandom().nextBytes(bytes)
                         }
 
-                    val key = retrieveSecretKey()
-                    checkNotNull(key) { "secret key retrieval failed" }
-                    val pubkey = sodium.cryptoScalarMultBase(Key.fromBytes(key)).asBytes
+                    val key = getSecretKey()
+                    val pubkey = publicKey(key)
 
                     // Encrypt the message
-                    val ciphertext = ByteArray(message.size + SecretBox.MACBYTES)
+                    val ciphertext = ByteArray(message.size + Box.MACBYTES)
                     val success =
                         sodium.cryptoBoxEasy(
                             ciphertext,
@@ -93,8 +78,7 @@ class AndroidEncryption(
                 try {
                     require(fullMessage.size > SecretBox.NONCEBYTES) { "Invalid message format" }
 
-                    val key = retrieveSecretKey()
-                    checkNotNull(key) { "No secret key found" }
+                    val key = getSecretKey()
 
                     val nonce = fullMessage.copyOfRange(0, SecretBox.NONCEBYTES)
                     val ciphertext = fullMessage.copyOfRange(SecretBox.NONCEBYTES, fullMessage.size)
@@ -120,34 +104,34 @@ class AndroidEncryption(
             }
         }
 
-    override suspend fun generateKey(
-        userId: UuidString,
-        password: String,
-    ) {
-        withContext(Dispatchers.IO) {
-            val secretKey = keyDerivation(password, userId.value)
-            storeSecretKey(secretKey)
-            secretKey.fill(0)
-        }
+    override suspend fun publicKey(secret: ByteArray): ByteArray {
+        val pubkey = sodium.cryptoScalarMultBase(Key.fromBytes(secret)).asBytes
+        return pubkey
+    }
+}
+
+/**
+ * Android secure storage using EncryptedFile with StrongBox support.
+ */
+class AndroidSecureStorage(
+    private val context: Context,
+) : SecureStorage {
+    private companion object {
+        private const val MASTER_KEY_ALIAS = "idos_enclave_master"
+        private const val KEY_FILENAME = "encrypted_key"
     }
 
-    override suspend fun deleteKey() {
-        withContext(Dispatchers.IO) {
-            try {
-                val file = File(context.filesDir, KEY_FILENAME)
-                if (file.exists()) {
-                    file.delete()
-                }
-            } catch (e: Exception) {
-                null
-            }
-        }
+    private val masterKey: MasterKey by lazy {
+        MasterKey
+            .Builder(context, MASTER_KEY_ALIAS)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .setRequestStrongBoxBacked(true) // Use StrongBox if available
+            .build()
     }
 
-    private suspend fun storeSecretKey(secretKey: ByteArray) =
+    override suspend fun storeKey(key: ByteArray) =
         withContext(Dispatchers.IO) {
             try {
-                // Store the secret key in Android's encrypted file storage
                 val file = File(context.filesDir, KEY_FILENAME)
 
                 val encryptedFile =
@@ -161,20 +145,19 @@ class AndroidEncryption(
                         .build()
 
                 encryptedFile.openFileOutput().use { outputStream ->
-                    outputStream.write(secretKey)
+                    outputStream.write(key)
                     outputStream.flush()
                 }
-                secretKey.fill(0)
             } catch (e: Exception) {
                 throw IllegalStateException("Failed to store secret key", e)
             }
         }
 
-    private suspend fun retrieveSecretKey(): ByteArray? =
+    override suspend fun retrieveKey(): ByteArray? =
         withContext(Dispatchers.IO) {
             try {
                 val file = File(context.filesDir, KEY_FILENAME)
-                if (!file.exists()) throw NoKeyError
+                if (!file.exists()) return@withContext null
 
                 val encryptedFile =
                     EncryptedFile
@@ -194,6 +177,18 @@ class AndroidEncryption(
                 }
             } catch (e: Exception) {
                 throw IllegalStateException("Failed to retrieve secret key", e)
+            }
+        }
+
+    override suspend fun deleteKey() =
+        withContext(Dispatchers.IO) {
+            try {
+                val file = File(context.filesDir, KEY_FILENAME)
+                if (file.exists()) {
+                    file.delete()
+                }
+            } catch (e: Exception) {
+                // Ignore deletion errors
             }
         }
 }

@@ -3,6 +3,8 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.idos.enclave.Enclave
+import org.idos.enclave.JvmEncryption
+import org.idos.enclave.JvmMetadataStorage
 import org.idos.kwil.KwilActionClient
 import org.idos.kwil.actions.getAccessGrantsOwned
 import org.idos.kwil.actions.getCredentialOwned
@@ -54,11 +56,8 @@ class ApiIntegrationTests :
                 }
                 val id = credentials.last().id
                 val data = client.getCredentialOwned(id)
-                val enclave =
-                    Enclave(
-                        userId = profile.id,
-                        secrets.password,
-                    )
+                val enclave = Enclave(JvmEncryption(), JvmMetadataStorage())
+                enclave.generateKey(profile.id, secrets.password, 1000)
                 val content = Base64String(data.content).toByteArray()
                 val pubkey = Base64String(data.encryptorPublicKey).toByteArray()
                 val raw = enclave.decrypt(content, pubkey)

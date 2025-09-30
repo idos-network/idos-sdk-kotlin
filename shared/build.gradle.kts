@@ -19,54 +19,137 @@ kotlin {
 
     jvm()
 
-    listOf(
-        iosArm64(),
-        iosSimulatorArm64(),
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
+    // Configure macOS target for testing (uses macOS libsodium)
+    macosArm64()
+
+    // Configure iOS targets
+    val iosTargets =
+        listOf(
+            iosArm64(),
+            iosSimulatorArm64(),
+        )
+
+    // Common iOS configuration
+    iosTargets.forEach { target ->
+        target.binaries.framework {
             baseName = "idos-sdk"
             freeCompilerArgs += listOf("-Xbinary=bundleId=org.idos")
             isStatic = true
         }
     }
 
+    // Configure cinterop for iOS and macOS
+    val darwinTargets = iosTargets + listOf(macosArm64())
+    darwinTargets.forEach { target ->
+        target.compilations.getByName("main") {
+            val libsodium by cinterops.creating {
+                defFile(project.file("src/iosMain/c_interop/libsodium.def"))
+                compilerOpts("-I/opt/homebrew/Cellar/libsodium/1.0.20/include")
+                includeDirs("/opt/homebrew/Cellar/libsodium/1.0.20/include")
+            }
+        }
+    }
+
     sourceSets {
-        commonMain.dependencies {
-            implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.content.negotiation)
-            implementation(libs.ktor.serialization.kotlinx.json)
-            implementation(libs.kotlinx.serialization.json)
-            implementation(libs.kotlinx.io)
-            implementation(project.dependencies.platform("org.kotlincrypto.hash:bom:0.7.1"))
-            implementation("org.kotlincrypto.hash:sha2")
+        val commonMain by getting {
+            dependencies {
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.serialization.kotlinx.json)
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlinx.io)
+                implementation(project.dependencies.platform(libs.kotlincrypto.hash.bom))
+                implementation(libs.kotlincrypto.hash.sha2)
+            }
         }
 
-        androidMain.dependencies {
-            implementation(libs.ktor.client.okhttp)
-            // NaCl for Android
-            implementation("com.goterl:lazysodium-android:5.0.1@aar")
-            implementation("net.java.dev.jna:jna:5.8.0@aar")
-            // AndroidX Security with StrongBox support
-            implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
-            // Bouncy Castle for SCrypt implementation (matching JVM version)
-            implementation(libs.bcprov.jdk15to18)
-//            implementation("org.bouncycastle:bcprov-jdk15on:1.70")
+        // Create shared Darwin source set for all Darwin platforms (iOS + macOS)
+        val darwinMain by creating {
+            dependsOn(commonMain)
         }
 
-        jvmMain.dependencies {
-            implementation("com.github.InstantWebP2P:tweetnacl-java:1.1.2")
-            implementation("org.bouncycastle:bcprov-jdk15on:1.70")
-            implementation("com.github.komputing:kethereum:0.86.0")
+        // iOS source sets depend on darwinMain
+        val iosMain by creating {
+            dependsOn(darwinMain)
         }
 
-        jvmTest.dependencies {
-            implementation(libs.kotlin.test)
-            implementation(libs.kotlinx.coroutines.test)
-            implementation(libs.kotest)
-            implementation(libs.kotest.runner)
-            implementation(libs.kotest.assert)
-            implementation(libs.ktor.client.okhttp)
-            implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
+        val iosArm64Main by getting {
+            dependsOn(iosMain)
+        }
+
+        val iosSimulatorArm64Main by getting {
+            dependsOn(iosMain)
+        }
+
+        // macOS depends on darwinMain (can add macOS-specific code to macosArm64Main)
+        val macosArm64Main by getting {
+            dependsOn(darwinMain)
+        }
+
+        val androidMain by getting {
+            dependencies {
+                implementation(libs.ktor.client.okhttp)
+                // NaCl for Android
+                implementation("${libs.lazysodium.android.get()}@aar")
+                implementation("${libs.jna.get()}@aar")
+                // AndroidX Security with StrongBox support
+                implementation(libs.security.crypto.ktx)
+                // Bouncy Castle for SCrypt implementation
+                implementation(libs.bcprov.jdk15to18)
+            }
+        }
+
+        val jvmMain by getting {
+            dependencies {
+                implementation(libs.tweetnacl.java)
+                implementation(libs.bcprov.jdk15on)
+                implementation(libs.kethereum)
+            }
+        }
+
+        val commonTest by getting {
+            dependencies {
+                implementation(libs.kotlin.test)
+                implementation(libs.kotest)
+                implementation(libs.kotest.assert)
+                implementation(libs.kotlinx.coroutines.test)
+            }
+        }
+
+        // JVM test dependencies
+        val jvmTest by getting {
+            dependencies {
+                implementation(libs.kotlin.test)
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.kotest)
+                implementation(libs.kotest.runner)
+                implementation(libs.kotest.assert)
+                implementation(libs.ktor.client.okhttp)
+                implementation(libs.dotenv.kotlin)
+            }
+        }
+
+        // Android test dependencies
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.kotlin.test)
+                implementation(libs.kotest.runner)
+                implementation(libs.kotest.assert)
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.androidx.test.core)
+                // Desktop libsodium for unit tests (unit tests run on host JVM, not Android)
+                implementation(libs.lazysodium.java)
+                implementation(libs.jna)
+            }
+        }
+
+        // macOS test dependencies (uses macOS libsodium for testing)
+        val macosArm64Test by getting {
+            dependencies {
+                implementation(libs.kotlin.test)
+                implementation(libs.kotest.assert)
+                implementation(libs.kotlinx.coroutines.test)
+            }
         }
     }
 }
