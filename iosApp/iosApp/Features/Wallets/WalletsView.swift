@@ -45,7 +45,7 @@ struct WalletCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(wallet.type)
+            Text(wallet.network)
                 .font(.headline)
 
             Text(wallet.address)

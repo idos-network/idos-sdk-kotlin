@@ -64,6 +64,9 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
+        .onAppear {
+            viewModel.onEvent(.checkKeyStatus)
+        }
         .alert("Delete Encryption Key", isPresented: $viewModel.state.showDeleteConfirmation) {
             Button("Cancel", role: .cancel) {
                 viewModel.onEvent(.cancelDelete)
@@ -86,7 +89,7 @@ struct SettingsView: View {
     }
 
     private func disconnectWallet() {
-        diContainer.storageManager.clearUserData()
+        diContainer.storageManager.clearUserProfile()
         diContainer.navigationCoordinator.replace(with: .login)
     }
 }

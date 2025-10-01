@@ -5,6 +5,7 @@ import androidx.security.crypto.EncryptedFile
 import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.idos.app.security.EthSigner.Companion.mnemonicToKeypair
 import org.idos.app.security.EthSigner.Companion.privateToAddress
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
@@ -49,11 +50,13 @@ class KeyManager(
      * Returns the address derived from the key.
      */
     @Throws(KeyGenerationException::class)
-    suspend fun generateAndStoreKey(key: ByteArray) =
+    suspend fun generateAndStoreKey(words: String) =
         withContext(Dispatchers.IO) {
             try {
+                val key = words.mnemonicToKeypair()
                 // Store the key securely
                 storeKey(key)
+                key.fill(0)
 
                 Timber.d("Generated and stored new key with address")
             } catch (e: Exception) {

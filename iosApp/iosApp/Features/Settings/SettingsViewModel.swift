@@ -19,9 +19,7 @@ enum SettingsEvent {
 }
 
 /// SettingsViewModel matching Android's SettingsViewModel
-class SettingsViewModel: ObservableObject {
-    @Published var state = SettingsState()
-
+class SettingsViewModel: BaseViewModel<SettingsState, SettingsEvent> {
     private let enclave: Enclave
     private let keyManager: KeyManager
     private let navigationCoordinator: NavigationCoordinator
@@ -30,10 +28,11 @@ class SettingsViewModel: ObservableObject {
         self.enclave = enclave
         self.keyManager = keyManager
         self.navigationCoordinator = navigationCoordinator
+        super.init(initialState: SettingsState())
         checkKeyStatus()
     }
 
-    func onEvent(_ event: SettingsEvent) {
+    override func onEvent(_ event: SettingsEvent) {
         switch event {
         case .checkKeyStatus:
             checkKeyStatus()
@@ -51,9 +50,9 @@ class SettingsViewModel: ObservableObject {
     private func checkKeyStatus() {
         Task {
             do {
-                let hasKey = try await enclave.hasValidKey()
+                try await enclave.hasValidKey()
                 await MainActor.run {
-                    state.hasEncryptionKey = hasKey
+                    state.hasEncryptionKey = true
                 }
             } catch {
                 await MainActor.run {

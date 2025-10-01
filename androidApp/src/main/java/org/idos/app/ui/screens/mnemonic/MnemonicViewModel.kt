@@ -103,11 +103,8 @@ class MnemonicViewModel(
 
                 // Step 1: Generate mnemonic and derive key pair
                 val words = currentState.words.joinToString(" ")
-                val key = words.mnemonicToKeypair()
-
                 // Step 2: Store key in KeyManager
-                keyManager.generateAndStoreKey(key)
-                key.fill(0) // Clear key from memory
+                keyManager.generateAndStoreKey(words)
                 Timber.d("Generated wallet")
 
                 // Step 3: Use UserRepository to fetch profile and store combined data

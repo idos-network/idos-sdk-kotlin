@@ -3,6 +3,7 @@ import SwiftUI
 /// DashboardView with drawer navigation matching Android's MainActivity
 struct DashboardView: View {
     @EnvironmentObject var diContainer: DIContainer
+    @EnvironmentObject var navigationCoordinator: NavigationCoordinator
     @State private var selectedTab: DrawerItem = .credentials
 
     enum DrawerItem: String, CaseIterable {
@@ -19,48 +20,74 @@ struct DashboardView: View {
         }
     }
 
+    // Extract credential ID from current route if it's a credentialDetail
+    private var currentCredentialId: String? {
+        if case .credentialDetail(let id) = navigationCoordinator.currentRoute {
+            return id
+        }
+        return nil
+    }
+
+    // iOS 15 compatible navigation state for credential detail
+    private var isCredentialDetailActive: Binding<Bool> {
+        Binding(
+            get: {
+                if case .credentialDetail = navigationCoordinator.currentRoute {
+                    return true
+                }
+                return false
+            },
+            set: { if !$0 { navigationCoordinator.navigateUp() } }
+        )
+    }
+
     var body: some View {
-        NavigationStack(path: $diContainer.navigationCoordinator.path) {
-            TabView(selection: $selectedTab) {
-                CredentialsView(
-                    viewModel: diContainer.makeCredentialsViewModel()
-                )
-                .tabItem {
-                    Label(DrawerItem.credentials.rawValue, systemImage: DrawerItem.credentials.icon)
-                }
-                .tag(DrawerItem.credentials)
+        NavigationView {
+            ZStack {
+                TabView(selection: $selectedTab) {
+                    CredentialsView(
+                        viewModel: diContainer.makeCredentialsViewModel()
+                    )
+                    .tabItem {
+                        Label(DrawerItem.credentials.rawValue, systemImage: DrawerItem.credentials.icon)
+                    }
+                    .tag(DrawerItem.credentials)
 
-                WalletsView(
-                    viewModel: diContainer.makeWalletsViewModel()
-                )
-                .tabItem {
-                    Label(DrawerItem.wallets.rawValue, systemImage: DrawerItem.wallets.icon)
-                }
-                .tag(DrawerItem.wallets)
+                    WalletsView(
+                        viewModel: diContainer.makeWalletsViewModel()
+                    )
+                    .tabItem {
+                        Label(DrawerItem.wallets.rawValue, systemImage: DrawerItem.wallets.icon)
+                    }
+                    .tag(DrawerItem.wallets)
 
-                SettingsView(
-                    viewModel: diContainer.makeSettingsViewModel()
-                )
-                .tabItem {
-                    Label(DrawerItem.settings.rawValue, systemImage: DrawerItem.settings.icon)
+                    SettingsView(
+                        viewModel: diContainer.makeSettingsViewModel()
+                    )
+                    .tabItem {
+                        Label(DrawerItem.settings.rawValue, systemImage: DrawerItem.settings.icon)
+                    }
+                    .tag(DrawerItem.settings)
                 }
-                .tag(DrawerItem.settings)
-            }
-            .navigationDestination(for: Route.self) { route in
-                routeDestination(for: route)
+
+                // Hidden NavigationLink for programmatic navigation (iOS 15 compatible)
+                if let credentialId = currentCredentialId {
+                    NavigationLink(
+                        destination: CredentialDetailView(
+                            viewModel: diContainer.makeCredentialDetailViewModel(credentialId: credentialId)
+                        ),
+                        isActive: isCredentialDetailActive
+                    ) { EmptyView() }
+                }
             }
         }
+        .navigationViewStyle(StackNavigationViewStyle())
     }
+}
 
-    @ViewBuilder
-    private func routeDestination(for route: Route) -> some View {
-        switch route {
-        case .credentialDetail(let credentialId):
-            CredentialDetailView(
-                viewModel: diContainer.makeCredentialDetailViewModel(credentialId: credentialId)
-            )
-        default:
-            EmptyView()
-        }
-    }
+#Preview {
+    let diContainer = DIContainer.shared
+    DashboardView()
+        .environmentObject(diContainer)
+        .environmentObject(diContainer.navigationCoordinator)
 }

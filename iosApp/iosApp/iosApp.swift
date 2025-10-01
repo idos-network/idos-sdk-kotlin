@@ -13,6 +13,7 @@ struct iosApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(DIContainer.shared)
+                .environmentObject(DIContainer.shared.navigationCoordinator)
         }
     }
 }

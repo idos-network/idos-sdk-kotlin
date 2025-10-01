@@ -4,10 +4,26 @@ import SwiftUI
 struct CredentialDetailView: View {
     @StateObject var viewModel: CredentialDetailViewModel
     @State private var showKeyGenDialog = false
+    @State private var showKeyGenError = false
 
     var body: some View {
         ZStack {
-            if viewModel.state.isLoading {
+            // Show enclave loading state
+            if case .loading = viewModel.enclaveState {
+                LoadingStateView(message: "Checking encryption key...")
+            }
+            // Show enclave error state
+            else if case .error(let message, let canRetry) = viewModel.enclaveState {
+                ErrorStateView(
+                    message: message,
+                    canRetry: canRetry,
+                    onRetry: {
+                        viewModel.retryEnclaveCheck()
+                    }
+                )
+            }
+            // Show credential loading/error/content
+            else if viewModel.state.isLoading {
                 LoadingStateView(message: "Loading credential...")
             } else if let error = viewModel.state.error {
                 ErrorStateView(
@@ -15,10 +31,13 @@ struct CredentialDetailView: View {
                     canRetry: true,
                     onRetry: {
                         viewModel.onEvent(.loadCredential)
+                    },
+                    onReset: {
+                        viewModel.onEvent(.resetKey)
                     }
                 )
-            } else if let credential = viewModel.state.credential {
-                credentialContent(credential)
+            } else if let decrypted = viewModel.state.decryptedContent {
+                credentialContent(credential: viewModel.state.credential!, content: decrypted)
             } else {
                 EmptyStateView(
                     icon: "doc.text",
@@ -40,13 +59,13 @@ struct CredentialDetailView: View {
             }
         }
         .sheet(isPresented: $showKeyGenDialog) {
-            if case .requiresKey = viewModel.enclaveState {
+            if case .requiresKey = viewModel.enclaveState, let userId = viewModel.userId {
                 KeyGenerationDialog(
-                    userId: "mock-user-id",
+                    userId: userId,
                     isGenerating: viewModel.enclaveState == .generating,
                     onGenerate: { password, expiration in
                         viewModel.generateKey(
-                            userId: "mock-user-id",
+                            userId: userId,
                             password: password,
                             expiration: expiration
                         )
@@ -57,38 +76,43 @@ struct CredentialDetailView: View {
                 )
             }
         }
+        .alert("Key Generation Error", isPresented: $showKeyGenError) {
+            Button("OK") {
+                viewModel.clearEnclaveError()
+                showKeyGenError = false
+            }
+        } message: {
+            if case .keyGenerationError(let message) = viewModel.enclaveState {
+                Text(message)
+            }
+        }
         .onChange(of: viewModel.enclaveState) { newState in
             switch newState {
             case .requiresKey:
                 showKeyGenDialog = true
             case .available:
                 showKeyGenDialog = false
+                // Retry loading credential after key is available
+                if viewModel.state.credential == nil && !viewModel.state.isLoading {
+                    viewModel.onEvent(.loadCredential)
+                }
+            case .keyGenerationError:
+                showKeyGenError = true
             default:
                 break
             }
         }
     }
 
-    private func credentialContent(_ credential: Credential) -> some View {
+    private func credentialContent(credential: CredentialDetail, content: String) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                // Credential Type
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Type")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text(credential.type)
-                        .font(.headline)
-                }
-
-                Divider()
-
                 // Issuer
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Issuer")
+                    Text("Id")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Text(credential.issuer)
+                    Text(credential.id)
                         .font(.body)
                 }
 
@@ -99,8 +123,8 @@ struct CredentialDetailView: View {
                     Text("Content")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Text(credential.content)
-                        .font(.system(.body, design: .monospaced))
+                    Text(content.prettyPrintedJSON())
+                        .font(.system(.footnote, design: .monospaced))
                         .padding()
                         .background(Color(.systemGray6))
                         .cornerRadius(8)
@@ -108,5 +132,14 @@ struct CredentialDetailView: View {
             }
             .padding()
         }
+    }
+}
+
+#Preview {
+    let diContainer = DIContainer.shared
+    NavigationView {
+        CredentialDetailView(
+            viewModel: diContainer.makeCredentialDetailViewModel(credentialId: "1")
+        )
     }
 }

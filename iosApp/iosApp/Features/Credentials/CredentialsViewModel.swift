@@ -2,14 +2,6 @@ import Foundation
 import Combine
 import idos_sdk
 
-/// Credential model (simplified)
-struct Credential: Identifiable {
-    let id: String
-    let type: String
-    let issuer: String
-    let content: String
-}
-
 /// Credentials state matching Android's CredentialsState
 struct CredentialsState {
     var credentials: [Credential] = []
@@ -25,19 +17,22 @@ enum CredentialsEvent {
     case refresh
 }
 
-/// CredentialsViewModel extending BaseEnclaveViewModel
-class CredentialsViewModel: BaseEnclaveViewModel<CredentialsState, CredentialsEvent> {
-    @Published var state = CredentialsState()
-
+/// CredentialsViewModel matching Android's CredentialsViewModel
+class CredentialsViewModel: BaseViewModel<CredentialsState, CredentialsEvent> {
+    private let credentialsRepository: CredentialsRepositoryProtocol
     private let navigationCoordinator: NavigationCoordinator
 
-    init(enclave: Enclave, navigationCoordinator: NavigationCoordinator) {
+    init(
+        credentialsRepository: CredentialsRepositoryProtocol,
+        navigationCoordinator: NavigationCoordinator
+    ) {
+        self.credentialsRepository = credentialsRepository
         self.navigationCoordinator = navigationCoordinator
-        super.init(enclave: enclave)
+        super.init(initialState: CredentialsState())
         loadCredentials()
     }
 
-    func onEvent(_ event: CredentialsEvent) {
+    override func onEvent(_ event: CredentialsEvent) {
         switch event {
         case .loadCredentials, .refresh:
             loadCredentials()
@@ -49,7 +44,7 @@ class CredentialsViewModel: BaseEnclaveViewModel<CredentialsState, CredentialsEv
     }
 
     private func loadCredentials() {
-        requireEnclave { [weak self] enclave in
+        Task { [weak self] in
             guard let self = self else { return }
 
             await MainActor.run {
@@ -57,26 +52,19 @@ class CredentialsViewModel: BaseEnclaveViewModel<CredentialsState, CredentialsEv
                 self.state.error = nil
             }
 
-            // TODO: Fetch credentials from API
-            // For now, use mock data
-            let mockCredentials = [
-                Credential(
-                    id: "1",
-                    type: "Identity Document",
-                    issuer: "Government",
-                    content: "{\"name\": \"John Doe\", \"id\": \"123456\"}"
-                ),
-                Credential(
-                    id: "2",
-                    type: "Education Certificate",
-                    issuer: "University",
-                    content: "{\"degree\": \"Bachelor of Science\", \"year\": \"2020\"}"
-                )
-            ]
+            do {
+                // Fetch credentials from repository (matches Android implementation)
+                let credentials = try await credentialsRepository.getCredentials()
 
-            await MainActor.run {
-                self.state.credentials = mockCredentials
-                self.state.isLoading = false
+                await MainActor.run {
+                    self.state.credentials = credentials
+                    self.state.isLoading = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.state.error = "Failed to load credentials: \(error.localizedDescription)"
+                    self.state.isLoading = false
+                }
             }
         }
     }

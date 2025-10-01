@@ -55,7 +55,7 @@ class ActionBuilder(
     ) {
         this.signer = signer
         this.signatureType = signer.getSignatureType()
-        this.identifier = signer.getIdentifier().toByteArray()
+        this.identifier = HexString(signer.getIdentifier()).toByteArray()
 
         if (signature != null) {
             this.signature = signature

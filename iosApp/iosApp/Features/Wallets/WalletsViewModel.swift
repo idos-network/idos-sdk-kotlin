@@ -1,12 +1,5 @@
 import Foundation
 
-/// Wallet model
-struct Wallet: Identifiable {
-    let id: String
-    let address: String
-    let type: String
-}
-
 /// Wallets state
 struct WalletsState {
     var wallets: [Wallet] = []
@@ -22,17 +15,16 @@ enum WalletsEvent {
 }
 
 /// WalletsViewModel matching Android's WalletsViewModel
-class WalletsViewModel: ObservableObject {
-    @Published var state = WalletsState()
-
+class WalletsViewModel: BaseViewModel<WalletsState, WalletsEvent> {
     private let navigationCoordinator: NavigationCoordinator
 
     init(navigationCoordinator: NavigationCoordinator) {
         self.navigationCoordinator = navigationCoordinator
+        super.init(initialState: WalletsState())
         loadWallets()
     }
 
-    func onEvent(_ event: WalletsEvent) {
+    override func onEvent(_ event: WalletsEvent) {
         switch event {
         case .loadWallets, .refresh:
             loadWallets()
@@ -49,9 +41,9 @@ class WalletsViewModel: ObservableObject {
         // For now, use mock data
         let mockWallets = [
             Wallet(
-                id: "1",
+                id: "123",
                 address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-                type: "Ethereum"
+                network: "Ethereum"
             )
         ]
 

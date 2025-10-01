@@ -16,7 +16,7 @@ class IosMetadataStorage : MetadataStorage {
     }
 
     override suspend fun store(meta: KeyMetadata) {
-        val jsonString = json.encodeToString(meta)
+        val jsonString = json.encodeToString(KeyMetadata.serializer(), meta)
         userDefaults.setObject(jsonString, forKey = KEY_METADATA)
         userDefaults.synchronize()
     }
@@ -24,7 +24,7 @@ class IosMetadataStorage : MetadataStorage {
     override suspend fun get(): KeyMetadata? {
         val jsonString = userDefaults.stringForKey(KEY_METADATA) ?: return null
         return try {
-            json.decodeFromString<KeyMetadata>(jsonString)
+            json.decodeFromString(KeyMetadata.serializer(), jsonString)
         } catch (e: Exception) {
             null
         }

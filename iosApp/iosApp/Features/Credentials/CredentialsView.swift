@@ -3,7 +3,6 @@ import SwiftUI
 /// CredentialsView matching Android's CredentialsScreen
 struct CredentialsView: View {
     @StateObject var viewModel: CredentialsViewModel
-    @State private var showKeyGenDialog = false
 
     var body: some View {
         ZStack {
@@ -31,34 +30,6 @@ struct CredentialsView: View {
         .refreshable {
             viewModel.onEvent(.refresh)
         }
-        .sheet(isPresented: $showKeyGenDialog) {
-            if case .requiresKey = viewModel.enclaveState {
-                KeyGenerationDialog(
-                    userId: "mock-user-id", // TODO: Get from UserRepository
-                    isGenerating: viewModel.enclaveState == .generating,
-                    onGenerate: { password, expiration in
-                        viewModel.generateKey(
-                            userId: "mock-user-id",
-                            password: password,
-                            expiration: expiration
-                        )
-                    },
-                    onDismiss: {
-                        showKeyGenDialog = false
-                    }
-                )
-            }
-        }
-        .onChange(of: viewModel.enclaveState) { newState in
-            switch newState {
-            case .requiresKey:
-                showKeyGenDialog = true
-            case .available:
-                showKeyGenDialog = false
-            default:
-                break
-            }
-        }
     }
 
     private var credentialsList: some View {
@@ -67,8 +38,10 @@ struct CredentialsView: View {
                 viewModel.onEvent(.credentialSelected(credential))
             }) {
                 CredentialCard(credential: credential)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(.plain)
         }
     }
 }
@@ -78,14 +51,33 @@ struct CredentialCard: View {
     let credential: Credential
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(credential.type)
-                .font(.headline)
+        HStack {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(credential.type)
+                    .font(.headline)
 
-            Text("Issuer: \(credential.issuer)")
-                .font(.subheadline)
+                Text("Issuer: \(credential.issuer)")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
                 .foregroundColor(.secondary)
         }
         .padding(.vertical, 8)
     }
+}
+
+#Preview {
+    let diContainer = DIContainer.shared
+    NavigationView {
+        CredentialsView(
+            viewModel: diContainer.makeCredentialsViewModel()
+        )
+    }
+    .environmentObject(diContainer)
+    .environmentObject(diContainer.navigationCoordinator)
 }

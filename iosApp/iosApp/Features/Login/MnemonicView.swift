@@ -2,10 +2,8 @@ import SwiftUI
 
 /// MnemonicView for wallet import matching Android's MnemonicScreen
 struct MnemonicView: View {
+    @StateObject var viewModel: MnemonicViewModel
     @EnvironmentObject var diContainer: DIContainer
-    @State private var mnemonic: String = ""
-    @State private var isImporting: Bool = false
-    @State private var errorMessage: String?
 
     var body: some View {
         ScrollView {
@@ -19,27 +17,32 @@ struct MnemonicView: View {
                     .foregroundColor(.secondary)
 
                 // Mnemonic Input
-                TextEditor(text: $mnemonic)
-                    .frame(minHeight: 150)
-                    .padding(8)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(.systemGray4), lineWidth: 1)
+                TextEditor(
+                    text: Binding(
+                        get: { viewModel.state.mnemonic },
+                        set: { viewModel.onEvent(.updateMnemonic($0)) }
                     )
-                    .autocapitalization(.none)
-                    .disableAutocorrection(true)
+                )
+                .frame(minHeight: 150)
+                .padding(8)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color(.systemGray4), lineWidth: 1)
+                )
+                .autocapitalization(.none)
+                .disableAutocorrection(true)
 
-                if let errorMessage = errorMessage {
+                if let errorMessage = viewModel.state.error {
                     Text(errorMessage)
                         .font(.caption)
                         .foregroundColor(.red)
                 }
 
                 // Import Button
-                Button(action: importWallet) {
-                    if isImporting {
+                Button(action: { viewModel.onEvent(.importWallet) }) {
+                    if viewModel.state.isLoading {
                         HStack {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -55,12 +58,12 @@ struct MnemonicView: View {
                             .fontWeight(.semibold)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(mnemonic.isEmpty ? Color.gray : Color.blue)
+                            .background(viewModel.state.mnemonic.isEmpty ? Color.gray : Color.blue)
                             .foregroundColor(.white)
                             .cornerRadius(12)
                     }
                 }
-                .disabled(mnemonic.isEmpty || isImporting)
+                .disabled(viewModel.state.mnemonic.isEmpty || viewModel.state.isLoading)
 
                 Spacer()
             }
@@ -68,43 +71,19 @@ struct MnemonicView: View {
         }
         .navigationTitle("Recovery Phrase")
         .navigationBarTitleDisplayMode(.inline)
-    }
-
-    private func importWallet() {
-        isImporting = true
-        errorMessage = nil
-
-        // TODO: Implement BIP39/BIP44 mnemonic derivation
-        // For now, this is a placeholder that stores a mock address
-        Task {
-            do {
-                // Validate mnemonic (12 or 24 words)
-                let words = mnemonic.trimmingCharacters(in: .whitespacesAndNewlines)
-                    .components(separatedBy: .whitespaces)
-                    .filter { !$0.isEmpty }
-
-                guard words.count == 12 || words.count == 24 else {
-                    await MainActor.run {
-                        errorMessage = "Please enter a valid 12 or 24 word recovery phrase"
-                        isImporting = false
-                    }
-                    return
-                }
-
-                // TODO: Derive Ethereum key using BIP39/BIP44
-                // This requires a Swift crypto library like web3.swift
-
-                // For now, save a mock wallet address
-                let mockAddress = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
-
-                await MainActor.run {
-                    diContainer.storageManager.saveWalletAddress(mockAddress)
-                    isImporting = false
-
-                    // Navigate to dashboard
-                    diContainer.navigationCoordinator.replace(with: .dashboard)
-                }
+        .alert(
+            "Success!",
+            isPresented: Binding<Bool>(
+                get: { viewModel.state.isSuccess },
+                set: { _ in  }
+            )
+        ) {
+            Button("OK") {
+                print("💾 MnemonicView: User clicked OK, triggering user fetch")
+                viewModel.onEvent(.fetchUser)
             }
+        } message: {
+            Text("Wallet imported successfully!")
         }
     }
 }

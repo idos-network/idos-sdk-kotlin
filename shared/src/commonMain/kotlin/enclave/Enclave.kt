@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 import org.idos.getCurrentTimeMillis
 import org.idos.kwil.rpc.HexString
 import org.idos.kwil.rpc.UuidString
+import kotlin.coroutines.cancellation.CancellationException
 
 @Serializable
 data class KeyMetadata(
@@ -18,9 +19,9 @@ sealed class EnclaveError(
     message: String,
 ) : Exception(message)
 
-object KeyExpiredError : EnclaveError("Key expired")
+class KeyExpiredError : EnclaveError("Key expired")
 
-object NoKeyError : EnclaveError("No key present, generate first")
+class NoKeyError : EnclaveError("No key present, generate first")
 
 // https://github.com/idos-network/idos-sdk-js/blob/main/packages/utils/src/enclave/local.ts
 class Enclave(
@@ -47,6 +48,7 @@ class Enclave(
     /**
      * Decrypt credentials content
      */
+    @Throws(CancellationException::class, NoKeyError::class, KeyExpiredError::class, IllegalStateException::class)
     suspend fun decrypt(
         message: ByteArray,
         senderPublicKey: ByteArray,
@@ -60,6 +62,7 @@ class Enclave(
         )
     }
 
+    @Throws(CancellationException::class, NoKeyError::class, KeyExpiredError::class)
     suspend fun encrypt(
         message: ByteArray,
         receiverPublicKey: ByteArray,
@@ -74,17 +77,18 @@ class Enclave(
      * Check if the enclave has a valid (non-expired) key without performing encryption
      * Throws NoKeyError if no key exists, KeyExpiredError if key is expired
      */
+    @Throws(CancellationException::class, NoKeyError::class, KeyExpiredError::class)
     suspend fun hasValidKey() {
         expirationCheck()
     }
 
     private suspend fun expirationCheck(): KeyMetadata {
-        val meta = storage.get() ?: throw NoKeyError
+        val meta = storage.get() ?: throw NoKeyError()
 
         if (meta.expiredAt < getCurrentTimeMillis()) {
             encryption.deleteKey()
             storage.delete()
-            throw KeyExpiredError
+            throw KeyExpiredError()
         }
 
         return meta

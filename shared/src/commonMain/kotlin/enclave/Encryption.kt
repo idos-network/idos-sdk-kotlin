@@ -38,7 +38,7 @@ abstract class Encryption(
         storage.deleteKey()
     }
 
-    protected suspend fun getSecretKey(): ByteArray = storage.retrieveKey() ?: throw NoKeyError
+    protected suspend fun getSecretKey(): ByteArray = storage.retrieveKey() ?: throw NoKeyError()
 
     protected abstract suspend fun publicKey(secret: ByteArray): ByteArray
 }

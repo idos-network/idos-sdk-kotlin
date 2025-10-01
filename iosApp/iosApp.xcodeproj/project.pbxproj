@@ -33,9 +33,23 @@
 		C27D819B2E8C27A400F6CADF /* CredentialDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D816D2E8C27A400F6CADF /* CredentialDetailViewModel.swift */; };
 		C27D819C2E8C27A400F6CADF /* BaseEnclaveViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D81802E8C27A400F6CADF /* BaseEnclaveViewModel.swift */; };
 		C27D819D2E8C27A400F6CADF /* CredentialsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D816F2E8C27A400F6CADF /* CredentialsViewModel.swift */; };
+		C27D81A22E8C27A500F6CADF /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D81A12E8C27A500F6CADF /* Config.swift */; };
+		C27D81A32E8C27A500F6CADF /* EthSigner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D81A42E8C27A500F6CADF /* EthSigner.swift */; };
+		C27D81A52E8C27A500F6CADF /* MnemonicViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D81A62E8C27A500F6CADF /* MnemonicViewModel.swift */; };
+		C2974AAF2E8D274300AADFBE /* WalletRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AAE2E8D274300AADFBE /* WalletRepository.swift */; };
+		C2974AB02E8D274300AADFBE /* UserRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AAD2E8D274300AADFBE /* UserRepository.swift */; };
+		C2974AB22E8D277400AADFBE /* Credential.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AB12E8D277400AADFBE /* Credential.swift */; };
+		C2974AB42E8D278100AADFBE /* CredentialsRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AB32E8D278100AADFBE /* CredentialsRepository.swift */; };
+		C2974ABB2E8D2A5A00AADFBE /* Wallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974ABA2E8D2A5A00AADFBE /* Wallet.swift */; };
+		C2974ABC2E8D2A5A00AADFBE /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AB92E8D2A5A00AADFBE /* User.swift */; };
+		C2974AC22E8D2DBE00AADFBE /* DataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974ABF2E8D2DBE00AADFBE /* DataProvider.swift */; };
+		C2974AC42E8D30FE00AADFBE /* ByteArrays.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AC32E8D30FA00AADFBE /* ByteArrays.swift */; };
+		C2974AC62E8DBE5B00AADFBE /* Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AC52E8DBE5700AADFBE /* Strings.swift */; };
+		D67AE0A494A8203A06DA4BA0 /* Pods_iosApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DB7BD996663771C2257CCFAE /* Pods_iosApp.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1D4991D105C771A3AB24CC5B /* Pods-iosApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosApp.release.xcconfig"; path = "Target Support Files/Pods-iosApp/Pods-iosApp.release.xcconfig"; sourceTree = "<group>"; };
 		7555FF7B242A565900829871 /* iosApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7555FF82242A565900829871 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		7555FF85242A565B00829871 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -64,7 +78,20 @@
 		C27D81822E8C27A400F6CADF /* EnclaveState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnclaveState.swift; sourceTree = "<group>"; };
 		C27D81832E8C27A400F6CADF /* KeyGenerationDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyGenerationDialog.swift; sourceTree = "<group>"; };
 		C27D81852E8C27A400F6CADF /* CommonViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonViews.swift; sourceTree = "<group>"; };
-		F8DD4E4D2C0B6E3700F1F5B3 /* idos-sdk.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = "idos-sdk.xcframework"; path = "../shared/build/XCFrameworks/debug/idos-sdk.xcframework"; sourceTree = "<group>"; };
+		C27D81A12E8C27A500F6CADF /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
+		C27D81A42E8C27A500F6CADF /* EthSigner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EthSigner.swift; sourceTree = "<group>"; };
+		C27D81A62E8C27A500F6CADF /* MnemonicViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MnemonicViewModel.swift; sourceTree = "<group>"; };
+		C2974AAD2E8D274300AADFBE /* UserRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserRepository.swift; sourceTree = "<group>"; };
+		C2974AAE2E8D274300AADFBE /* WalletRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletRepository.swift; sourceTree = "<group>"; };
+		C2974AB12E8D277400AADFBE /* Credential.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Credential.swift; sourceTree = "<group>"; };
+		C2974AB32E8D278100AADFBE /* CredentialsRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialsRepository.swift; sourceTree = "<group>"; };
+		C2974AB92E8D2A5A00AADFBE /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
+		C2974ABA2E8D2A5A00AADFBE /* Wallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Wallet.swift; sourceTree = "<group>"; };
+		C2974ABF2E8D2DBE00AADFBE /* DataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataProvider.swift; sourceTree = "<group>"; };
+		C2974AC32E8D30FA00AADFBE /* ByteArrays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteArrays.swift; sourceTree = "<group>"; };
+		C2974AC52E8DBE5700AADFBE /* Strings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Strings.swift; sourceTree = "<group>"; };
+		DB7BD996663771C2257CCFAE /* Pods_iosApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_iosApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		FB21B815C23CCBDB0C1EC03A /* Pods-iosApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosApp.debug.xcconfig"; path = "Target Support Files/Pods-iosApp/Pods-iosApp.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,6 +99,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D67AE0A494A8203A06DA4BA0 /* Pods_iosApp.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,6 +112,7 @@
 				7555FF7D242A565900829871 /* iosApp */,
 				7555FF7C242A565900829871 /* Products */,
 				F8DD4E4C2C0B6E3700F1F5B3 /* Frameworks */,
+				D15D6754A4706ECC11A2C46D /* Pods */,
 			);
 			sourceTree = "<group>";
 		};
@@ -132,6 +161,8 @@
 		C27D81612E8C27A400F6CADF /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
+				C2974AC52E8DBE5700AADFBE /* Strings.swift */,
+				C2974AC32E8D30FA00AADFBE /* ByteArrays.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -155,6 +186,7 @@
 		C27D81662E8C27A400F6CADF /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				C27D81A12E8C27A500F6CADF /* Config.swift */,
 				C27D81612E8C27A400F6CADF /* Extensions */,
 				C27D81632E8C27A400F6CADF /* Navigation */,
 				C27D81652E8C27A400F6CADF /* Theme */,
@@ -165,6 +197,9 @@
 		C27D81672E8C27A400F6CADF /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				C2974AB92E8D2A5A00AADFBE /* User.swift */,
+				C2974ABA2E8D2A5A00AADFBE /* Wallet.swift */,
+				C2974AB12E8D277400AADFBE /* Credential.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -172,6 +207,9 @@
 		C27D81682E8C27A400F6CADF /* Repository */ = {
 			isa = PBXGroup;
 			children = (
+				C2974AB32E8D278100AADFBE /* CredentialsRepository.swift */,
+				C2974AAD2E8D274300AADFBE /* UserRepository.swift */,
+				C2974AAE2E8D274300AADFBE /* WalletRepository.swift */,
 			);
 			path = Repository;
 			sourceTree = "<group>";
@@ -187,6 +225,7 @@
 		C27D816B2E8C27A400F6CADF /* Data */ = {
 			isa = PBXGroup;
 			children = (
+				C2974AC02E8D2DBE00AADFBE /* Network */,
 				C27D81672E8C27A400F6CADF /* Models */,
 				C27D81682E8C27A400F6CADF /* Repository */,
 				C27D816A2E8C27A400F6CADF /* Storage */,
@@ -219,6 +258,7 @@
 				C27D81732E8C27A400F6CADF /* LoginView.swift */,
 				C27D81742E8C27A400F6CADF /* LoginViewModel.swift */,
 				C27D81752E8C27A400F6CADF /* MnemonicView.swift */,
+				C27D81A62E8C27A500F6CADF /* MnemonicViewModel.swift */,
 			);
 			path = Login;
 			sourceTree = "<group>";
@@ -256,6 +296,7 @@
 		C27D817F2E8C27A400F6CADF /* Security */ = {
 			isa = PBXGroup;
 			children = (
+				C27D81A42E8C27A500F6CADF /* EthSigner.swift */,
 				C27D817E2E8C27A400F6CADF /* KeyManager.swift */,
 			);
 			path = Security;
@@ -289,10 +330,27 @@
 			path = UI;
 			sourceTree = "<group>";
 		};
+		C2974AC02E8D2DBE00AADFBE /* Network */ = {
+			isa = PBXGroup;
+			children = (
+				C2974ABF2E8D2DBE00AADFBE /* DataProvider.swift */,
+			);
+			path = Network;
+			sourceTree = "<group>";
+		};
+		D15D6754A4706ECC11A2C46D /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				FB21B815C23CCBDB0C1EC03A /* Pods-iosApp.debug.xcconfig */,
+				1D4991D105C771A3AB24CC5B /* Pods-iosApp.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		F8DD4E4C2C0B6E3700F1F5B3 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				F8DD4E4D2C0B6E3700F1F5B3 /* idos-sdk.xcframework */,
+				DB7BD996663771C2257CCFAE /* Pods_iosApp.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -304,10 +362,13 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 7555FF8F242A565B00829871 /* Build configuration list for PBXNativeTarget "iosApp" */;
 			buildPhases = (
+				69E3AC28AEB0F5C0693D6AFF /* [CP] Check Pods Manifest.lock */,
+				C27D81A02E8C27A500F6CADF /* Generate Config */,
 				F8DD4E4E2C0B6E3700F1F5B3 /* Build Kotlin Framework */,
 				7555FF77242A565900829871 /* Sources */,
 				7555FF78242A565900829871 /* Frameworks */,
 				7555FF79242A565900829871 /* Resources */,
+				B365D2DDDDD2C13C10F4C813 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -364,8 +425,72 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		69E3AC28AEB0F5C0693D6AFF /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-iosApp-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		B365D2DDDDD2C13C10F4C813 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		C27D81A02E8C27A500F6CADF /* Generate Config */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Generate Config";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/iosApp/Core/Config.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"$SRCROOT/generate-config.sh\"\n";
+		};
 		F8DD4E4E2C0B6E3700F1F5B3 /* Build Kotlin Framework */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -391,28 +516,40 @@
 			files = (
 				7555FFB0242A642300829871 /* iosApp.swift in Sources */,
 				7555FF83242A565900829871 /* ContentView.swift in Sources */,
+				C2974AC42E8D30FE00AADFBE /* ByteArrays.swift in Sources */,
 				C27D81882E8C27A400F6CADF /* DIContainer.swift in Sources */,
 				C27D81892E8C27A400F6CADF /* BaseViewModel.swift in Sources */,
 				C27D818A2E8C27A400F6CADF /* CredentialDetailView.swift in Sources */,
 				C27D818B2E8C27A400F6CADF /* KeyManager.swift in Sources */,
 				C27D818C2E8C27A400F6CADF /* SettingsViewModel.swift in Sources */,
 				C27D818D2E8C27A400F6CADF /* StorageManager.swift in Sources */,
+				C2974AB42E8D278100AADFBE /* CredentialsRepository.swift in Sources */,
+				C2974AC62E8DBE5B00AADFBE /* Strings.swift in Sources */,
 				C27D818E2E8C27A400F6CADF /* DashboardView.swift in Sources */,
 				C27D818F2E8C27A400F6CADF /* LoginView.swift in Sources */,
 				C27D81902E8C27A400F6CADF /* KeyGenerationDialog.swift in Sources */,
 				C27D81912E8C27A400F6CADF /* MnemonicView.swift in Sources */,
+				C2974AAF2E8D274300AADFBE /* WalletRepository.swift in Sources */,
+				C2974AB02E8D274300AADFBE /* UserRepository.swift in Sources */,
 				C27D81922E8C27A400F6CADF /* LoginViewModel.swift in Sources */,
 				C27D81932E8C27A400F6CADF /* WalletsView.swift in Sources */,
 				C27D81942E8C27A400F6CADF /* CredentialsView.swift in Sources */,
 				C27D81952E8C27A400F6CADF /* AppTheme.swift in Sources */,
 				C27D81962E8C27A400F6CADF /* NavigationCoordinator.swift in Sources */,
+				C2974AC22E8D2DBE00AADFBE /* DataProvider.swift in Sources */,
+				C2974ABB2E8D2A5A00AADFBE /* Wallet.swift in Sources */,
+				C2974ABC2E8D2A5A00AADFBE /* User.swift in Sources */,
 				C27D81972E8C27A400F6CADF /* CommonViews.swift in Sources */,
 				C27D81982E8C27A400F6CADF /* SettingsView.swift in Sources */,
 				C27D81992E8C27A400F6CADF /* EnclaveState.swift in Sources */,
+				C2974AB22E8D277400AADFBE /* Credential.swift in Sources */,
 				C27D819A2E8C27A400F6CADF /* WalletsViewModel.swift in Sources */,
 				C27D819B2E8C27A400F6CADF /* CredentialDetailViewModel.swift in Sources */,
 				C27D819C2E8C27A400F6CADF /* BaseEnclaveViewModel.swift in Sources */,
 				C27D819D2E8C27A400F6CADF /* CredentialsViewModel.swift in Sources */,
+				C27D81A22E8C27A500F6CADF /* Config.swift in Sources */,
+				C27D81A32E8C27A500F6CADF /* EthSigner.swift in Sources */,
+				C27D81A52E8C27A500F6CADF /* MnemonicViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -535,17 +672,19 @@
 		};
 		7555FF90242A565B00829871 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = FB21B815C23CCBDB0C1EC03A /* Pods-iosApp.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
+				DEVELOPMENT_TEAM = 93X9HS5327;
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
 				INFOPLIST_FILE = iosApp/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -553,7 +692,7 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-framework",
-					"idos-sdk",
+					idos_sdk,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = org.idos.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -564,17 +703,19 @@
 		};
 		7555FF91242A565B00829871 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 1D4991D105C771A3AB24CC5B /* Pods-iosApp.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
+				DEVELOPMENT_TEAM = 93X9HS5327;
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
 				INFOPLIST_FILE = iosApp/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -582,7 +723,7 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-framework",
-					"idos-sdk",
+					idos_sdk,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = org.idos.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";

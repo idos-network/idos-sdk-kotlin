@@ -6,6 +6,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.utils.io.core.toByteArray
 import org.idos.kwil.rpc.ApiClient
 import org.idos.kwil.rpc.Base64String
+import org.idos.kwil.rpc.HexString
 import org.idos.kwil.signer.BaseSigner
 
 // https://github.com/trufnetwork/kwil-js/blob/main/src/auth/auth.ts#L35
@@ -27,7 +28,7 @@ class Auth(
         val response =
             this.client.authn(
                 authParam.nonce,
-                signer.getIdentifier(),
+                HexString(signer.getIdentifier()),
                 Base64String(signature),
                 signer.getSignatureType(),
             )

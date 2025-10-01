@@ -14,18 +14,17 @@ enum LoginEvent {
 }
 
 /// LoginViewModel matching Android's LoginViewModel
-class LoginViewModel: ObservableObject {
-    @Published var state = LoginState()
-
+class LoginViewModel: BaseViewModel<LoginState, LoginEvent> {
     private let navigationCoordinator: NavigationCoordinator
     private let storageManager: StorageManager
 
     init(navigationCoordinator: NavigationCoordinator, storageManager: StorageManager) {
         self.navigationCoordinator = navigationCoordinator
         self.storageManager = storageManager
+        super.init(initialState: LoginState())
     }
 
-    func onEvent(_ event: LoginEvent) {
+    override func onEvent(_ event: LoginEvent) {
         switch event {
         case .connectWallet:
             connectWallet()

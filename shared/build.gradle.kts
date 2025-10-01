@@ -29,7 +29,7 @@ kotlin {
     // Common iOS configuration
     iosTargets.forEach { target ->
         target.binaries.framework {
-            baseName = "idos-sdk"
+            baseName = "idos_sdk"
             freeCompilerArgs += listOf("-Xbinary=bundleId=org.idos")
             isStatic = true
         }
@@ -92,6 +92,7 @@ kotlin {
         }
 
         iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
 //            implementation(libs.multiplatform.crypto.libsodium.bindings)
         }
 

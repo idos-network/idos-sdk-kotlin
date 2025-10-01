@@ -12,6 +12,29 @@ class KeyManager {
         case keyRetrievalFailed
         case keyDeletionFailed
     }
+    
+    /// Generate and store key from mnemonic phrase
+    /// Matches Android's KeyManager.generateAndStoreKey()
+    /// - Parameter words: Mnemonic phrase (12 or 24 words)
+    /// - Returns: Derived Ethereum address
+    /// - Throws: KeyManagerError if generation or storage fails
+    func generateAndStoreKey(words: String) throws -> String {
+        // Derive private key from mnemonic
+        var key = try EthSigner.mnemonicToPrivateKey(words)
+
+        defer {
+            // Zero out key data for security (matches Android's key.fill(0))
+            key.resetBytes(in: 0..<key.count)
+        }
+
+        // Derive address before storing
+        let address = try EthSigner.privateKeyToAddress(key)
+
+        // Store the key securely
+        try storeKey(key)
+
+        return address
+    }
 
     /// Store a private key securely in Keychain
     func storeKey(_ keyData: Data) throws {

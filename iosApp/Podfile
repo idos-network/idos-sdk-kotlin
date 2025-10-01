@@ -5,17 +5,9 @@ platform :ios, '15.0'
 
 target 'iosApp' do
   use_frameworks!
-
-  # SwiftSodium - libsodium wrapper for NaCl encryption
-  # Provides: crypto_box_easy, crypto_box_open_easy, crypto_scalarmult_base
-  pod 'SwiftSodium', '~> 0.9.1'
-
-  # CryptoSwift - Pure Swift crypto library
-  # Provides: SCrypt key derivation
-  pod 'CryptoSwift', '~> 1.8.0'
-
-  # Optional: web3.swift for Ethereum wallet operations (BIP39/BIP44)
-  # pod 'web3.swift', '~> 1.6.0'
+  # TrustWalletCore for Ethereum wallet operations (BIP39/BIP44/secp256k1)
+  # Mature, production-proven library from Trust Wallet
+  pod 'TrustWalletCore', '~> 4.0'
 end
 
 post_install do |installer|

@@ -4,9 +4,25 @@ import SwiftUI
 struct LoginView: View {
     @StateObject var viewModel: LoginViewModel
     @EnvironmentObject var diContainer: DIContainer
+    @EnvironmentObject var navigationCoordinator: NavigationCoordinator
+
+    // iOS 15 compatible navigation state
+    private var isMnemonicActive: Binding<Bool> {
+        Binding(
+            get: { navigationCoordinator.currentRoute == .mnemonic },
+            set: { if !$0 { navigationCoordinator.navigateUp() } }
+        )
+    }
+
+    private var isDashboardActive: Binding<Bool> {
+        Binding(
+            get: { navigationCoordinator.currentRoute == .dashboard },
+            set: { if !$0 { navigationCoordinator.navigateUp() } }
+        )
+    }
 
     var body: some View {
-        NavigationStack(path: $diContainer.navigationCoordinator.path) {
+        NavigationView {
             VStack(spacing: 32) {
                 Spacer()
 
@@ -44,23 +60,27 @@ struct LoginView: View {
 
                 Spacer()
                     .frame(height: 60)
-            }
-            .navigationDestination(for: Route.self) { route in
-                routeDestination(for: route)
-            }
-        }
-        .environmentObject(diContainer.navigationCoordinator)
-    }
 
-    @ViewBuilder
-    private func routeDestination(for route: Route) -> some View {
-        switch route {
-        case .mnemonic:
-            MnemonicView()
-        case .dashboard:
-            DashboardView()
-        default:
-            EmptyView()
+                // Hidden NavigationLinks for programmatic navigation (iOS 15 compatible)
+                NavigationLink(
+                    destination: MnemonicView(viewModel: diContainer.makeMnemonicViewModel()),
+                    isActive: isMnemonicActive
+                ) { EmptyView() }
+
+                NavigationLink(
+                    destination: DashboardView(),
+                    isActive: isDashboardActive
+                ) { EmptyView() }
+            }
+            .navigationBarHidden(true)
         }
+        .navigationViewStyle(StackNavigationViewStyle())
     }
+}
+
+#Preview {
+    let diContainer = DIContainer.shared
+    LoginView(viewModel: diContainer.makeLoginViewModel())
+        .environmentObject(diContainer)
+        .environmentObject(diContainer.navigationCoordinator)
 }

@@ -4,7 +4,7 @@ import org.idos.kwil.rpc.AccountId
 import org.idos.kwil.rpc.HexString
 
 interface BaseSigner {
-    fun getIdentifier(): HexString
+    fun getIdentifier(): String
 
     fun getSignatureType(): SignatureType
 

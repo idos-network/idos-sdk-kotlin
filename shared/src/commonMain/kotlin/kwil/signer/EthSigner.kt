@@ -1,6 +1,7 @@
 package org.idos.kwil.signer
 
 import org.idos.kwil.rpc.AccountId
+import org.idos.kwil.rpc.HexString
 
 // Abstract Ethereum signer interface
 abstract class EthSigner : BaseSigner {
@@ -8,7 +9,7 @@ abstract class EthSigner : BaseSigner {
 
     override fun accountId(): AccountId =
         AccountId(
-            identifier = getIdentifier(),
+            identifier = HexString(getIdentifier()),
             keyType = KeyType.SECP256K1,
         )
 }

@@ -1,12 +1,22 @@
 import Foundation
 import Combine
 
-/// Protocol defining base ViewModel behavior
-/// Matches Android's BaseViewModel abstract class
-protocol BaseViewModel: ObservableObject {
-    associatedtype State
-    associatedtype Event
+/// Base class for all ViewModels
+/// Matches Android's BaseViewModel abstract class with State/Event pattern
+class BaseViewModel<State, Event>: ObservableObject {
+    @Published var state: State
 
-    var state: State { get set }
-    func onEvent(_ event: Event)
+    init(initialState: State) {
+        self.state = initialState
+    }
+
+    /// Handle events - subclasses must override
+    func onEvent(_ event: Event) {
+        fatalError("onEvent(_:) must be overridden by subclass")
+    }
+
+    /// Update state - helper for atomic state updates
+    func updateState(_ transform: (inout State) -> Void) {
+        transform(&state)
+    }
 }

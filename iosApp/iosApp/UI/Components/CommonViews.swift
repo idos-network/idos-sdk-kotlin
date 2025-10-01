@@ -55,6 +55,14 @@ struct ErrorStateView: View {
     let message: String
     let canRetry: Bool
     let onRetry: (() -> Void)?
+    let onReset: (() -> Void)?
+
+    init(message: String, canRetry: Bool, onRetry: (() -> Void)? = nil, onReset: (() -> Void)? = nil) {
+        self.message = message
+        self.canRetry = canRetry
+        self.onRetry = onRetry
+        self.onReset = onReset
+    }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -71,14 +79,27 @@ struct ErrorStateView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
 
-            if canRetry, let onRetry = onRetry {
-                Button(action: onRetry) {
-                    Text("Retry")
-                        .padding(.horizontal, 32)
-                        .padding(.vertical, 12)
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
+            VStack(spacing: 12) {
+                if canRetry, let onRetry = onRetry {
+                    Button(action: onRetry) {
+                        Text("Retry")
+                            .padding(.horizontal, 32)
+                            .padding(.vertical, 12)
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                    }
+                }
+
+                if let onReset = onReset {
+                    Button(action: onReset) {
+                        Text("Reset Key")
+                            .padding(.horizontal, 32)
+                            .padding(.vertical, 12)
+                            .background(Color.orange)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                    }
                 }
             }
         }

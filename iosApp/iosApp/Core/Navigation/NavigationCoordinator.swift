@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 /// Navigation routes matching Android's NavRoutes.kt
-enum Route: Hashable {
+enum Route: Hashable, Identifiable {
     case login
     case mnemonic
     case dashboard
@@ -10,26 +10,44 @@ enum Route: Hashable {
     case credentialDetail(credentialId: String)
     case wallets
     case settings
+
+    var id: String {
+        switch self {
+        case .login: return "login"
+        case .mnemonic: return "mnemonic"
+        case .dashboard: return "dashboard"
+        case .credentials: return "credentials"
+        case .credentialDetail(let id): return "credentialDetail-\(id)"
+        case .wallets: return "wallets"
+        case .settings: return "settings"
+        }
+    }
 }
 
-/// NavigationCoordinator manages navigation state
+/// NavigationCoordinator manages navigation state for iOS 15+
 /// This matches Android's NavigationManager pattern using SharedFlow
 class NavigationCoordinator: ObservableObject {
-    @Published var path: NavigationPath = NavigationPath()
+    // Array-based navigation stack (iOS 15 compatible)
+    @Published var navigationStack: [Route] = []
     @Published var presentedSheet: Route?
 
+    // Computed properties for navigation state
+    var currentRoute: Route? {
+        navigationStack.last
+    }
+
     func navigate(to route: Route) {
-        path.append(route)
+        navigationStack.append(route)
     }
 
     func navigateUp() {
-        if !path.isEmpty {
-            path.removeLast()
+        if !navigationStack.isEmpty {
+            navigationStack.removeLast()
         }
     }
 
     func popToRoot() {
-        path = NavigationPath()
+        navigationStack.removeAll()
     }
 
     func presentSheet(_ route: Route) {
@@ -41,7 +59,12 @@ class NavigationCoordinator: ObservableObject {
     }
 
     func replace(with route: Route) {
-        path = NavigationPath()
-        path.append(route)
+        navigationStack.removeAll()
+        navigationStack.append(route)
+    }
+
+    // Helper to check if a specific route is active
+    func isRouteActive(_ route: Route) -> Bool {
+        return currentRoute == route
     }
 }
