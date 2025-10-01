@@ -1,15 +1,2 @@
-language = Objective-C
-package = libsodium
-
-# Path to Homebrew's libsodium headers
-headers = /opt/homebrew/opt/libsodium/include/sodium.h
-
-# Library paths
-staticLibraries = libsodium.a
-libraryPaths = /opt/homebrew/opt/libsodium/lib
-
-# Linker flags
-linkerOpts = -L/opt/homebrew/opt/libsodium/lib -lsodium
-
-# Common compiler flags
-compilerOpts = -I/opt/homebrew/opt/libsodium/include
+headers = sodium.h
+headerFilter = sodium.h sodium/**

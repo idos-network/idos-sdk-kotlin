@@ -39,10 +39,13 @@ kotlin {
     iosArm64().compilations.getByName("main") {
         cinterops {
             val libsodium by creating {
-                defFile(project.file("src/iosMain/c_interop/libsodium-device.def"))
-                includeDirs("$projectDir/libs/libsodium.xcframework/ios-arm64/Headers")
+                defFile(project.file("src/iosMain/c_interop/libsodium.def"))
                 compilerOpts("-I$projectDir/libs/libsodium.xcframework/ios-arm64/Headers")
             }
+        }
+        compileTaskProvider.configure {
+            compilerOptions.freeCompilerArgs.add("-include-binary")
+            compilerOptions.freeCompilerArgs.add("$projectDir/libs/libsodium.xcframework/ios-arm64/libsodium.a")
         }
     }
 
@@ -50,10 +53,13 @@ kotlin {
     iosSimulatorArm64().compilations.getByName("main") {
         cinterops {
             val libsodium by creating {
-                defFile(project.file("src/iosMain/c_interop/libsodium-simulator.def"))
-                includeDirs("$projectDir/libs/libsodium.xcframework/ios-arm64_x86_64-simulator/Headers")
+                defFile(project.file("src/iosMain/c_interop/libsodium.def"))
                 compilerOpts("-I$projectDir/libs/libsodium.xcframework/ios-arm64_x86_64-simulator/Headers")
             }
+        }
+        compileTaskProvider.configure {
+            compilerOptions.freeCompilerArgs.add("-include-binary")
+            compilerOptions.freeCompilerArgs.add("$projectDir/libs/libsodium.xcframework/ios-arm64_x86_64-simulator/libsodium.a")
         }
     }
 
