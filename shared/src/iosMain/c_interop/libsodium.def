@@ -1,20 +1,15 @@
 language = Objective-C
 package = libsodium
 
-# Only include this for iOS targets
-targets = ios_arm64, ios_simulator_arm64
+# Path to Homebrew's libsodium headers
+headers = /opt/homebrew/opt/libsodium/include/sodium.h
 
-# Link against the system libsodium
+# Library paths
 staticLibraries = libsodium.a
-libraryPaths = /opt/homebrew/Cellar/libsodium/1.0.20/lib
+libraryPaths = /opt/homebrew/opt/libsodium/lib
 
-# Headers to include
-headers = sodium.h
+# Linker flags
+linkerOpts = -L/opt/homebrew/opt/libsodium/lib -lsodium
 
-# Explicitly specify the header filter
-headerFilter = sodium/**
-
-depends = Foundation
-
-compilerOpts = -I/opt/homebrew/Cellar/libsodium/1.0.20/include
-linkerOpts = -L/opt/homebrew/Cellar/libsodium/1.0.20/lib -lsodium
+# Common compiler flags
+compilerOpts = -I/opt/homebrew/opt/libsodium/include

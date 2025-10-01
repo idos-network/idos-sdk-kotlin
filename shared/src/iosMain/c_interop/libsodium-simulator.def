@@ -1,0 +1,15 @@
+language = Objective-C
+package = libsodium
+
+# Path to XCFramework headers (simulator)
+headers = /Users/vander/dev/idos/idos-sdk-kotlin/shared/libs/libsodium.xcframework/ios-arm64_x86_64-simulator/Headers/sodium.h
+
+# Library paths
+staticLibraries = libsodium.a
+libraryPaths = /Users/vander/dev/idos/idos-sdk-kotlin/shared/libs/libsodium.xcframework/ios-arm64_x86_64-simulator
+
+# Linker flags
+linkerOpts = -L/Users/vander/dev/idos/idos-sdk-kotlin/shared/libs/libsodium.xcframework/ios-arm64_x86_64-simulator -lsodium
+
+# Common compiler flags
+compilerOpts = -I/Users/vander/dev/idos/idos-sdk-kotlin/shared/libs/libsodium.xcframework/ios-arm64_x86_64-simulator/Headers
