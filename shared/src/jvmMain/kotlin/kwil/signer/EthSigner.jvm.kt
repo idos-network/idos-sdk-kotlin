@@ -15,7 +15,7 @@ class JvmEthSigner(
     private val privateKey = PrivateKey(BigInteger(privateKeyHex.removePrefix("0x"), 16))
     private val keyPair: ECKeyPair = privateKey.toECKeyPair()
 
-    override fun getIdentifier(): HexString = HexString(keyPair.toAddress().toString().removePrefix("0x"))
+    override fun getIdentifier(): String = keyPair.toAddress().toString().removePrefix("0x")
 
     override suspend fun sign(msg: ByteArray): ByteArray =
         keyPair

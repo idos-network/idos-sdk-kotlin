@@ -41,7 +41,7 @@ class ApiIntegrationTests :
                             .toString(16),
                     )
                 val client = KwilActionClient("https://nodes.staging.idos.network", signer, chainId)
-                val accountId = signer.getIdentifier().prefixedValue
+                val accountId = "0x" + signer.getIdentifier()
                 println(accountId)
                 client.hasUserProfile(accountId).hasProfile shouldBe true
                 val wallets = client.getWallets()
@@ -52,9 +52,44 @@ class ApiIntegrationTests :
                 wallets.asClue { it.first().address.lowercase() shouldBe accountId }
 
                 accessGrants.firstOrNull()?.run {
+                    // Print message payload for revokeAccessGrant
+                    val message =
+                        client.buildMessage(
+                            org.idos.kwil.rpc.CallBody(
+                                namespace = org.idos.kwil.actions.generated.execute.RevokeAccessGrant.namespace,
+                                name = org.idos.kwil.actions.generated.execute.RevokeAccessGrant.name,
+                                inputs =
+                                    org.idos.kwil.actions.generated.execute.RevokeAccessGrant.toPositionalParams(
+                                        org.idos.kwil.actions.generated.execute
+                                            .RevokeAccessGrantParams(this.id),
+                                    ),
+                                types = org.idos.kwil.actions.generated.execute.RevokeAccessGrant.positionalTypes,
+                            ),
+                            signer,
+                        )
+                    println("revokeAccessGrant payload: ${message.body.payload}")
+
                     client.revokeAccessGrant(this.id).asClue { it shouldNotBe null }
                 }
                 val id = credentials.last().id
+
+                // Print message payload for getCredentialOwned
+                val credMessage =
+                    client.buildMessage(
+                        org.idos.kwil.rpc.CallBody(
+                            namespace = org.idos.kwil.actions.generated.view.GetCredentialOwned.namespace,
+                            name = org.idos.kwil.actions.generated.view.GetCredentialOwned.name,
+                            inputs =
+                                org.idos.kwil.actions.generated.view.GetCredentialOwned.toPositionalParams(
+                                    org.idos.kwil.actions.generated.view
+                                        .GetCredentialOwnedParams(id),
+                                ),
+                            types = org.idos.kwil.actions.generated.view.GetCredentialOwned.positionalTypes,
+                        ),
+                        signer,
+                    )
+                println("getCredentialOwned payload: ${credMessage.body.payload}")
+
                 val data = client.getCredentialOwned(id)
                 val enclave = Enclave(JvmEncryption(), JvmMetadataStorage())
                 enclave.generateKey(profile.id, secrets.password, 1000)
