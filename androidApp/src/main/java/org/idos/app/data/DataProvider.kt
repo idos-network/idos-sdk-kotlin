@@ -1,29 +1,28 @@
 package org.idos.app.data
 
-import org.idos.kwil.KwilActionClient
-import org.idos.kwil.actions.getCredentialOwned
-import org.idos.kwil.actions.getCredentials
-import org.idos.kwil.actions.getUser
-import org.idos.kwil.actions.getWallets
-import org.idos.kwil.actions.hasUserProfile
-import org.idos.kwil.rpc.HexString
-import org.idos.kwil.rpc.UuidString
-import org.idos.kwil.signer.BaseSigner
+import org.idos.IdosClient
+import org.idos.get
+import org.idos.getAll
+import org.idos.getOwned
+import org.idos.hasProfile
+import org.idos.kwil.security.signer.Signer
+import org.idos.kwil.types.HexString
+import org.idos.kwil.types.UuidString
 
 class DataProvider(
     url: String,
-    signer: BaseSigner,
+    signer: Signer,
     chainId: String,
 ) {
-    private val client = KwilActionClient(url, signer, chainId)
+    private val client = IdosClient.create(url, chainId, signer).getOrThrow()
 
-    suspend fun getWallets() = client.getWallets()
+    suspend fun getWallets() = client.wallets.getAll()
 
-    suspend fun getCredentials() = client.getCredentials()
+    suspend fun getCredentials() = client.credentials.getAll()
 
-    suspend fun getCredential(id: UuidString) = client.getCredentialOwned(id)
+    suspend fun getCredential(id: UuidString) = client.credentials.getOwned(id)
 
-    suspend fun getUser() = client.getUser()
+    suspend fun getUser() = client.users.get()
 
-    suspend fun hasUserProfile(address: HexString) = client.hasUserProfile(address.prefixedValue)
+    suspend fun hasUserProfile(address: HexString) = client.users.hasProfile(address)
 }

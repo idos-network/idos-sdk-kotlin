@@ -10,7 +10,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.idos.app.data.model.UserModel
 import org.idos.app.security.KeyManager
-import org.idos.kwil.rpc.HexString
+import org.idos.kwil.types.HexString
 import timber.log.Timber
 
 sealed class UserState
@@ -20,7 +20,7 @@ object LoadingUser : UserState()
 object NoUser : UserState()
 
 data class ConnectedWallet(
-    val address: HexString,
+    val address: org.idos.kwil.types.HexString,
 ) : UserState()
 
 data class ConnectedUser(
@@ -89,7 +89,7 @@ class StorageManager(
         }
     }
 
-    fun saveWalletAddress(address: HexString) {
+    fun saveWalletAddress(address: org.idos.kwil.types.HexString) {
         _userState.value = ConnectedWallet(address)
     }
 
@@ -120,7 +120,7 @@ class StorageManager(
             else -> null
         }
 
-    fun getStoredWallet(): HexString? =
+    fun getStoredWallet(): org.idos.kwil.types.HexString? =
         when (val state = _userState.value) {
             is ConnectedUser -> state.user.walletAddress
             is ConnectedWallet -> state.address

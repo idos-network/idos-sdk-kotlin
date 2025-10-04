@@ -26,7 +26,7 @@ import org.idos.enclave.AndroidMetadataStorage
 import org.idos.enclave.Enclave
 import org.idos.enclave.Encryption
 import org.idos.enclave.MetadataStorage
-import org.idos.kwil.signer.BaseSigner
+import org.idos.kwil.security.signer.Signer
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -79,7 +79,7 @@ val securityModule =
         single<MetadataStorage> { AndroidMetadataStorage(androidContext()) }
         single { Enclave(get(), get()) }
         single { KeyManager(androidContext()) }
-        single<BaseSigner> { EthSigner(get(), get()) }
+        single<Signer> { EthSigner(get(), get()) }
     }
 
 val appModule =

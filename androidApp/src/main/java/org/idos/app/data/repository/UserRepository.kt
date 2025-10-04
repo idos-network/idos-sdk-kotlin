@@ -7,7 +7,7 @@ import org.idos.app.data.UserState
 import org.idos.app.data.model.UserModel
 import org.idos.app.security.EthSigner.Companion.privateToAddress
 import org.idos.app.security.KeyManager
-import org.idos.kwil.rpc.HexString
+import org.idos.kwil.types.HexString
 import org.kethereum.model.Address
 import timber.log.Timber
 
@@ -50,14 +50,14 @@ class UserRepositoryImpl(
         storageManager.saveWalletAddress(address)
 
         // Step 2: Check if user has profile first
-        val hasProfileResponse = dataProvider.hasUserProfile(address)
-        if (!hasProfileResponse.hasProfile) {
+        val hasProfile = dataProvider.hasUserProfile(address).getOrThrow()
+        if (!hasProfile) {
             throw NoProfileException("User profile does not exist - please create profile first")
         }
 
         try {
             // Step 3: Fetch user data
-            val user = dataProvider.getUser()
+            val user = dataProvider.getUser().getOrThrow()
 
             // Step 4: Combine address + user data
             val userModel =

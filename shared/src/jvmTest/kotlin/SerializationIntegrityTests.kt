@@ -1,22 +1,21 @@
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import org.idos.kwil.KwilActionClient
-import org.idos.kwil.actions.generated.execute.AddCredential
-import org.idos.kwil.actions.generated.execute.AddCredentialParams
-import org.idos.kwil.actions.generated.execute.AddWallet
-import org.idos.kwil.actions.generated.execute.AddWalletParams
-import org.idos.kwil.actions.generated.execute.CreateAccessGrant
-import org.idos.kwil.actions.generated.execute.CreateAccessGrantParams
-import org.idos.kwil.actions.generated.execute.RevokeAccessGrant
-import org.idos.kwil.actions.generated.execute.RevokeAccessGrantParams
-import org.idos.kwil.actions.generated.view.GetCredentialOwned
-import org.idos.kwil.actions.generated.view.GetCredentialOwnedParams
-import org.idos.kwil.actions.generated.view.HasProfile
-import org.idos.kwil.actions.generated.view.HasProfileParams
-import org.idos.kwil.rpc.CallBody
-import org.idos.kwil.rpc.UuidString
-import org.idos.kwil.signer.JvmEthSigner
+import org.idos.kwil.domain.generated.execute.AddCredential
+import org.idos.kwil.domain.generated.execute.AddCredentialParams
+import org.idos.kwil.domain.generated.execute.AddWallet
+import org.idos.kwil.domain.generated.execute.AddWalletParams
+import org.idos.kwil.domain.generated.execute.CreateAccessGrant
+import org.idos.kwil.domain.generated.execute.CreateAccessGrantParams
+import org.idos.kwil.domain.generated.execute.RevokeAccessGrant
+import org.idos.kwil.domain.generated.execute.RevokeAccessGrantParams
+import org.idos.kwil.domain.generated.view.GetCredentialOwned
+import org.idos.kwil.domain.generated.view.GetCredentialOwnedParams
+import org.idos.kwil.domain.generated.view.HasProfile
+import org.idos.kwil.domain.generated.view.HasProfileParams
+import org.idos.kwil.serialization.toMessage
+import org.idos.kwil.security.signer.JvmEthSigner
+import org.idos.kwil.types.UuidString
 
 /**
  * Serialization Integrity Tests
@@ -33,27 +32,11 @@ class SerializationIntegrityTests :
 
             "hasProfile should serialize correctly" {
                 val secrets = getSecrets()
-                val signer =
-                    JvmEthSigner(
-                        secrets.keyPair.privateKey.key
-                            .toString(16),
-                    )
-                val client = KwilActionClient("https://nodes.staging.idos.network", signer, chainId)
-                client.ensureAuthenticationMode()
-
+                val signer = JvmEthSigner(secrets.keyPair)
                 val address = "0x1234567890abcdef1234567890abcdef12345678"
                 val params = HasProfileParams(address)
 
-                val message =
-                    client.buildMessage(
-                        CallBody(
-                            namespace = HasProfile.namespace,
-                            name = HasProfile.name,
-                            inputs = HasProfile.toPositionalParams(params),
-                            types = HasProfile.positionalTypes,
-                        ),
-                        signer,
-                    )
+                val message = HasProfile.toMessage(params, signer)
 
                 println("hasProfile payload: ${message.body.payload}")
                 println("  - address: $address")
@@ -66,27 +49,11 @@ class SerializationIntegrityTests :
 
             "getCredentialOwned should serialize correctly" {
                 val secrets = getSecrets()
-                val signer =
-                    JvmEthSigner(
-                        secrets.keyPair.privateKey.key
-                            .toString(16),
-                    )
-                val client = KwilActionClient("https://nodes.staging.idos.network", signer, chainId)
-                client.ensureAuthenticationMode()
-
+                val signer = JvmEthSigner(secrets.keyPair)
                 val id = UuidString("550e8400-e29b-41d4-a716-446655440000")
                 val params = GetCredentialOwnedParams(id)
 
-                val message =
-                    client.buildMessage(
-                        CallBody(
-                            namespace = GetCredentialOwned.namespace,
-                            name = GetCredentialOwned.name,
-                            inputs = GetCredentialOwned.toPositionalParams(params),
-                            types = GetCredentialOwned.positionalTypes,
-                        ),
-                        signer,
-                    )
+                val message = GetCredentialOwned.toMessage(params, signer)
 
                 println("getCredentialOwned payload: ${message.body.payload}")
                 println("  - id: ${id.value}")
@@ -99,27 +66,11 @@ class SerializationIntegrityTests :
 
             "revokeAccessGrant should serialize correctly" {
                 val secrets = getSecrets()
-                val signer =
-                    JvmEthSigner(
-                        secrets.keyPair.privateKey.key
-                            .toString(16),
-                    )
-                val client = KwilActionClient("https://nodes.staging.idos.network", signer, chainId)
-                client.ensureAuthenticationMode()
-
+                val signer = JvmEthSigner(secrets.keyPair)
                 val id = UuidString("550e8400-e29b-41d4-a716-446655440001")
                 val params = RevokeAccessGrantParams(id)
 
-                val message =
-                    client.buildMessage(
-                        CallBody(
-                            namespace = RevokeAccessGrant.namespace,
-                            name = RevokeAccessGrant.name,
-                            inputs = RevokeAccessGrant.toPositionalParams(params),
-                            types = RevokeAccessGrant.positionalTypes,
-                        ),
-                        signer,
-                    )
+                val message = RevokeAccessGrant.toMessage(params, signer)
 
                 println("revokeAccessGrant payload: ${message.body.payload}")
                 println("  - id: ${id.value}")
@@ -132,14 +83,7 @@ class SerializationIntegrityTests :
 
             "addWallet should serialize correctly" {
                 val secrets = getSecrets()
-                val signer =
-                    JvmEthSigner(
-                        secrets.keyPair.privateKey.key
-                            .toString(16),
-                    )
-                val client = KwilActionClient("https://nodes.staging.idos.network", signer, chainId)
-                client.ensureAuthenticationMode()
-
+                val signer = JvmEthSigner(secrets.keyPair)
                 val params =
                     AddWalletParams(
                         id = UuidString("550e8400-e29b-41d4-a716-446655440002"),
@@ -149,16 +93,7 @@ class SerializationIntegrityTests :
                         signature = "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab",
                     )
 
-                val message =
-                    client.buildMessage(
-                        CallBody(
-                            namespace = AddWallet.namespace,
-                            name = AddWallet.name,
-                            inputs = AddWallet.toPositionalParams(params),
-                            types = AddWallet.positionalTypes,
-                        ),
-                        signer,
-                    )
+                val message = AddWallet.toMessage(params, signer)
 
                 println("addWallet payload: ${message.body.payload}")
                 println("  - id: ${params.id.value}")
@@ -175,14 +110,7 @@ class SerializationIntegrityTests :
 
             "createAccessGrant should serialize correctly" {
                 val secrets = getSecrets()
-                val signer =
-                    JvmEthSigner(
-                        secrets.keyPair.privateKey.key
-                            .toString(16),
-                    )
-                val client = KwilActionClient("https://nodes.staging.idos.network", signer, chainId)
-                client.ensureAuthenticationMode()
-
+                val signer = JvmEthSigner(secrets.keyPair)
                 val params =
                     CreateAccessGrantParams(
                         granteeWalletIdentifier = "0x1234567890abcdef1234567890abcdef12345678",
@@ -193,16 +121,7 @@ class SerializationIntegrityTests :
                         inserterId = "0x9876543210fedcba9876543210fedcba98765432",
                     )
 
-                val message =
-                    client.buildMessage(
-                        CallBody(
-                            namespace = CreateAccessGrant.namespace,
-                            name = CreateAccessGrant.name,
-                            inputs = CreateAccessGrant.toPositionalParams(params),
-                            types = CreateAccessGrant.positionalTypes,
-                        ),
-                        signer,
-                    )
+                val message = CreateAccessGrant.toMessage(params, signer)
 
                 println("createAccessGrant payload: ${message.body.payload}")
                 println("  - granteeWalletIdentifier: ${params.granteeWalletIdentifier}")
@@ -220,14 +139,7 @@ class SerializationIntegrityTests :
 
             "addCredential should serialize correctly" {
                 val secrets = getSecrets()
-                val signer =
-                    JvmEthSigner(
-                        secrets.keyPair.privateKey.key
-                            .toString(16),
-                    )
-                val client = KwilActionClient("https://nodes.staging.idos.network", signer, chainId)
-                client.ensureAuthenticationMode()
-
+                val signer = JvmEthSigner(secrets.keyPair)
                 val params =
                     AddCredentialParams(
                         id = UuidString("550e8400-e29b-41d4-a716-446655440004"),
@@ -239,16 +151,7 @@ class SerializationIntegrityTests :
                         broaderSignature = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12",
                     )
 
-                val message =
-                    client.buildMessage(
-                        CallBody(
-                            namespace = AddCredential.namespace,
-                            name = AddCredential.name,
-                            inputs = AddCredential.toPositionalParams(params),
-                            types = AddCredential.positionalTypes,
-                        ),
-                        signer,
-                    )
+                val message = AddCredential.toMessage(params, signer)
 
                 println("addCredential payload: ${message.body.payload}")
                 println("  - id: ${params.id.value}")
@@ -269,27 +172,11 @@ class SerializationIntegrityTests :
                 // This test documents the expected payload structure
                 // When schema changes, this will fail and needs to be updated
                 val secrets = getSecrets()
-                val signer =
-                    JvmEthSigner(
-                        secrets.keyPair.privateKey.key
-                            .toString(16),
-                    )
-                val client = KwilActionClient("https://nodes.staging.idos.network", signer, chainId)
-                client.ensureAuthenticationMode()
-
+                val signer = JvmEthSigner(secrets.keyPair)
                 val testId = UuidString("550e8400-e29b-41d4-a716-446655440000")
                 val params = GetCredentialOwnedParams(testId)
 
-                val message =
-                    client.buildMessage(
-                        CallBody(
-                            namespace = GetCredentialOwned.namespace,
-                            name = GetCredentialOwned.name,
-                            inputs = GetCredentialOwned.toPositionalParams(params),
-                            types = GetCredentialOwned.positionalTypes,
-                        ),
-                        signer,
-                    )
+                val message = GetCredentialOwned.toMessage(params, signer)
 
                 // The payload should be a non-empty base64 string
                 message.body.payload shouldNotBe null

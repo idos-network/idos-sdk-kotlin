@@ -1,16 +1,16 @@
 package org.idos.app.data.model
 
 import kotlinx.serialization.Serializable
-import org.idos.kwil.rpc.HexString
-import org.idos.kwil.rpc.UuidString
+import org.idos.kwil.types.HexString
+import org.idos.kwil.types.UuidString
 
 data class Credential(
-    val id: UuidString,
+    val id: org.idos.kwil.types.UuidString,
     val notes: Notes,
 )
 
 data class Notes(
-    val id: UuidString,
+    val id: org.idos.kwil.types.UuidString,
     val type: String,
     val level: String,
     val status: String,
@@ -18,7 +18,7 @@ data class Notes(
 )
 
 data class CredentialDetail(
-    val id: UuidString,
+    val id: org.idos.kwil.types.UuidString,
     val content: String,
     val encryptorPublicKey: String,
 )
@@ -30,7 +30,7 @@ data class Wallet(
 
 @Serializable
 data class UserModel(
-    val id: UuidString,
-    val walletAddress: HexString,
+    val id: org.idos.kwil.types.UuidString,
+    val walletAddress: org.idos.kwil.types.HexString,
     val lastUpdated: Long = System.currentTimeMillis(),
 )

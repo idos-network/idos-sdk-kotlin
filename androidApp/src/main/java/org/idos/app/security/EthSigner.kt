@@ -1,7 +1,7 @@
 package org.idos.app.security
 
 import org.idos.app.data.StorageManager
-import org.idos.kwil.rpc.HexString
+import org.idos.kwil.types.HexString
 import org.kethereum.bip32.toKey
 import org.kethereum.bip39.model.MnemonicWords
 import org.kethereum.bip39.toSeed
@@ -14,7 +14,7 @@ import org.kethereum.model.PrivateKey
 class EthSigner(
     private val keyManager: KeyManager,
     private val storageManager: StorageManager,
-) : org.idos.kwil.signer.EthSigner() {
+) : org.idos.kwil.security.signer.EthSigner() {
     override fun getIdentifier(): HexString {
         val address = storageManager.getStoredWallet()
         requireNotNull(address)

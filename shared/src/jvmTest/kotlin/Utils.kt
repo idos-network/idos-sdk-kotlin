@@ -2,6 +2,7 @@ import io.github.cdimascio.dotenv.dotenv
 import io.kotest.assertions.asClue
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.shouldNotBe
+import org.kethereum.bip32.model.Seed
 import org.kethereum.bip32.toKey
 import org.kethereum.bip39.model.MnemonicWords
 import org.kethereum.bip39.toSeed

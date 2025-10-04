@@ -14,8 +14,8 @@ import org.idos.app.navigation.NavigationManager
 import org.idos.app.ui.screens.base.BaseEnclaveViewModel
 import org.idos.enclave.Enclave
 import org.idos.enclave.KeyExpiredError
-import org.idos.kwil.rpc.Base64String
-import org.idos.kwil.rpc.UuidString
+import org.idos.kwil.types.Base64String
+import org.idos.kwil.types.UuidString
 import org.idos.kwil.serialization.toByteArray
 import timber.log.Timber
 

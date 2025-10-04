@@ -5,7 +5,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.idos.kwil.rpc.UuidString
+import org.idos.kwil.types.UuidString
 
 class EncryptionTest :
     StringSpec({

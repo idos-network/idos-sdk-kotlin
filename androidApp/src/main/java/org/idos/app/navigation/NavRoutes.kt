@@ -1,7 +1,7 @@
 package org.idos.app.navigation
 
 import androidx.navigation.NavBackStackEntry
-import org.idos.kwil.rpc.UuidString
+import org.idos.kwil.types.UuidString
 
 sealed class NavRoute(
     val route: String,

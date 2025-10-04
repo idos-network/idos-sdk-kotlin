@@ -9,14 +9,14 @@ import org.idos.app.data.DataProvider
 import org.idos.app.data.model.Credential
 import org.idos.app.data.model.CredentialDetail
 import org.idos.app.data.model.Notes
-import org.idos.kwil.actions.generated.view.GetCredentialOwnedResponse
-import org.idos.kwil.actions.generated.view.GetCredentialsResponse
-import org.idos.kwil.rpc.UuidString
+import org.idos.kwil.domain.generated.view.GetCredentialOwnedResponse
+import org.idos.kwil.domain.generated.view.GetCredentialsResponse
+import org.idos.kwil.types.UuidString
 
 interface CredentialsRepository {
     fun getCredentials(): Flow<List<Credential>>
 
-    fun getCredential(id: UuidString): Flow<CredentialDetail>
+    fun getCredential(id: org.idos.kwil.types.UuidString): Flow<CredentialDetail>
 }
 
 class CredentialsRepositoryImpl(
@@ -27,24 +27,29 @@ class CredentialsRepositoryImpl(
             emit(
                 dataProvider
                     .getCredentials()
+                    .getOrThrow()
                     .filter { it.publicNotes.isNotBlank() }
                     .map { it.toCredential() },
             )
         }
 
-    override fun getCredential(id: UuidString): Flow<CredentialDetail> = flow { emit(dataProvider.getCredential(id).toDetail()) }
+    override fun getCredential(id: org.idos.kwil.types.UuidString): Flow<CredentialDetail> =
+        flow {
+            val credential = dataProvider.getCredential(id).getOrThrow()
+            emit(credential.toDetail())
+        }
 }
 
 @Serializable
 data class PublicNotes(
-    @SerialName("id") val id: UuidString,
+    @SerialName("id") val id: org.idos.kwil.types.UuidString,
     @SerialName("type") val type: String,
     @SerialName("level") val level: String,
     @SerialName("status") val status: String,
     @SerialName("issuer") val issuer: String,
 )
 
-fun GetCredentialsResponse.toCredential(): Credential {
+fun org.idos.kwil.domain.generated.view.GetCredentialsResponse.toCredential(): Credential {
     val publicNotes = Json.decodeFromString<PublicNotes>(this.publicNotes)
     return Credential(
         id,
@@ -59,4 +64,5 @@ fun GetCredentialsResponse.toCredential(): Credential {
     )
 }
 
-fun GetCredentialOwnedResponse.toDetail(): CredentialDetail = CredentialDetail(id, content, encryptorPublicKey)
+fun org.idos.kwil.domain.generated.view.GetCredentialOwnedResponse.toDetail(): CredentialDetail =
+    CredentialDetail(id, content, encryptorPublicKey)

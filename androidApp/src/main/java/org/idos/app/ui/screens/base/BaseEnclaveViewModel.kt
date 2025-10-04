@@ -98,7 +98,7 @@ abstract class BaseEnclaveViewModel<State : Any, Event>(
 
         viewModelScope.launch {
             try {
-                val user = dataProvider.getUser()
+                val user = dataProvider.getUser().getOrThrow()
                 enclave.generateKey(user.id, password, expiration.inWholeMilliseconds)
                 Timber.d("Key generated successfully")
                 _enclaveUiState.value = EnclaveUiState.Available(enclave)
