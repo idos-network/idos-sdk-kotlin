@@ -24,6 +24,7 @@ import org.idos.app.ui.screens.wallets.WalletsViewModel
 import org.idos.enclave.AndroidEncryption
 import org.idos.enclave.AndroidMetadataStorage
 import org.idos.enclave.Enclave
+import org.idos.enclave.EnclaveOrchestrator
 import org.idos.enclave.Encryption
 import org.idos.enclave.MetadataStorage
 import org.idos.kwil.security.signer.Signer
@@ -78,6 +79,7 @@ val securityModule =
         single<Encryption> { AndroidEncryption(androidContext()) }
         single<MetadataStorage> { AndroidMetadataStorage(androidContext()) }
         single { Enclave(get(), get()) }
+        single { EnclaveOrchestrator(get()) }
         single { KeyManager(androidContext()) }
         single<Signer> { EthSigner(get(), get()) }
     }

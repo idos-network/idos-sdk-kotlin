@@ -41,8 +41,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.serialization.json.*
 import org.idos.app.data.model.CredentialDetail
 import org.idos.app.ui.screens.base.BaseScreen
-import org.idos.app.ui.screens.base.EnclaveEvent
-import org.idos.app.ui.screens.base.EnclaveUiState
 import org.idos.app.ui.screens.base.KeyGenerationDialog
 import org.idos.app.ui.screens.base.spacing
 import timber.log.Timber
@@ -52,6 +50,8 @@ import timber.log.Timber
 fun CredentialDetailScreen(viewModel: CredentialDetailViewModel) {
     val state by viewModel.state.collectAsState()
     val enclaveUiState by viewModel.enclaveUiState.collectAsState()
+    Timber.d("*********UI state is $state")
+    Timber.d("*********enclave UI state is $enclaveUiState")
 
     BaseScreen {
         when (val it = state) {
@@ -64,10 +64,12 @@ fun CredentialDetailScreen(viewModel: CredentialDetailViewModel) {
                 }
             }
 
-            is CredentialDetailState.Success -> {
+            is CredentialDetailState.Loaded -> {
                 CredentialDetailContent(
                     credential = it.credential,
                     decryptedContent = it.decryptedContent,
+                    isEncrypted = it.decryptedContent == null,
+                    onItem = { viewModel.onEvent(CredentialDetailEvent.DecryptCredential) },
                 )
             }
 
@@ -75,94 +77,48 @@ fun CredentialDetailScreen(viewModel: CredentialDetailViewModel) {
                 ErrorState(
                     message = it.message,
                     onRetry = { viewModel.onEvent(CredentialDetailEvent.Retry) },
-                    onReset = { viewModel.onEvent(CredentialDetailEvent.ResetKey) },
+                    onReset = { viewModel.onEvent(CredentialDetailEvent.LockEnclave) },
                 )
             }
         }
     }
 
-    // Enclave UI overlay (key generation dialog, etc.)
+    // Enclave UI overlay (password dialog, errors)
     EnclaveUiOverlay(
         enclaveUiState = enclaveUiState,
-        onEnclaveEvent = viewModel::onEnclaveEvent,
+        onEvent = viewModel::onEvent,
     )
 }
 
 @Composable
 private fun EnclaveUiOverlay(
     enclaveUiState: EnclaveUiState,
-    onEnclaveEvent: (EnclaveEvent) -> Unit,
+    onEvent: (CredentialDetailEvent) -> Unit,
 ) {
-    Timber.d("*********enclave ui state is $enclaveUiState")
+    // Show single dialog, update values instead of recreating
+    if (enclaveUiState != EnclaveUiState.Hidden) {
+        val isGenerating = enclaveUiState is EnclaveUiState.Unlocking
+        val error = (enclaveUiState as? EnclaveUiState.UnlockError)?.message
 
-    when (enclaveUiState) {
-        is EnclaveUiState.RequiresKey,
-        is EnclaveUiState.Generating,
-        is EnclaveUiState.KeyGenerationError,
-        -> {
-            val isGenerating = enclaveUiState is EnclaveUiState.Generating
-            val error = (enclaveUiState as? EnclaveUiState.KeyGenerationError)?.message
-
-            KeyGenerationDialog(
-                onGenerateKey = { password, expiration ->
-                    onEnclaveEvent(EnclaveEvent.GenerateKey(password, expiration))
-                },
-                onDismiss = {
-                    if (!isGenerating) {
-                        onEnclaveEvent(EnclaveEvent.Dismiss)
-                    }
-                },
-                isGenerating = isGenerating,
-                error = error,
-            )
-        }
-
-        is EnclaveUiState.Error -> {
-            // Show error dialog for general enclave errors
-            AlertDialog(
-                onDismissRequest = {
-                    if (enclaveUiState.canRetry) {
-                        onEnclaveEvent(EnclaveEvent.Retry)
-                    }
-                },
-                title = {
-                    Text("Enclave Error")
-                },
-                text = {
-                    Text(enclaveUiState.message)
-                },
-                confirmButton = {
-                    if (enclaveUiState.canRetry) {
-                        Button(
-                            onClick = { onEnclaveEvent(EnclaveEvent.Retry) },
-                        ) {
-                            Text("Retry")
-                        }
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = { onEnclaveEvent(EnclaveEvent.Dismiss) },
-                    ) {
-                        Text("Cancel")
-                    }
-                },
-            )
-        }
-
-        is EnclaveUiState.Loading,
-        is EnclaveUiState.Available,
-        is EnclaveUiState.Close,
-        -> {
-            // No overlay needed
-        }
+        KeyGenerationDialog(
+            onGenerateKey = { password, expiration ->
+                onEvent(CredentialDetailEvent.UnlockEnclave(password, expiration))
+            },
+            onDismiss = {
+                onEvent(CredentialDetailEvent.DismissEnclave)
+            },
+            isGenerating = isGenerating,
+            error = error,
+        )
     }
 }
 
 @Composable
 private fun CredentialDetailContent(
     credential: CredentialDetail,
-    decryptedContent: JsonElement,
+    decryptedContent: JsonElement?,
+    isEncrypted: Boolean,
+    onItem: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
@@ -187,8 +143,51 @@ private fun CredentialDetailContent(
         )
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
-        // Display JSON element content
-        JsonElementDisplay(jsonElement = decryptedContent)
+        // Display encrypted or decrypted content
+        if (isEncrypted || decryptedContent == null) {
+            EncryptedContentPlaceholder(onClick = onItem)
+        } else {
+            JsonElementDisplay(jsonElement = decryptedContent)
+        }
+    }
+}
+
+@Composable
+private fun EncryptedContentPlaceholder(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        onClick = onClick,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(MaterialTheme.spacing.large),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = "\uD83D\uDD12 Content Encrypted",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+            )
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
+            Text(
+                text = "Enter your password to decrypt",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 

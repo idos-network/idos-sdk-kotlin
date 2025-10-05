@@ -11,12 +11,15 @@ abstract class BaseViewModel<State : Any, Event> : ViewModel() {
 
     protected var currentState: State
         get() = _state.value
-        set(value) { _state.value = value }
+        set(value) {
+            _state.value = value
+        }
 
     protected inline fun updateState(update: State.() -> State) {
         currentState = currentState.update()
     }
 
     abstract fun initialState(): State
+
     abstract fun onEvent(event: Event)
 }

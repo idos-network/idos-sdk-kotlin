@@ -20,12 +20,12 @@ enum SettingsEvent {
 
 /// SettingsViewModel matching Android's SettingsViewModel
 class SettingsViewModel: BaseViewModel<SettingsState, SettingsEvent> {
-    private let enclave: Enclave
+    private let orchestrator: EnclaveOrchestrator
     private let keyManager: KeyManager
     private let navigationCoordinator: NavigationCoordinator
 
-    init(enclave: Enclave, keyManager: KeyManager, navigationCoordinator: NavigationCoordinator) {
-        self.enclave = enclave
+    init(orchestrator: EnclaveOrchestrator, keyManager: KeyManager, navigationCoordinator: NavigationCoordinator) {
+        self.orchestrator = orchestrator
         self.keyManager = keyManager
         self.navigationCoordinator = navigationCoordinator
         super.init(initialState: SettingsState())
@@ -49,15 +49,17 @@ class SettingsViewModel: BaseViewModel<SettingsState, SettingsEvent> {
 
     private func checkKeyStatus() {
         Task {
-            do {
-                try await enclave.hasValidKey()
+            // Check orchestrator state instead of calling hasValidKey directly
+            for await flowState in orchestrator.state {
                 await MainActor.run {
-                    state.hasEncryptionKey = true
+                    switch flowState {
+                    case is EnclaveFlowAvailable, is EnclaveFlowProcessing:
+                        state.hasEncryptionKey = true
+                    default:
+                        state.hasEncryptionKey = false
+                    }
                 }
-            } catch {
-                await MainActor.run {
-                    state.hasEncryptionKey = false
-                }
+                break // Only check once
             }
         }
     }
@@ -68,7 +70,7 @@ class SettingsViewModel: BaseViewModel<SettingsState, SettingsEvent> {
 
         Task {
             do {
-                try await enclave.deleteKey()
+                try await orchestrator.resetKey()
                 await MainActor.run {
                     state.hasEncryptionKey = false
                     state.isDeleting = false

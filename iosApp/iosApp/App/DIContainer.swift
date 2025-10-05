@@ -34,6 +34,7 @@ class DIContainer: ObservableObject {
     let encryption: Encryption
     let metadataStorage: MetadataStorage
     let enclave: Enclave
+    let enclaveOrchestrator: EnclaveOrchestrator
     let keyManager: KeyManager
     let ethSigner: EthSigner
 
@@ -67,6 +68,7 @@ class DIContainer: ObservableObject {
             encryption: encryption,
             storage: metadataStorage
         )
+        self.enclaveOrchestrator = EnclaveOrchestrator(enclave: enclave)
         self.keyManager = KeyManager()
 
         // Initialize data layer (matching Android's repositoryModule)
@@ -140,7 +142,7 @@ class DIContainer: ObservableObject {
     func makeCredentialDetailViewModel(credentialId: String) -> CredentialDetailViewModel {
         CredentialDetailViewModel(
             credentialId: credentialId,
-            enclave: enclave,
+            orchestrator: enclaveOrchestrator,
             credentialsRepository: credentialsRepository,
             userRepository: userRepository,
             navigationCoordinator: navigationCoordinator
@@ -155,7 +157,7 @@ class DIContainer: ObservableObject {
 
     func makeSettingsViewModel() -> SettingsViewModel {
         SettingsViewModel(
-            enclave: enclave,
+            orchestrator: enclaveOrchestrator,
             keyManager: keyManager,
             navigationCoordinator: navigationCoordinator
         )

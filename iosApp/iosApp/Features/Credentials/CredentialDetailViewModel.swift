@@ -30,7 +30,7 @@ class CredentialDetailViewModel: BaseEnclaveViewModel<CredentialDetailState, Cre
 
     init(
         credentialId: String,
-        enclave: Enclave,
+        orchestrator: EnclaveOrchestrator,
         credentialsRepository: CredentialsRepositoryProtocol,
         userRepository: UserRepositoryProtocol,
         navigationCoordinator: NavigationCoordinator
@@ -42,7 +42,7 @@ class CredentialDetailViewModel: BaseEnclaveViewModel<CredentialDetailState, Cre
         self.userRepository = userRepository
         super.init(
             initialState: CredentialDetailState(),
-            enclave: enclave
+            orchestrator: orchestrator
         )
 
         if let userId = userId {
