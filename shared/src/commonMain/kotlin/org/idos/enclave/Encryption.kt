@@ -26,19 +26,25 @@ abstract class Encryption(
     suspend fun generateKey(
         userId: UuidString,
         password: String,
-    ): ByteArray {
-        val secretKey = keyDerivation(password, userId.value)
-        storage.storeKey(secretKey)
-        val pubkey = publicKey(secretKey)
-        secretKey.fill(0)
-        return pubkey
-    }
+    ): ByteArray =
+        runCatching {
+            val secretKey = keyDerivation(password, userId.value)
+            storage.storeKey(secretKey)
+            val pubkey = publicKey(secretKey)
+            secretKey.fill(0)
+            pubkey
+        }.getOrElse { error ->
+            throw EnclaveError.KeyGenerationFailed(error.message ?: "Unknown error")
+        }
 
-    suspend fun deleteKey() {
-        storage.deleteKey()
-    }
+    suspend fun deleteKey() =
+        runCatching {
+            storage.deleteKey()
+        }.getOrElse { error ->
+            throw EnclaveError.StorageFailed(error.message ?: "Failed to delete key")
+        }
 
-    protected suspend fun getSecretKey(): ByteArray = storage.retrieveKey() ?: throw NoKeyError()
+    protected suspend fun getSecretKey(): ByteArray = storage.retrieveKey() ?: throw EnclaveError.NoKey()
 
     protected abstract suspend fun publicKey(secret: ByteArray): ByteArray
 }

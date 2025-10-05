@@ -15,6 +15,7 @@ class JvmEncryption(
         receiverPublicKey: ByteArray,
     ): Pair<ByteArray, ByteArray> =
         withContext(Dispatchers.IO) {
+            // todo add public key & message validation
             val nonce = ByteArray(TweetNaclFast.Box.nonceLength)
             random.nextBytes(nonce)
 
@@ -24,7 +25,7 @@ class JvmEncryption(
 
             val encrypted =
                 box.box(message, nonce)
-                    ?: throw IllegalStateException("Couldn't encrypt")
+                    ?: throw EnclaveError.EncryptionFailed("NaCl box encryption returned null")
 
             val fullMessage = ByteArray(nonce.size + encrypted.size)
             System.arraycopy(nonce, 0, fullMessage, 0, nonce.size)
@@ -39,6 +40,8 @@ class JvmEncryption(
         senderPublicKey: ByteArray,
     ): ByteArray =
         withContext(Dispatchers.IO) {
+            // todo add public key & message validation
+
             val nonceLen = TweetNaclFast.Box.nonceLength
 
             val nonce = fullMessage.copyOfRange(0, nonceLen)
@@ -49,7 +52,10 @@ class JvmEncryption(
 
             val decrypted =
                 box.open(cipherText, nonce)
-                    ?: throw IllegalStateException("Couldn't decrypt")
+                    ?: throw EnclaveError.DecryptionFailed(
+                        reason = DecryptFailure.WrongPassword,
+                        details = "NaCl box decryption returned null",
+                    )
 
             secret.fill(0)
             decrypted

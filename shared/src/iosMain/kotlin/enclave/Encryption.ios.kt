@@ -45,8 +45,10 @@ class IosEncryption(
         receiverPublicKey: ByteArray,
     ): Pair<ByteArray, ByteArray> =
         withContext(Dispatchers.Default) {
-            require(receiverPublicKey.size == PUBLIC_KEY_BYTES) {
-                "Receiver public key must be $PUBLIC_KEY_BYTES bytes"
+            if (receiverPublicKey.size != PUBLIC_KEY_BYTES) {
+                throw EnclaveError.InvalidPublicKey(
+                    "Receiver public key must be $PUBLIC_KEY_BYTES bytes, got ${receiverPublicKey.size}",
+                )
             }
 
             val nonce =
@@ -83,7 +85,7 @@ class IosEncryption(
             secretKey.fill(0)
 
             if (result != 0) {
-                error("Encryption failed with error code: $result")
+                throw EnclaveError.EncryptionFailed("Libsodium crypto_box_easy failed with code: $result")
             }
 
             val fullMessage = nonce + ciphertext
@@ -95,11 +97,16 @@ class IosEncryption(
         senderPublicKey: ByteArray,
     ): ByteArray =
         withContext(Dispatchers.Default) {
-            require(fullMessage.size > NONCE_BYTES + MAC_BYTES) {
-                "Invalid message format: too short"
+            if (fullMessage.size <= NONCE_BYTES + MAC_BYTES) {
+                throw EnclaveError.DecryptionFailed(
+                    reason = DecryptFailure.InvalidCiphertext,
+                    details = "Message too short: ${fullMessage.size} bytes",
+                )
             }
-            require(senderPublicKey.size == PUBLIC_KEY_BYTES) {
-                "Sender public key must be $PUBLIC_KEY_BYTES bytes"
+            if (senderPublicKey.size != PUBLIC_KEY_BYTES) {
+                throw EnclaveError.InvalidPublicKey(
+                    details = "Public key must be $PUBLIC_KEY_BYTES bytes, got ${senderPublicKey.size}",
+                )
             }
 
             val secretKey = getSecretKey()
@@ -130,7 +137,10 @@ class IosEncryption(
             secretKey.fill(0)
 
             if (result != 0) {
-                error("Decryption failed - message was tampered with or not encrypted with the given key")
+                throw EnclaveError.DecryptionFailed(
+                    reason = DecryptFailure.WrongPassword,
+                    details = "Libsodium crypto_box_open_easy failed with code: $result",
+                )
             }
 
             decrypted

@@ -96,23 +96,72 @@ All operations return `Result<T>` for safe error handling.
 
 ## 🔐 Enclave (Encryption)
 
-```kotlin
-import org.idos.enclave.Enclave
+The SDK provides stateful encryption management with reactive UI updates via `EnclaveOrchestrator`:
 
-// Initialize enclave with user ID and password
-val enclave = Enclave(
+```kotlin
+import org.idos.enclave.*
+
+// Create enclave components
+val encryption = JvmEncryption()  // or AndroidEncryption(context), IosEncryption()
+val storage = JvmMetadataStorage()  // or AndroidMetadataStorage(context), IosMetadataStorage()
+val enclave = Enclave(encryption, storage)
+val orchestrator = EnclaveOrchestrator(enclave)
+
+// Observe state for UI updates
+orchestrator.state.collect { state ->
+    when (state) {
+        is EnclaveFlow.RequiresKey -> showPasswordPrompt()
+        is EnclaveFlow.Available -> enableEncryptedFeatures()
+        is EnclaveFlow.WrongPasswordSuspected ->
+            showError("Decryption failed ${state.attemptCount} times")
+        is EnclaveFlow.Error -> showError(state.message)
+        // ... handle other states
+    }
+}
+
+// Generate key when user provides password
+orchestrator.generateKey(
     userId = userProfile.id,
-    password = "your-password"
+    password = userPassword,
+    expirationMillis = 3600000  // 1 hour
 )
 
 // Decrypt credential data
 val credential = client.credentials.getOwned(credentialId).getOrThrow()
-val decryptedData = enclave.decrypt(
-    ciphertext = credential.content.toByteArray(),
-    publicKey = credential.encryptorPublicKey.toByteArray()
-)
+orchestrator.decrypt(
+    message = credential.content.toByteArray(),
+    senderPublicKey = credential.encryptorPublicKey.toByteArray()
+).onSuccess { decryptedData ->
+    println(String(decryptedData))
+}.onFailure { error ->
+    when (error) {
+        is EnclaveError.NoKey -> println("Generate key first")
+        is EnclaveError.KeyExpired -> println("Key expired, regenerate")
+        is EnclaveError.DecryptionFailed ->
+            println("Decryption failed: ${error.reason}")
+        else -> println("Error: ${error.message}")
+    }
+}
+```
 
-println(String(decryptedData))
+### Enclave Error Types
+
+```kotlin
+sealed class EnclaveError : Exception {
+    class NoKey : EnclaveError()
+    class KeyExpired : EnclaveError()
+    data class DecryptionFailed(reason: DecryptFailure) : EnclaveError()
+    data class EncryptionFailed(details: String) : EnclaveError()
+    data class InvalidPublicKey(details: String) : EnclaveError()
+    data class KeyGenerationFailed(details: String) : EnclaveError()
+    data class StorageFailed(details: String) : EnclaveError()
+}
+
+sealed class DecryptFailure {
+    data object WrongPassword : DecryptFailure()
+    data object CorruptedData : DecryptFailure()
+    data object InvalidCiphertext : DecryptFailure()
+}
 ```
 
 ## 🧪 Testing

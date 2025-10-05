@@ -67,8 +67,8 @@ class ApiIntegrationTests :
                 enclave.generateKey(profile.id, secrets.password, 1000)
                 val content = Base64String(data.content).toByteArray()
                 val pubkey = Base64String(data.encryptorPublicKey).toByteArray()
-                val raw = enclave.decrypt(content, pubkey)
-                val decrypt = raw.decodeToString()
+                val raw = enclave.decrypt(content, pubkey).getOrThrow()
+                val decrypt = String(raw)
                 decrypt.asClue { it shouldNotBe null }
 
                 println(wallets)

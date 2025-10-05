@@ -335,6 +335,256 @@ client.wallets.add(walletParams)
 
 ---
 
+## 🔐 Enclave Layer (`enclave/`)
+
+**Purpose**: Stateful encryption key management with reactive state flow for UI integration
+
+### Architecture Pattern
+
+```
+┌──────────────────────────────────────────────────┐
+│  EnclaveOrchestrator (StateFlow)                 │  Public API (Result<T>)
+│  - State machine with 8 states                   │
+│  - Pending action queue                          │
+│  - Wrong password detection                      │
+├──────────────────────────────────────────────────┤
+│  Enclave (Result-based API)                      │  iOS-compatible
+│  - Key expiration checks                         │
+│  - encrypt() / decrypt()                         │
+│  - Converts exceptions → Result                  │
+├──────────────────────────────────────────────────┤
+│  Encryption (Platform-specific, throws)          │  Internal
+│  - JVM: TweetNaCl                                │
+│  - Android: Lazysodium (libsodium)               │
+│  - iOS: libsodium XCFramework                    │
+├──────────────────────────────────────────────────┤
+│  SecureStorage + MetadataStorage                 │  Platform-specific
+│  - Android: EncryptedFile + SharedPreferences    │
+│  - iOS: Keychain + UserDefaults                  │
+│  - JVM: In-memory (testing)                      │
+└──────────────────────────────────────────────────┘
+```
+
+### Key Components
+
+#### 1. EnclaveOrchestrator (`EnclaveOrchestrator.kt`)
+**Purpose**: State machine for enclave lifecycle with reactive UI updates
+
+```kotlin
+class EnclaveOrchestrator(private val enclave: Enclave) {
+    val state: StateFlow<EnclaveFlow>  // Reactive state for UI
+
+    suspend fun checkStatus()  // Check if key exists and is valid
+    suspend fun generateKey(userId, password, expiration)
+    suspend fun cancel()  // User cancelled flow
+    suspend fun reset()   // Delete key and start over
+    suspend fun retry()   // Retry after error
+
+    suspend fun requireEnclave(action: suspend (Enclave) -> Unit): Result<Unit>
+    suspend fun encrypt(message, receiverPublicKey): Result<Pair<ByteArray, ByteArray>>
+    suspend fun decrypt(message, senderPublicKey): Result<ByteArray>
+}
+```
+
+**State Model** (`EnclaveFlow.kt`):
+```kotlin
+sealed class EnclaveFlow {
+    data object Loading : EnclaveFlow()           // Checking key status
+    data object RequiresKey : EnclaveFlow()       // No key, need password
+    data object Cancelled : EnclaveFlow()         // User cancelled
+    data object Generating : EnclaveFlow()        // Creating key
+    data class Available(enclave) : EnclaveFlow() // Ready for operations
+    data class KeyGenerationError(message) : EnclaveFlow()
+    data class WrongPasswordSuspected(message, attemptCount) : EnclaveFlow()
+    data class Error(message, canRetry) : EnclaveFlow()
+}
+```
+
+**Features**:
+- ✅ Thread-safe pending action queue (Mutex-protected)
+- ✅ Wrong password detection with attempt counter
+- ✅ Prevents infinite retry loops
+- ✅ User cancellation support
+- ✅ StateFlow for reactive UI updates (Android Compose, iOS SwiftUI)
+
+#### 2. Enclave (`Enclave.kt`)
+**Purpose**: Public API for encryption operations (Result-based, iOS-compatible)
+
+```kotlin
+open class Enclave(
+    private val encryption: Encryption,
+    private val storage: MetadataStorage
+) {
+    open suspend fun generateKey(userId, password, expiration): Result<ByteArray>
+    open suspend fun deleteKey(): Result<Unit>
+    open suspend fun encrypt(message, receiverPublicKey): Result<Pair<ByteArray, ByteArray>>
+    open suspend fun decrypt(message, senderPublicKey): Result<ByteArray>
+    open suspend fun hasValidKey(): Result<Unit>
+}
+```
+
+**Responsibilities**:
+- Key expiration checking
+- Metadata storage updates (lastUsedAt)
+- Exception → Result conversion (iOS compatibility)
+- Error type mapping (EnclaveError hierarchy)
+
+#### 3. Encryption (`Encryption.kt`)
+**Purpose**: Platform-specific NaCl Box encryption (throws exceptions internally)
+
+```kotlin
+abstract class Encryption(protected val storage: SecureStorage) {
+    abstract suspend fun encrypt(message, receiverPublicKey): Pair<ByteArray, ByteArray>
+    abstract suspend fun decrypt(fullMessage, senderPublicKey): ByteArray
+
+    suspend fun generateKey(userId, password): ByteArray
+    suspend fun deleteKey()
+    protected suspend fun getSecretKey(): ByteArray  // throws NoKey
+    protected abstract suspend fun publicKey(secret: ByteArray): ByteArray
+}
+```
+
+**Platform Implementations**:
+- **JVM**: `JvmEncryption` - TweetNaCl (pure Java NaCl)
+- **Android**: `AndroidEncryption` - Lazysodium (libsodium JNI)
+- **iOS**: `IosEncryption` - libsodium XCFramework (C interop)
+
+**Why exceptions internally?**
+- Natural for platform code (Swift, Java throw natively)
+- No Kotlin Result in Swift (type erasure issues)
+- Enclave layer (public boundary) converts to Result
+
+#### 4. Storage Abstractions
+
+**SecureStorage** - Encryption key persistence:
+```kotlin
+interface SecureStorage {
+    suspend fun storeKey(key: ByteArray)
+    suspend fun retrieveKey(): ByteArray?
+    suspend fun deleteKey()
+}
+```
+
+**MetadataStorage** - Key metadata (expiration, userId):
+```kotlin
+interface MetadataStorage {
+    suspend fun store(meta: KeyMetadata)
+    suspend fun get(): KeyMetadata?
+    suspend fun delete()
+}
+
+data class KeyMetadata(
+    val userId: UuidString,
+    val publicKey: HexString,
+    val expiredAt: Long,
+    val createdAt: Long,
+    val lastUsedAt: Long
+)
+```
+
+**Platform Implementations**:
+- **Android**: `EncryptedFile` + `SharedPreferences` (StrongBox support)
+- **iOS**: `Keychain` + `UserDefaults`
+- **JVM**: In-memory (for testing)
+
+### Error Hierarchy
+
+```kotlin
+sealed class EnclaveError : Exception {
+    class NoKey : EnclaveError()
+    class KeyExpired : EnclaveError()
+    data class DecryptionFailed(reason: DecryptFailure) : EnclaveError()
+    data class EncryptionFailed(details: String) : EnclaveError()
+    data class InvalidPublicKey(details: String) : EnclaveError()
+    data class KeyGenerationFailed(details: String) : EnclaveError()
+    data class StorageFailed(details: String) : EnclaveError()
+    data class Unknown(details, cause) : EnclaveError()
+}
+
+sealed class DecryptFailure {
+    data object WrongPassword : DecryptFailure()
+    data object CorruptedData : DecryptFailure()
+    data object InvalidCiphertext : DecryptFailure()
+    data class Unknown(message) : DecryptFailure()
+}
+```
+
+**Benefits**:
+- ✅ Type-safe error handling (exhaustive when expressions)
+- ✅ iOS-compatible (no Kotlin Result type erasure)
+- ✅ Detailed error information for debugging
+- ✅ Distinguishes wrong password from corrupted data
+
+### Usage Example
+
+```kotlin
+// 1. Create orchestrator
+val orchestrator = EnclaveOrchestrator(
+    Enclave(JvmEncryption(), JvmMetadataStorage())
+)
+
+// 2. Observe state in UI
+orchestrator.state.collect { state ->
+    when (state) {
+        is EnclaveFlow.RequiresKey -> showPasswordPrompt()
+        is EnclaveFlow.Generating -> showLoadingSpinner()
+        is EnclaveFlow.Available -> enableEncryptedFeatures()
+        is EnclaveFlow.WrongPasswordSuspected ->
+            showError("Failed ${state.attemptCount} times. Reset key?")
+        is EnclaveFlow.Error -> showError(state.message)
+        // ...
+    }
+}
+
+// 3. Generate key when user enters password
+orchestrator.generateKey(userId, password, expiration = 3600000)
+
+// 4. Decrypt data
+orchestrator.decrypt(ciphertext, senderPubKey)
+    .onSuccess { plaintext -> display(plaintext) }
+    .onFailure { error ->
+        when (error) {
+            is EnclaveError.NoKey -> orchestrator.checkStatus()
+            is EnclaveError.KeyExpired -> promptRegenerate()
+            is EnclaveError.DecryptionFailed ->
+                when (error.reason) {
+                    DecryptFailure.WrongPassword -> offerReset()
+                    DecryptFailure.CorruptedData -> reportError()
+                }
+        }
+    }
+```
+
+### Engineering Notes
+
+**Boundary Pattern**:
+- Internal (Encryption): Throws exceptions (natural for platform code)
+- Public (Enclave): Returns Result (iOS-compatible)
+- Single conversion point: `Enclave` catches and wraps errors
+
+**State Management**:
+- StateFlow for reactive UI updates
+- Works with Android Compose `collectAsState()`
+- Works with iOS SwiftUI via wrapper
+
+**Thread Safety**:
+- Mutex-protected pending action queue
+- Safe for concurrent `requireEnclave()` calls
+- Platform Encryption implementations use own locking
+
+**Key Derivation**:
+- Argon2id (memory-hard, OWASP recommended)
+- Salt: userId (unique per user)
+- Iterations: 3, Memory: 64MB, Parallelism: 4
+
+**Security Features**:
+- Key expiration (configurable TTL)
+- Secure key erasure (`ByteArray.fill(0)`)
+- Platform secure storage (Keychain, EncryptedFile)
+- Wrong password detection (prevents brute force)
+
+---
+
 ## 🔐 Security Layer (`kwil/security/`)
 
 ### Authentication (KGW)

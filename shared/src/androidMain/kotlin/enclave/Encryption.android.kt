@@ -36,36 +36,36 @@ class AndroidEncryption(
     ): Pair<ByteArray, ByteArray> =
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                try {
-                    val nonce =
-                        ByteArray(Box.NONCEBYTES).also { bytes ->
-                            SecureRandom().nextBytes(bytes)
-                        }
+                // todo add public key & message validation
 
-                    val key = getSecretKey()
-                    val pubkey = publicKey(key)
+                val nonce =
+                    ByteArray(Box.NONCEBYTES).also { bytes ->
+                        SecureRandom().nextBytes(bytes)
+                    }
 
-                    // Encrypt the message
-                    val ciphertext = ByteArray(message.size + Box.MACBYTES)
-                    val success =
-                        sodium.cryptoBoxEasy(
-                            ciphertext,
-                            message,
-                            message.size.toLong(),
-                            nonce,
-                            receiverPublicKey,
-                            key,
-                        )
-                    key.fill(0)
+                val key = getSecretKey()
+                val pubkey = publicKey(key)
 
-                    check(success) { "Encryption failed" }
+                // Encrypt the message
+                val ciphertext = ByteArray(message.size + Box.MACBYTES)
+                val success =
+                    sodium.cryptoBoxEasy(
+                        ciphertext,
+                        message,
+                        message.size.toLong(),
+                        nonce,
+                        receiverPublicKey,
+                        key,
+                    )
+                key.fill(0)
 
-                    // Combine nonce and ciphertext
-                    val fullMessage = nonce + ciphertext
-                    fullMessage to pubkey
-                } catch (e: Exception) {
-                    throw IllegalStateException("Encryption failed", e)
+                if (!success) {
+                    throw EnclaveError.EncryptionFailed("Libsodium crypto_box_easy failed")
                 }
+
+                // Combine nonce and ciphertext
+                val fullMessage = nonce + ciphertext
+                fullMessage to pubkey
             }
         }
 
@@ -75,32 +75,40 @@ class AndroidEncryption(
     ): ByteArray =
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                try {
-                    require(fullMessage.size > SecretBox.NONCEBYTES) { "Invalid message format" }
+                // todo add public key validation
 
-                    val key = getSecretKey()
-
-                    val nonce = fullMessage.copyOfRange(0, SecretBox.NONCEBYTES)
-                    val ciphertext = fullMessage.copyOfRange(SecretBox.NONCEBYTES, fullMessage.size)
-
-                    val plaintext = ByteArray(ciphertext.size - SecretBox.MACBYTES)
-                    val success =
-                        sodium.cryptoBoxOpenEasy(
-                            plaintext,
-                            ciphertext,
-                            ciphertext.size.toLong(),
-                            nonce,
-                            senderPublicKey,
-                            key,
-                        )
-                    key.fill(0)
-
-                    check(success) { "Decryption failed" }
-
-                    plaintext
-                } catch (e: Exception) {
-                    throw IllegalStateException("Decryption failed", e)
+                if (fullMessage.size <= SecretBox.NONCEBYTES) {
+                    throw EnclaveError.DecryptionFailed(
+                        reason = DecryptFailure.InvalidCiphertext,
+                        details = "Message too short",
+                    )
                 }
+
+                val key = getSecretKey()
+
+                val nonce = fullMessage.copyOfRange(0, SecretBox.NONCEBYTES)
+                val ciphertext = fullMessage.copyOfRange(SecretBox.NONCEBYTES, fullMessage.size)
+
+                val plaintext = ByteArray(ciphertext.size - SecretBox.MACBYTES)
+                val success =
+                    sodium.cryptoBoxOpenEasy(
+                        plaintext,
+                        ciphertext,
+                        ciphertext.size.toLong(),
+                        nonce,
+                        senderPublicKey,
+                        key,
+                    )
+                key.fill(0)
+
+                if (!success) {
+                    throw EnclaveError.DecryptionFailed(
+                        reason = DecryptFailure.WrongPassword,
+                        details = "Libsodium crypto_box_open_easy failed",
+                    )
+                }
+
+                plaintext
             }
         }
 
