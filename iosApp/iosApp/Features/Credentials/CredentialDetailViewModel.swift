@@ -3,30 +3,51 @@ import UIKit
 import idos_sdk
 import Combine
 
+// MARK: - Enclave UI State
+
+/// Enclave dialog/UI state (matches Android EnclaveUiState)
+enum EnclaveUiState {
+    case hidden
+    case requiresUnlock
+    case unlocking
+}
+
+// MARK: - Credential Detail State
+
 /// Credential Detail state
 struct CredentialDetailState {
     var credential: CredentialDetail?
-    var decryptedContent: String? = nil
+    var decryptedContent: String? = nil  // nil = still encrypted
     var isLoading: Bool = false
+    var isDecrypting: Bool = false
     var error: String? = nil
-    var copySuccess: Bool = false
 }
+
+// MARK: - Credential Detail Events
 
 /// Credential Detail events
 enum CredentialDetailEvent {
     case loadCredential
-    case copyContent
+    case decryptCredential
     case clearError
-    case resetKey
+
+    // Enclave events
+    case unlockEnclave(password: String, expiration: KeyExpiration)
+    case lockEnclave
+    case dismissEnclave
 }
 
-/// CredentialDetailViewModel extending BaseEnclaveViewModel
-class CredentialDetailViewModel: BaseEnclaveViewModel<CredentialDetailState, CredentialDetailEvent> {
+// MARK: - ViewModel
+
+/// CredentialDetailViewModel with direct orchestrator usage (matches Android pattern)
+class CredentialDetailViewModel: BaseViewModel<CredentialDetailState, CredentialDetailEvent> {
     private let credentialId: String
     private let navigationCoordinator: NavigationCoordinator
     private let credentialsRepository: CredentialsRepositoryProtocol
     private let userRepository: UserRepositoryProtocol
-    private var cancellables = Set<AnyCancellable>()
+    private let orchestrator: EnclaveOrchestrator
+
+    @Published var enclaveUiState: EnclaveUiState = .hidden
 
     init(
         credentialId: String,
@@ -40,118 +61,205 @@ class CredentialDetailViewModel: BaseEnclaveViewModel<CredentialDetailState, Cre
         self.navigationCoordinator = navigationCoordinator
         self.credentialsRepository = credentialsRepository
         self.userRepository = userRepository
-        super.init(
-            initialState: CredentialDetailState(),
-            orchestrator: orchestrator
-        )
+        self.orchestrator = orchestrator
 
-        if let userId = userId {
-            print("📄 CredentialDetailViewModel: Found stored userId: \(userId)")
-        } else {
-            print("⚠️ CredentialDetailViewModel: No stored userId found")
-        }
+        super.init(initialState: CredentialDetailState())
 
         loadCredential()
-    }
-
-    var userId: String? {
-        userRepository.getStoredUser()?.id
+        observeEnclaveState()
+        
+        // Check status on init
+        Task {
+            do {
+                try await orchestrator.checkStatus()
+            } catch {}
+        }
     }
 
     override func onEvent(_ event: CredentialDetailEvent) {
+        print("📄 CredentialDetailViewModel: on event: \(event)")
         switch event {
         case .loadCredential:
             loadCredential()
-        case .copyContent:
-            copyToClipboard()
+        case .decryptCredential:
+            triggerDecrypt()
         case .clearError:
             state.error = nil
-        case .resetKey:
-            resetKey()
-            loadCredential()
+        case .unlockEnclave(let password, let expiration):
+            unlockEnclave(password: password, expiration: expiration)
+        case .lockEnclave:
+            lockEnclave()
+        case .dismissEnclave:
+            dismissEnclave()
         }
     }
+
+    // MARK: - Enclave State Observer
+
+    private func observeEnclaveState() {
+        Task { @MainActor in
+            for await enclaveState: EnclaveState in orchestrator.state {
+                print("📄 CredentialDetailViewModel: Starting observeEnclaveState: \(enclaveState)")
+                switch enclaveState {
+                case is EnclaveState.Locked:
+                    // Don't automatically show dialog
+                    break
+
+                case is EnclaveState.Unlocking:
+                    self.enclaveUiState = .unlocking
+
+                case let unlocked as EnclaveState.Unlocked:
+                    self.enclaveUiState = .hidden
+                    // Auto-decrypt when unlocked
+                    guard let credential = state.credential else { return }
+                    await decryptLoadedCredential(enclave: unlocked.enclave, credential: credential)
+
+                default:
+                    break
+                }
+            }
+        }
+    }
+
+    // MARK: - Load Credential
 
     private func loadCredential() {
         print("📄 CredentialDetailViewModel: Starting loadCredential for id: \(credentialId)")
-        Task { [weak self] in
+        Task { @MainActor [weak self] in
             guard let self = self else { return }
 
-            await MainActor.run {
-                self.state.isLoading = true
-                self.state.error = nil
-                print("📄 CredentialDetailViewModel: State set to loading")
-            }
-
+            self.state.isLoading = true
+            self.state.error = nil
+            
             do {
-                // Fetch credential from repository
-                print("📄 CredentialDetailViewModel: Fetching credential from repository")
-                let credentialDetail = try await credentialsRepository.getCredential(id: credentialId)
-                print("✅ CredentialDetailViewModel: Credential fetched successfully")
-                print("📄 CredentialDetailViewModel: Credential id: \(credentialDetail.id), pubkey: \(credentialDetail.encryptorPublicKey)")
+                let detail = try await credentialsRepository.getCredential(id: credentialId)
 
-                // Decrypt the content using enclave
-                print("🔐 CredentialDetailViewModel: Starting decryption with enclave")
-                try await requireEnclave { [weak self] enclave in
-                    guard let self = self else { return }
-                    print("🔐 CredentialDetailViewModel: Converting encrypted data")
-                    let encryptedData = Data(base64Encoded: credentialDetail.content) ?? Data()
-                    let senderPublicKey = Data(base64Encoded: credentialDetail.encryptorPublicKey) ?? Data()
-
-                    print("🔐 CredentialDetailViewModel: Calling enclave.decrypt()")
-                    print("🔐 CredentialDetailViewModel: Encrypted data size: \(encryptedData.count) bytes")
-                    print("🔐 CredentialDetailViewModel: Sender public key size: \(senderPublicKey.count) bytes")
-
-                    // Set loading state when action actually starts
-                    await MainActor.run {
-                        self.state.isLoading = true
-                    }
-
-                    let decrypted = try await enclave.decrypt(
-                        message: encryptedData.toKotlinByteArray(),
-                        senderPublicKey: senderPublicKey.toKotlinByteArray()
-                    )
-
-                    print("✅ CredentialDetailViewModel: Decryption successful")
-                    let decryptedContent = String(data: decrypted.toData(), encoding: .utf8)
-                    print("📄 CredentialDetailViewModel: Decrypted content length: \(decryptedContent?.count ?? 0) characters")
-
-                    // Update state with decrypted content
-                    await MainActor.run { [decryptedContent] in
-                        print("📄 CredentialDetailViewModel: Updating state with decrypted content")
-                        self.state.credential = credentialDetail
-                        self.state.decryptedContent = decryptedContent
-                        self.state.isLoading = false
-                        print("✅ CredentialDetailViewModel: Load complete, isLoading = false")
-                    }
+                let currentState = orchestrator.currentState()
+                if currentState is EnclaveState.Unlocked {
+                    let unlocked = currentState as! EnclaveState.Unlocked
+                    await decryptLoadedCredential(enclave: unlocked.enclave, credential: detail)
                 }
-
-                // If requireEnclave deferred the action, reset loading state
-//                await MainActor.run {
-//                    if self.state.decryptedContent == nil {
-//                        print("📄 CredentialDetailViewModel: Action was deferred, resetting isLoading")
-//                        self.state.isLoading = false
-//                    }
-//                }
+                
+                self.state.credential = detail
+                self.state.isLoading = false
             } catch {
                 print("❌ CredentialDetailViewModel: Load failed - \(error.localizedDescription)")
+                self.state.error = "Failed to load credential: \(error.localizedDescription)"
+                self.state.isLoading = false
+            }
+        }
+    }
+
+    // MARK: - Decrypt
+
+    private func triggerDecrypt() {
+        guard let credential = state.credential else { return }
+        // Check if enclave is unlocked
+        self.state.isDecrypting = true
+        if orchestrator.currentState() is EnclaveState.Unlocked {
+            let unlocked = orchestrator.currentState() as! EnclaveState.Unlocked
+            Task {
+                await decryptLoadedCredential(enclave: unlocked.enclave, credential: credential)
+            }
+        } else {
+            // Show unlock dialog
+            enclaveUiState = .requiresUnlock
+        }
+    }
+
+    private func decryptLoadedCredential(enclave: Enclave, credential: CredentialDetail) async {
+        guard state.decryptedContent == nil else { return } // Already decrypted
+
+        print("🔐 CredentialDetailViewModel: Starting decryption")
+
+        let encryptedData = Data(base64Encoded: credential.content) ?? Data()
+        let senderPublicKey = Data(base64Encoded: credential.encryptorPublicKey) ?? Data()
+
+        do {
+            let decryptedData = try await enclave.decrypt(
+                message: encryptedData.toKotlinByteArray(),
+                senderPublicKey: senderPublicKey.toKotlinByteArray()
+            )
+            
+            if let decryptedContent = String(data: decryptedData.toData(), encoding: .utf8) {
                 await MainActor.run {
-                    self.state.error = error.localizedDescription
-                    self.state.isLoading = false
-                    print("📄 CredentialDetailViewModel: Error state set, isLoading = false")
+                    self.state.decryptedContent = decryptedContent
+                    self.state.isDecrypting = false
+                    print("✅ CredentialDetailViewModel: Decryption successful")
+                }
+            } else {
+                await MainActor.run {
+                    self.state.error = "Failed to decode decrypted content"
+                }
+            }
+        } catch {
+            if let enclaveError = error.asEnclaveError() {
+                await MainActor.run {
+                    switch onEnum(of: enclaveError) {
+                    case .noKey, .keyExpired:
+                        print("🔑 CredentialDetailViewModel: No key found")
+                        self.enclaveUiState = .requiresUnlock
+                        
+                    case .decryptionFailed(let reason):
+                        print("❌ CredentialDetailViewModel: Decryption failed - \(reason)")
+                        self.state.error = reason.description()
+                        
+                    default:
+                        print("❌ CredentialDetailViewModel: Decryption failed")
+                        self.state.error = enclaveError.message
+                    }
+                }
+            } else {
+                await MainActor.run {
+                    self.state.error = "Decryption error: \(error.localizedDescription)"
                 }
             }
         }
     }
 
-    private func copyToClipboard() {
-        guard let content = state.credential?.content else { return }
+    // MARK: - Enclave Operations
 
-        UIPasteboard.general.string = content
-
-        state.copySuccess = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
-            self?.state.copySuccess = false
+    private func unlockEnclave(password: String, expiration: KeyExpiration) {
+        guard let user = userRepository.getStoredUser() else {
+            state.error = "No user ID found"
+            return
         }
+
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            
+            do {
+                try await orchestrator.unlock(
+                    userId: user.id,
+                    password: password,
+                    expirationMillis: expiration.rawValue
+                )
+                print("✅ CredentialDetailViewModel: Enclave unlocked successfully")
+                // State observer will trigger decrypt
+            } catch {
+                print("❌ CredentialDetailViewModel: Unlock failed - \(error.localizedDescription)")
+                self.enclaveUiState = .hidden
+                self.state.error = error.localizedDescription
+            }
+        }
+    }
+
+    private func lockEnclave() {
+        Task { @MainActor in
+            do {
+                _ = try await orchestrator.lock()
+                print("✅ CredentialDetailViewModel: Enclave lock successful")
+            } catch {
+                // noop
+            }
+            self.state.decryptedContent = nil
+            self.state.error = nil
+            self.state.isDecrypting = false
+        }
+    }
+
+    private func dismissEnclave() {
+        enclaveUiState = .hidden
+        self.state.isDecrypting = false
     }
 }

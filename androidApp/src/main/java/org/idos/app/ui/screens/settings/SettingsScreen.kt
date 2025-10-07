@@ -1,21 +1,28 @@
 package org.idos.app.ui.screens.settings
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -23,29 +30,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import org.idos.app.ui.screens.base.BaseScreen
 import org.idos.app.ui.screens.base.spacing
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
-    viewModel: SettingsViewModel = koinViewModel()
-) {
+fun SettingsScreen(viewModel: SettingsViewModel = koinViewModel()) {
     val state = viewModel.state.collectAsState().value
     val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
 
-    // Show success message when settings are saved
-    LaunchedEffect(state.isSaveSuccessful) {
-        if (state.isSaveSuccessful) {
+    // Check key status when screen is first shown
+    LaunchedEffect(Unit) {
+        viewModel.onEvent(SettingsEvent.CheckKeyStatus)
+    }
+
+    // Show success/error messages
+    LaunchedEffect(state.error) {
+        state.error?.let { error ->
             snackbarHostState.showSnackbar(
-                message = "Settings saved successfully",
-                duration = SnackbarDuration.Short
+                message = error,
+                duration = SnackbarDuration.Long,
             )
-            viewModel.onEvent(SettingsEvent.ResetSaveStatus)
+            viewModel.onEvent(SettingsEvent.ClearError)
         }
     }
 
@@ -53,60 +63,112 @@ fun SettingsScreen(
         snackbarHostState = snackbarHostState,
     ) {
         Column(
-            modifier = Modifier
-                .padding(MaterialTheme.spacing.medium)
-                .fillMaxWidth()
+            modifier =
+                Modifier
+                    .padding(MaterialTheme.spacing.medium)
+                    .fillMaxWidth(),
         ) {
             Text(
                 text = "Settings",
                 style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 16.dp),
             )
 
+            // Encryption Key Section
             Text("Security", style = MaterialTheme.typography.titleMedium)
-            OutlinedTextField(
-                value = state.password,
-                onValueChange = { viewModel.onEvent(SettingsEvent.UpdatePassword(it)) },
-                label = { Text("Password") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                enabled = !state.isLoading
-            )
 
-            Text(
-                "Biometrics",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 16.dp)
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            // Encryption Key Status
+            Card(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
             ) {
-                Text("Enable biometric authentication")
-                Switch(
-                    checked = state.biometricsEnabled,
-                    onCheckedChange = { viewModel.onEvent(SettingsEvent.ToggleBiometrics(it)) },
-                    enabled = !state.isLoading
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = { viewModel.onEvent(SettingsEvent.SaveSettings) },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !state.isLoading
-            ) {
-                if (state.isLoading) {
-                    CircularProgressIndicator()
-                } else {
-                    Text("Save Settings")
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Key,
+                        contentDescription = "Encryption Key",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text("Encryption Key")
+                    Spacer(modifier = Modifier.weight(1f))
+                    if (state.hasEncryptionKey) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = "Key exists",
+                            tint = Color.Green,
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Error,
+                            contentDescription = "No key",
+                            tint = Color.Red,
+                        )
+                    }
                 }
             }
+
+            // Delete Key Button
+            if (state.hasEncryptionKey) {
+                Button(
+                    onClick = { viewModel.onEvent(SettingsEvent.DeleteEncryptionKey) },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                    enabled = !state.isDeleting,
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        ),
+                ) {
+                    if (state.isDeleting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                    } else {
+                        Text("Delete Encryption Key")
+                    }
+                }
+            }
+        }
+
+        // Delete Confirmation Dialog
+        if (state.showDeleteConfirmation) {
+            AlertDialog(
+                onDismissRequest = { viewModel.onEvent(SettingsEvent.CancelDelete) },
+                title = { Text("Delete Encryption Key") },
+                text = {
+                    Text("Are you sure you want to delete your encryption key? You will need to generate a new key to decrypt credentials.")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { viewModel.onEvent(SettingsEvent.ConfirmDelete) },
+                        colors =
+                            ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error,
+                            ),
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { },
+                    ) {
+                        Text("Cancel")
+                    }
+                },
+            )
         }
     }
 }

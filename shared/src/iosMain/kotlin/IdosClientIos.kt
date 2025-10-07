@@ -1,37 +1,18 @@
 package org.idos
 
-import org.idos.kwil.domain.ActionExecutor
-import org.idos.kwil.domain.DomainError
-import org.idos.kwil.domain.generated.view.GetUserResponse
-import org.idos.kwil.domain.runCatchingDomainError
 import org.idos.kwil.security.signer.Signer
 
-/**
- * Main entry point for the idOS SDK.
- *
- * This class provides organized access to idOS operations through object groups.
- * All operations are defined as extensions in IdosClientExtensions.kt for easy
- * discoverability in IDEs.
- *
- * Example usage:
- * ```kotlin
- * val client = IdosClient.create(
- *     baseUrl = "https://nodes.staging.idos.network",
- *     chainId = "idos-testnet",
- *     signer = EthSigner(privateKey)
- * ).getOrThrow()
- *
- * // IDE autocomplete shows available object groups
- * client.wallets.add(...)
- * client.credentials.getOwned()
- * client.accessGrants.create(...)
- * client.users.get()
- * ```
- */
-class IdosClient internal constructor(
-    internal val executor: ActionExecutor,
-    val chainId: String,
+class IdosClientIos(
+    internal val client: IdosClient,
 ) {
+    companion object {
+        fun create(
+            baseUrl: String,
+            chainId: String,
+            signer: Signer,
+        ): ResultInterop<IdosClientIos> = runCatching { IdosClientIos(IdosClient.create(baseUrl, chainId, signer)) }.interop()
+    }
+
     /**
      * Wallet operations group.
      *
@@ -40,7 +21,7 @@ class IdosClient internal constructor(
      * - getAll(): Get all wallets for current user
      * - remove(id): Remove a wallet
      */
-    val wallets = Wallets(this)
+    val wallets = Wallets(this.client)
 
     class Wallets internal constructor(
         internal val client: IdosClient,
@@ -57,7 +38,7 @@ class IdosClient internal constructor(
      * - remove(id): Remove a credential
      * - share(input): Share a credential
      */
-    val credentials = Credentials(this)
+    val credentials = Credentials(this.client)
 
     class Credentials internal constructor(
         internal val client: IdosClient,
@@ -73,7 +54,7 @@ class IdosClient internal constructor(
      * - getForCredential(id): Get grants for specific credential
      * - revoke(input): Revoke an access grant
      */
-    val accessGrants = AccessGrants(this)
+    val accessGrants = AccessGrants(this.client)
 
     class AccessGrants internal constructor(
         internal val client: IdosClient,
@@ -86,13 +67,11 @@ class IdosClient internal constructor(
      * - get(): Get current user
      * - hasProfile(): Check if user has a profile
      */
-    val users = Users(this)
+    val users = Users(this.client)
 
     class Users internal constructor(
         internal val client: IdosClient,
-    ) {
-        public suspend fun getUser(): GetUserResponse = client.users.get()
-    }
+    )
 
     /**
      * Attribute operations group.
@@ -104,26 +83,9 @@ class IdosClient internal constructor(
      * - remove(id): Remove an attribute
      * - share(input): Share an attribute
      */
-    val attributes = Attributes(this)
+    val attributes = Attributes(this.client)
 
     class Attributes internal constructor(
         internal val client: IdosClient,
     )
-
-    companion object {
-        /**
-         * Creates a new IdosClient instance.
-         *
-         * @param baseUrl KWIL network URL (e.g., "https://nodes.staging.idos.network")
-         * @param chainId Chain identifier (e.g., "idos-testnet")
-         * @param signer Cryptographic signer for transactions
-         * @return IdosClient instance
-         */
-        @Throws(DomainError::class)
-        fun create(
-            baseUrl: String,
-            chainId: String,
-            signer: Signer,
-        ): IdosClient = runCatchingDomainError { IdosClient(ActionExecutor(baseUrl, chainId, signer), chainId) }
-    }
 }

@@ -1,7 +1,6 @@
 package org.idos.kwil.security.signer
 
 import org.idos.kwil.protocol.AccountId
-import org.idos.kwil.types.HexString
 
 /**
  * Abstract Ethereum signer using Secp256k1 personal sign.

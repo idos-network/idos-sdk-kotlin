@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 import org.idos.getCurrentTimeMillis
 import org.idos.kwil.types.HexString
 import org.idos.kwil.types.UuidString
+import kotlin.coroutines.cancellation.CancellationException
 
 @Serializable
 data class KeyMetadata(
@@ -32,30 +33,30 @@ open class Enclave(
      * @param expiration Key expiration time in milliseconds
      * @return Result with public key bytes or error
      */
-    open suspend fun generateKey(
+    internal open suspend fun generateKey(
         userId: UuidString,
         password: String,
         expiration: Long,
-    ): Result<ByteArray> =
-        runCatching {
+    ): ByteArray =
+        runCatchingErrorAsync {
             encryption.deleteKey()
             val pubkey = encryption.generateKey(userId, password)
             val now = getCurrentTimeMillis()
             val meta = KeyMetadata(userId, HexString(pubkey), now + expiration)
             storage.store(meta)
             pubkey
-        }.mapError { EnclaveError.KeyGenerationFailed(it.message ?: "Unknown error") }
+        }
 
     /**
      * Delete encryption key.
      *
      * @return Result with Unit or error
      */
-    open suspend fun deleteKey(): Result<Unit> =
-        runCatching {
+    internal open suspend fun deleteKey(): Unit =
+        runCatchingErrorAsync {
             encryption.deleteKey()
             storage.delete()
-        }.mapError { EnclaveError.StorageFailed(it.message ?: "Failed to delete key") }
+        }
 
     /**
      * Decrypt message.
@@ -64,23 +65,15 @@ open class Enclave(
      * @param senderPublicKey Sender's public key
      * @return Result with decrypted bytes or EnclaveError
      */
+    @Throws(CancellationException::class, EnclaveError::class)
     open suspend fun decrypt(
         message: ByteArray,
         senderPublicKey: ByteArray,
-    ): Result<ByteArray> =
-        runCatching {
-            val meta = expirationCheck().getOrThrow()
+    ): ByteArray =
+        runCatchingErrorAsync {
+            val meta = expirationCheck()
             storage.store(meta.copy(lastUsedAt = getCurrentTimeMillis()))
             encryption.decrypt(message, senderPublicKey)
-        }.mapError { error ->
-            when (error) {
-                is EnclaveError -> error
-                else ->
-                    EnclaveError.DecryptionFailed(
-                        reason = DecryptFailure.WrongPassword,
-                        details = error.message,
-                    )
-            }
         }
 
     /**
@@ -90,19 +83,15 @@ open class Enclave(
      * @param receiverPublicKey Receiver's public key
      * @return Result with (ciphertext, nonce) or EnclaveError
      */
+    @Throws(CancellationException::class, EnclaveError::class)
     open suspend fun encrypt(
         message: ByteArray,
         receiverPublicKey: ByteArray,
-    ): Result<Pair<ByteArray, ByteArray>> =
-        runCatching {
-            val meta = expirationCheck().getOrThrow()
+    ): Pair<ByteArray, ByteArray> =
+        runCatchingErrorAsync {
+            val meta = expirationCheck()
             storage.store(meta.copy(lastUsedAt = getCurrentTimeMillis()))
             encryption.encrypt(message, receiverPublicKey)
-        }.mapError { error ->
-            when (error) {
-                is EnclaveError -> error
-                else -> EnclaveError.EncryptionFailed(error.message ?: "Unknown error")
-            }
         }
 
     /**
@@ -110,10 +99,12 @@ open class Enclave(
      *
      * @return Result with Unit if valid, or EnclaveError
      */
-    open suspend fun hasValidKey(): Result<Unit> = expirationCheck().map { }
+    internal open suspend fun hasValidKey() {
+        expirationCheck()
+    }
 
-    private suspend fun expirationCheck(): Result<KeyMetadata> =
-        runCatching {
+    private suspend fun expirationCheck(): KeyMetadata =
+        runCatchingErrorAsync {
             val meta = storage.get() ?: throw EnclaveError.NoKey()
 
             if (meta.expiredAt < getCurrentTimeMillis()) {
@@ -124,7 +115,4 @@ open class Enclave(
 
             meta
         }
-
-    private fun <T, R> Result<T>.mapError(transform: (Throwable) -> R): Result<T> where R : Throwable =
-        this.recoverCatching { error -> throw transform(error) }
 }

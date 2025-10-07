@@ -15,22 +15,19 @@ class CredentialsRepository: CredentialsRepositoryProtocol {
     }
     
     func getCredentials() async throws -> [Credential] {
-        let response = try await dataProvider.getCredentials()
-        return response
-            .filter { !$0.publicNotes.isEmpty }
-            .map { Credential.from(response: $0) }
+        try await dataProvider.getCredentials().filter { !$0.publicNotes.isEmpty }.map(Credential.from)
     }
     
     func getCredential(id: String) async throws -> CredentialDetail {
-        let response = try await dataProvider.getCredential(id: id)
-        return CredentialDetail.from(response: response)
+        let credential = try await dataProvider.getCredential(id: id)
+        return CredentialDetail.from(response: credential)
     }
 }
 
 // MARK: - Mock for Preview and Testing
 #if DEBUG
 class MockCredentialsRepository: CredentialsRepositoryProtocol {
-    func getCredentials() async throws -> [Credential] {
+    func getCredentials() async -> [Credential] {
         // Create mock credentials directly
         let credential1 = Credential(
             id: "1",
@@ -51,7 +48,7 @@ class MockCredentialsRepository: CredentialsRepositoryProtocol {
         return [credential1, credential2]
     }
     
-    func getCredential(id: String) async throws -> CredentialDetail {
+    func getCredential(id: String) async -> CredentialDetail {
         // Create mock credential detail directly
         return CredentialDetail(
             id: id,

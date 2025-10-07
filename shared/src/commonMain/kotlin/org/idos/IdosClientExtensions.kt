@@ -1,5 +1,6 @@
 package org.idos
 
+import org.idos.kwil.domain.DomainError
 import org.idos.kwil.domain.generated.execute.AddAttribute
 import org.idos.kwil.domain.generated.execute.AddAttributeParams
 import org.idos.kwil.domain.generated.execute.AddCredential
@@ -50,6 +51,7 @@ import org.idos.kwil.domain.generated.view.HasProfile
 import org.idos.kwil.domain.generated.view.HasProfileParams
 import org.idos.kwil.types.HexString
 import org.idos.kwil.types.UuidString
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Extension functions for IdosClient operation groups.
@@ -58,8 +60,8 @@ import org.idos.kwil.types.UuidString
  * modification and code generation. Each operation group is separated for clarity.
  *
  * Pattern:
- * - View actions (queries) return Result<List<T>> or Result<T?>
- * - Execute actions (transactions) return Result<HexString>
+ * - View actions (queries) return List<T>> or T?>
+ * - Execute actions (transactions) return HexString>
  * - All operations are suspend functions
  */
 
@@ -73,14 +75,16 @@ import org.idos.kwil.types.UuidString
  * @param input Wallet details including address, public key, and signature
  * @return Result containing transaction hash or error
  */
-suspend fun IdosClient.Wallets.add(input: AddWalletParams): Result<HexString> = executor.execute(AddWallet, input)
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.Wallets.add(input: AddWalletParams): HexString = executor.execute(AddWallet, input)
 
 /**
  * Gets all wallets for the current user.
  *
  * @return Result containing list of wallets or error
  */
-suspend fun IdosClient.Wallets.getAll(): Result<List<GetWalletsResponse>> =
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.Wallets.getAll(): List<GetWalletsResponse> =
     executor.call(
         GetWallets,
     )
@@ -91,7 +95,8 @@ suspend fun IdosClient.Wallets.getAll(): Result<List<GetWalletsResponse>> =
  * @param id Wallet ID to remove
  * @return Result containing transaction hash or error
  */
-suspend fun IdosClient.Wallets.remove(id: UuidString): Result<HexString> =
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.Wallets.remove(id: UuidString): HexString =
     executor.execute(
         RemoveWallet,
         RemoveWalletParams(id),
@@ -107,21 +112,24 @@ suspend fun IdosClient.Wallets.remove(id: UuidString): Result<HexString> =
  * @param input Credential details
  * @return Result containing transaction hash or error
  */
-suspend fun IdosClient.Credentials.add(input: AddCredentialParams): Result<HexString> = executor.execute(AddCredential, input)
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.Credentials.add(input: AddCredentialParams): HexString = executor.execute(AddCredential, input)
 
 /**
  * Gets all credentials owned by the current user.
  *
  * @return Result containing list of owned credentials or error
  */
-suspend fun IdosClient.Credentials.getAll(): Result<List<GetCredentialsResponse>> = executor.call(GetCredentials)
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.Credentials.getAll(): List<GetCredentialsResponse> = executor.call(GetCredentials)
 
 /**
  * Gets credential owned by the current user by id.
  *
  * @return Result containing credential or error (including not found)
  */
-suspend fun IdosClient.Credentials.getOwned(id: UuidString): Result<GetCredentialOwnedResponse> =
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.Credentials.getOwned(id: UuidString): GetCredentialOwnedResponse =
     executor.callSingle(
         GetCredentialOwned,
         GetCredentialOwnedParams(id),
@@ -132,7 +140,8 @@ suspend fun IdosClient.Credentials.getOwned(id: UuidString): Result<GetCredentia
  *
  * @return Result containing list of shared credentials or error
  */
-suspend fun IdosClient.Credentials.getShared(id: UuidString): Result<List<GetCredentialSharedResponse>> =
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.Credentials.getShared(id: UuidString): List<GetCredentialSharedResponse> =
     executor.call(
         GetCredentialShared,
         GetCredentialSharedParams(id),
@@ -144,7 +153,8 @@ suspend fun IdosClient.Credentials.getShared(id: UuidString): Result<List<GetCre
  * @param input Updated credential details
  * @return Result containing transaction hash or error
  */
-suspend fun IdosClient.Credentials.edit(input: EditCredentialParams): Result<HexString> = executor.execute(EditCredential, input)
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.Credentials.edit(input: EditCredentialParams): HexString = executor.execute(EditCredential, input)
 
 /**
  * Removes a credential.
@@ -152,7 +162,8 @@ suspend fun IdosClient.Credentials.edit(input: EditCredentialParams): Result<Hex
  * @param id Credential ID to remove
  * @return Result containing transaction hash or error
  */
-suspend fun IdosClient.Credentials.remove(id: UuidString): Result<HexString> =
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.Credentials.remove(id: UuidString): HexString =
     executor.execute(
         RemoveCredential,
         RemoveCredentialParams(id),
@@ -164,7 +175,8 @@ suspend fun IdosClient.Credentials.remove(id: UuidString): Result<HexString> =
  * @param input Share details including credential ID and grantee
  * @return Result containing transaction hash or error
  */
-suspend fun IdosClient.Credentials.share(input: ShareCredentialParams): Result<HexString> = executor.execute(ShareCredential, input)
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.Credentials.share(input: ShareCredentialParams): HexString = executor.execute(ShareCredential, input)
 
 // ============================================================================
 // ACCESS GRANTS
@@ -176,14 +188,16 @@ suspend fun IdosClient.Credentials.share(input: ShareCredentialParams): Result<H
  * @param input Access grant details
  * @return Result containing transaction hash or error
  */
-suspend fun IdosClient.AccessGrants.create(input: CreateAccessGrantParams): Result<HexString> = executor.execute(CreateAccessGrant, input)
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.AccessGrants.create(input: CreateAccessGrantParams): HexString = executor.execute(CreateAccessGrant, input)
 
 /**
  * Gets all access grants owned by the current user.
  *
  * @return Result containing list of owned access grants or error
  */
-suspend fun IdosClient.AccessGrants.getOwned(): Result<List<GetAccessGrantsOwnedResponse>> =
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.AccessGrants.getOwned(): List<GetAccessGrantsOwnedResponse> =
     executor.call(
         GetAccessGrantsOwned,
     )
@@ -193,11 +207,12 @@ suspend fun IdosClient.AccessGrants.getOwned(): Result<List<GetAccessGrantsOwned
  *
  * @return Result containing list of granted access grants or error
  */
+@Throws(CancellationException::class, DomainError::class)
 suspend fun IdosClient.AccessGrants.getGranted(
     userId: UuidString,
     page: Int,
     size: Int,
-): Result<List<GetAccessGrantsGrantedResponse>> =
+): List<GetAccessGrantsGrantedResponse> =
     executor.call(
         GetAccessGrantsGranted,
         GetAccessGrantsGrantedParams(userId, page, size),
@@ -209,7 +224,8 @@ suspend fun IdosClient.AccessGrants.getGranted(
  * @param credentialId Credential ID to query
  * @return Result containing list of access grants for the credential or error
  */
-suspend fun IdosClient.AccessGrants.getForCredential(credentialId: UuidString): Result<List<GetAccessGrantsForCredentialResponse>> =
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.AccessGrants.getForCredential(credentialId: UuidString): List<GetAccessGrantsForCredentialResponse> =
     executor.call(
         GetAccessGrantsForCredential,
         GetAccessGrantsForCredentialParams(credentialId),
@@ -221,8 +237,8 @@ suspend fun IdosClient.AccessGrants.getForCredential(credentialId: UuidString): 
  * @param id Access Grant id to revoke
  * @return Result containing transaction hash or error
  */
-suspend fun IdosClient.AccessGrants.revoke(id: UuidString): Result<HexString> =
-    executor.execute(RevokeAccessGrant, RevokeAccessGrantParams(id))
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.AccessGrants.revoke(id: UuidString): HexString = executor.execute(RevokeAccessGrant, RevokeAccessGrantParams(id))
 
 // ============================================================================
 // USERS
@@ -233,17 +249,17 @@ suspend fun IdosClient.AccessGrants.revoke(id: UuidString): Result<HexString> =
  *
  * @return Result containing user profile or error (including not found)
  */
-suspend fun IdosClient.Users.get(): Result<GetUserResponse> = executor.callSingle(GetUser)
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.Users.get(): GetUserResponse = executor.callSingle(GetUser)
 
 /**
  * Checks if the current user has a profile.
  *
  * @return Result containing true if profile exists, false otherwise, or error
  */
-suspend fun IdosClient.Users.hasProfile(address: HexString): Result<Boolean> =
-    executor.call(HasProfile, HasProfileParams(address.prefixedValue)).map { results ->
-        results.firstOrNull()?.hasProfile ?: false
-    }
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.Users.hasProfile(address: HexString): Boolean =
+    executor.call(HasProfile, HasProfileParams(address.prefixedValue)).firstOrNull()?.hasProfile ?: false
 
 // ============================================================================
 // ATTRIBUTES
@@ -255,14 +271,16 @@ suspend fun IdosClient.Users.hasProfile(address: HexString): Result<Boolean> =
  * @param input Attribute details
  * @return Result containing transaction hash or error
  */
-suspend fun IdosClient.Attributes.add(input: AddAttributeParams): Result<HexString> = executor.execute(AddAttribute, input)
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.Attributes.add(input: AddAttributeParams): HexString = executor.execute(AddAttribute, input)
 
 /**
  * Gets all attributes for the current user.
  *
  * @return Result containing list of attributes or error
  */
-suspend fun IdosClient.Attributes.getAll(): Result<List<GetAttributesResponse>> =
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.Attributes.getAll(): List<GetAttributesResponse> =
     executor.call(
         GetAttributes,
     )
@@ -273,7 +291,8 @@ suspend fun IdosClient.Attributes.getAll(): Result<List<GetAttributesResponse>> 
  * @param input Updated attribute details
  * @return Result containing transaction hash or error
  */
-suspend fun IdosClient.Attributes.edit(input: EditAttributeParams): Result<HexString> = executor.execute(EditAttribute, input)
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.Attributes.edit(input: EditAttributeParams): HexString = executor.execute(EditAttribute, input)
 
 /**
  * Removes an attribute.
@@ -281,7 +300,8 @@ suspend fun IdosClient.Attributes.edit(input: EditAttributeParams): Result<HexSt
  * @param id Attribute ID to remove
  * @return Result containing transaction hash or error
  */
-suspend fun IdosClient.Attributes.remove(id: UuidString): Result<HexString> =
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.Attributes.remove(id: UuidString): HexString =
     executor.execute(
         RemoveAttribute,
         RemoveAttributeParams(id),
@@ -293,7 +313,8 @@ suspend fun IdosClient.Attributes.remove(id: UuidString): Result<HexString> =
  * @param input Share details including attribute ID and grantee
  * @return Result containing transaction hash or error
  */
-suspend fun IdosClient.Attributes.share(input: ShareAttributeParams): Result<HexString> = executor.execute(ShareAttribute, input)
+@Throws(CancellationException::class, DomainError::class)
+suspend fun IdosClient.Attributes.share(input: ShareAttributeParams): HexString = executor.execute(ShareAttribute, input)
 
 /**
  * Internal accessor for ActionExecutor.

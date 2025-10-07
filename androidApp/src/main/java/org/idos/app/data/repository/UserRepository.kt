@@ -50,14 +50,14 @@ class UserRepositoryImpl(
         storageManager.saveWalletAddress(address)
 
         // Step 2: Check if user has profile first
-        val hasProfile = dataProvider.hasUserProfile(address).getOrThrow()
+        val hasProfile = dataProvider.hasUserProfile(address)
         if (!hasProfile) {
             throw NoProfileException("User profile does not exist - please create profile first")
         }
 
         try {
             // Step 3: Fetch user data
-            val user = dataProvider.getUser().getOrThrow()
+            val user = dataProvider.getUser()
 
             // Step 4: Combine address + user data
             val userModel =

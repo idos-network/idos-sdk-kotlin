@@ -53,9 +53,7 @@ class CredentialsViewModel: BaseViewModel<CredentialsState, CredentialsEvent> {
             }
 
             do {
-                // Fetch credentials from repository (matches Android implementation)
                 let credentials = try await credentialsRepository.getCredentials()
-
                 await MainActor.run {
                     self.state.credentials = credentials
                     self.state.isLoading = false

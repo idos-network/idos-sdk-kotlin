@@ -3,6 +3,21 @@ import SwiftUI
 /// CredentialsView matching Android's CredentialsScreen
 struct CredentialsView: View {
     @StateObject var viewModel: CredentialsViewModel
+    @EnvironmentObject var diContainer: DIContainer
+    @EnvironmentObject var navigationCoordinator: NavigationCoordinator
+    
+    // Check if we should show the detail view
+    private var isShowingDetail: Binding<Bool> {
+        Binding(
+            get: {
+                if case .credentialDetail = navigationCoordinator.currentRoute {
+                    return true
+                }
+                return false
+            },
+            set: { if !$0 { navigationCoordinator.navigateUp() } }
+        )
+    }
 
     var body: some View {
         ZStack {
@@ -43,6 +58,21 @@ struct CredentialsView: View {
             }
             .buttonStyle(.plain)
         }
+        // Hidden NavigationLink for programmatic navigation
+        .background(
+            NavigationLink(
+                destination: Group {
+                    if let route = navigationCoordinator.currentRoute,
+                       case let .credentialDetail(credentialId) = route {
+                        CredentialDetailView(
+                            viewModel: diContainer.makeCredentialDetailViewModel(credentialId: credentialId)
+                        )
+                    }
+                },
+                isActive: isShowingDetail,
+                label: { EmptyView() }
+            )
+        )
     }
 }
 
@@ -73,11 +103,11 @@ struct CredentialCard: View {
 
 #Preview {
     let diContainer = DIContainer.shared
-    NavigationView {
-        CredentialsView(
-            viewModel: diContainer.makeCredentialsViewModel()
-        )
+    let viewModel = diContainer.makeCredentialsViewModel()
+    
+    return NavigationView {
+        CredentialsView(viewModel: viewModel)
+            .environmentObject(diContainer)
+            .environmentObject(diContainer.navigationCoordinator)
     }
-    .environmentObject(diContainer)
-    .environmentObject(diContainer.navigationCoordinator)
 }

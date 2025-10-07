@@ -14,14 +14,14 @@ class WalletRepository: WalletRepositoryProtocol {
     }
     
     func getWallets() async throws -> [Wallet] {
-        try await dataProvider.getWallets().map { Wallet.from(response: $0) }
+        return try await dataProvider.getWallets().map(Wallet.from)
     }
 }
 
 #if DEBUG
 class MockWalletRepository: WalletRepositoryProtocol {
-    func getWallets() async throws -> [Wallet] {
-        [
+    func getWallets() async -> [Wallet] {
+        return [
             Wallet(
                 id: "123",
                 address: "0x123...",

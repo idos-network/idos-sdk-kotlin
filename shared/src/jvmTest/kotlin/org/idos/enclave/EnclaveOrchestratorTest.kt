@@ -3,13 +3,11 @@ package org.idos.enclave
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import org.idos.kwil.types.UuidString
 
 /**
- * Tests for EnclaveOrchestrator state machine and flow.
- * Based on the use cases defined in the design phase.
+ * Tests for simplified EnclaveOrchestrator.
+ * Tests state management and withEnclave access control.
  */
 class EnclaveOrchestratorTest :
     FunSpec({
@@ -17,346 +15,264 @@ class EnclaveOrchestratorTest :
         val password = "test-password"
         val expiration = 3600000L // 1 hour
 
-        // Happy Path Tests
-        context("UC-1: Initial Key Generation") {
-            test("UC-1.1: Fresh start - checkStatus shows RequiresKey") {
+        context("State Management") {
+            test("Initial state is Locked") {
+                val enclave = MockEnclave(MockEnclave.MockBehavior.NoKey)
+                val orchestrator = EnclaveOrchestrator(enclave)
+
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Locked>()
+            }
+
+            test("checkStatus with no key → Locked") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.NoKey)
                 val orchestrator = EnclaveOrchestrator(enclave)
 
                 orchestrator.checkStatus()
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.RequiresKey>()
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Locked>()
             }
 
-            test("UC-1.2: Generate key successfully transitions to Available") {
+            test("checkStatus with valid key → Unlocked") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
                 val orchestrator = EnclaveOrchestrator(enclave)
 
+                // Generate key first
+                orchestrator.unlock(userId, password, expiration)
+
+                // Then check status
                 orchestrator.checkStatus()
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.RequiresKey>()
-
-                orchestrator.generateKey(userId, password, expiration)
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.Available>()
-            }
-        }
-
-        context("UC-2: Normal Operations") {
-            test("UC-2.1: Encrypt with valid key succeeds") {
-                val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator = EnclaveOrchestrator(enclave)
-
-                orchestrator.generateKey(userId, password, expiration)
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.Available>()
-
-                val message = "Hello, World!".encodeToByteArray()
-                val receiverPubKey = ByteArray(32) { 1 }
-
-                val result = orchestrator.encrypt(message, receiverPubKey)
-                result.isSuccess shouldBe true
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Unlocked>()
             }
 
-            test("UC-2.2: Decrypt with valid key succeeds") {
-                val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator = EnclaveOrchestrator(enclave)
-
-                orchestrator.generateKey(userId, password, expiration)
-
-                val message = "Hello, World!".encodeToByteArray()
-                val senderPubKey = ByteArray(32) { 1 }
-
-                // First encrypt to get ciphertext
-                val (ciphertext, _) = orchestrator.encrypt(message, senderPubKey).getOrThrow()
-
-                // Then decrypt
-                val result = orchestrator.decrypt(ciphertext, senderPubKey)
-                result.isSuccess shouldBe true
-            }
-        }
-
-        context("UC-3: Pending Actions") {
-            test("UC-3.1: Action queued when enclave not ready") {
-                val enclave = MockEnclave(MockEnclave.MockBehavior.NoKey)
-                val orchestrator = EnclaveOrchestrator(enclave)
-
-                var actionExecuted = false
-                val result =
-                    orchestrator.requireEnclave {
-                        actionExecuted = true
-                    }
-
-                result.isFailure shouldBe true
-                actionExecuted shouldBe false
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.RequiresKey>()
-            }
-
-            test("UC-3.2: Pending actions execute after key generation") {
-                val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator = EnclaveOrchestrator(enclave)
-
-                var actionExecuted = false
-
-                // Queue action before key exists
-                orchestrator.requireEnclave {
-                    actionExecuted = true
-                }
-
-                actionExecuted shouldBe false
-
-                // Generate key - should execute pending actions
-                orchestrator.generateKey(userId, password, expiration)
-
-                actionExecuted shouldBe true
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.Available>()
-            }
-
-            test("UC-3.3: Multiple pending actions execute in order") {
-                val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator = EnclaveOrchestrator(enclave)
-
-                val executionOrder = mutableListOf<Int>()
-
-                orchestrator.requireEnclave { executionOrder.add(1) }
-                orchestrator.requireEnclave { executionOrder.add(2) }
-                orchestrator.requireEnclave { executionOrder.add(3) }
-
-                executionOrder.size shouldBe 0
-
-                orchestrator.generateKey(userId, password, expiration)
-
-                executionOrder shouldBe listOf(1, 2, 3)
-            }
-        }
-
-        context("UC-4: User Actions") {
-            test("UC-4.1: User cancels key generation flow") {
-                val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator = EnclaveOrchestrator(enclave)
-
-                orchestrator.checkStatus()
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.RequiresKey>()
-
-                orchestrator.cancel()
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.Cancelled>()
-            }
-
-            test("UC-4.2: Pending actions cleared on cancel") {
-                val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator = EnclaveOrchestrator(enclave)
-
-                var action1Executed = false
-                var action2Executed = false
-
-                orchestrator.requireEnclave { action1Executed = true }
-                orchestrator.requireEnclave { action2Executed = true }
-
-                orchestrator.cancel()
-
-                // Generate key - should NOT execute cancelled actions
-                orchestrator.generateKey(userId, password, expiration)
-
-                action1Executed shouldBe false
-                action2Executed shouldBe false
-            }
-
-            test("UC-4.3: Retry after wrong password suspect") {
-                val enclave =
-                    MockEnclave(
-                        MockEnclave.MockBehavior.DecryptFails(
-                            EnclaveError.DecryptionFailed(DecryptFailure.WrongPassword),
-                        ),
-                    )
-                val orchestrator = EnclaveOrchestrator(enclave)
-
-                orchestrator.generateKey(userId, password, expiration)
-
-                val ciphertext = "encrypted".encodeToByteArray()
-                val pubkey = ByteArray(32)
-
-                orchestrator.decrypt(ciphertext, pubkey)
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.WrongPasswordSuspected>()
-
-                orchestrator.retry()
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.Available>()
-            }
-
-            test("UC-4.4: Reset clears key and returns to RequiresKey") {
-                val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator = EnclaveOrchestrator(enclave)
-
-                orchestrator.generateKey(userId, password, expiration)
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.Available>()
-
-                orchestrator.reset()
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.RequiresKey>()
-            }
-        }
-
-        context("UC-5: Error Handling") {
-            test("UC-5.1: Key generation fails") {
-                val error = EnclaveError.KeyGenerationFailed("Test failure")
-                val enclave = MockEnclave(MockEnclave.MockBehavior.KeyGenerationFails(error))
-                val orchestrator = EnclaveOrchestrator(enclave)
-
-                orchestrator.generateKey(userId, password, expiration)
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.KeyGenerationError>()
-            }
-
-            test("UC-5.2: Decryption fails - wrong password suspected") {
-                val enclave =
-                    MockEnclave(
-                        MockEnclave.MockBehavior.DecryptFails(
-                            EnclaveError.DecryptionFailed(DecryptFailure.WrongPassword),
-                        ),
-                    )
-                val orchestrator = EnclaveOrchestrator(enclave)
-
-                orchestrator.generateKey(userId, password, expiration)
-
-                val ciphertext = "encrypted".encodeToByteArray()
-                val pubkey = ByteArray(32)
-
-                orchestrator.decrypt(ciphertext, pubkey)
-
-                val state = orchestrator.state.value
-                state.shouldBeInstanceOf<EnclaveFlow.WrongPasswordSuspected>()
-                state.attemptCount shouldBe 1
-            }
-
-            test("UC-5.3: Multiple decrypt failures increment attempt counter") {
-                val enclave =
-                    MockEnclave(
-                        MockEnclave.MockBehavior.DecryptFails(
-                            EnclaveError.DecryptionFailed(DecryptFailure.WrongPassword),
-                        ),
-                    )
-                val orchestrator = EnclaveOrchestrator(enclave)
-
-                orchestrator.generateKey(userId, password, expiration)
-
-                val ciphertext = "encrypted".encodeToByteArray()
-                val pubkey = ByteArray(32)
-
-                orchestrator.decrypt(ciphertext, pubkey)
-                (orchestrator.state.value as EnclaveFlow.WrongPasswordSuspected).attemptCount shouldBe 1
-
-                orchestrator.retry()
-                orchestrator.decrypt(ciphertext, pubkey)
-                (orchestrator.state.value as EnclaveFlow.WrongPasswordSuspected).attemptCount shouldBe 2
-            }
-
-            test("UC-5.4: Encryption fails transitions to Error") {
-                val error = EnclaveError.EncryptionFailed("Test failure")
-                val enclave = MockEnclave(MockEnclave.MockBehavior.EncryptFails(error))
-                val orchestrator = EnclaveOrchestrator(enclave)
-
-                orchestrator.generateKey(userId, password, expiration)
-
-                val message = "test".encodeToByteArray()
-                val pubkey = ByteArray(32)
-
-                orchestrator.encrypt(message, pubkey)
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.Error>()
-            }
-
-            test("UC-5.5: Key expired detected on operation") {
+            test("checkStatus with expired key → Locked") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.KeyExpired)
                 val orchestrator = EnclaveOrchestrator(enclave)
 
                 orchestrator.checkStatus()
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.RequiresKey>()
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Locked>()
             }
         }
 
-        context("UC-6: Edge Cases") {
-            test("UC-6.1: requireEnclave with Available state executes immediately") {
+        context("unlock() - Key Generation") {
+            test("unlock() transitions Locked → Unlocking → Unlocked") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
                 val orchestrator = EnclaveOrchestrator(enclave)
 
-                orchestrator.generateKey(userId, password, expiration)
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Locked>()
 
-                var actionExecuted = false
-                val result =
-                    orchestrator.requireEnclave {
-                        actionExecuted = true
+                runCatching {
+                    orchestrator.unlock(userId, password, expiration)
+                }.isSuccess shouldBe true
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Unlocked>()
+            }
+
+            test("unlock() failure → Locked") {
+                val error = EnclaveError.KeyGenerationFailed("Test failure")
+                val enclave = MockEnclave(MockEnclave.MockBehavior.KeyGenerationFails(error))
+                val orchestrator = EnclaveOrchestrator(enclave)
+
+                orchestrator.unlock(userId, password, expiration)
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Locked>()
+            }
+
+            test("unlock() from Unlocked state re-generates key") {
+                val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
+                val orchestrator = EnclaveOrchestrator(enclave)
+
+                orchestrator.unlock(userId, password, expiration)
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Unlocked>()
+
+                // Unlock again (re-generate)
+                runCatching {
+                    orchestrator.unlock(userId, "new-password", expiration)
+                }.isSuccess shouldBe true
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Unlocked>()
+            }
+        }
+
+        context("lock() - Key Deletion") {
+            test("lock() transitions to Locked") {
+                val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
+                val orchestrator = EnclaveOrchestrator(enclave)
+
+                orchestrator.unlock(userId, password, expiration)
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Unlocked>()
+
+                orchestrator.lock()
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Locked>()
+            }
+
+            test("lock() when already Locked → still Locked") {
+                val enclave = MockEnclave(MockEnclave.MockBehavior.NoKey)
+                val orchestrator = EnclaveOrchestrator(enclave)
+
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Locked>()
+
+                orchestrator.lock()
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Locked>()
+            }
+
+            test("lock() failure still transitions to Locked") {
+                val enclave = MockEnclave(MockEnclave.MockBehavior.DeleteKeyFails)
+                val orchestrator = EnclaveOrchestrator(enclave)
+
+                orchestrator.unlock(userId, password, expiration)
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Unlocked>()
+
+                runCatching {
+                    orchestrator.lock()
+                }.isSuccess shouldBe true
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Locked>()
+            }
+        }
+
+        context("withEnclave() - Access Control") {
+            test("withEnclave() when Locked → NoKey error") {
+                val enclave = MockEnclave(MockEnclave.MockBehavior.NoKey)
+                val orchestrator = EnclaveOrchestrator(enclave)
+
+                val exception =
+                    runCatching {
+                        orchestrator.withEnclave { it.hasValidKey() }
+                    }.exceptionOrNull()
+                exception.shouldBeInstanceOf<EnclaveError.NoKey>()
+            }
+
+            test("withEnclave() when Unlocked → executes action") {
+                val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
+                val orchestrator = EnclaveOrchestrator(enclave)
+
+                orchestrator.unlock(userId, password, expiration)
+
+                runCatching {
+                    orchestrator.withEnclave { it.hasValidKey() }
+                }.isSuccess shouldBe true
+            }
+
+            test("withEnclave() action returns Result") {
+                val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
+                val orchestrator = EnclaveOrchestrator(enclave)
+
+                orchestrator.unlock(userId, password, expiration)
+
+                runCatching {
+                    orchestrator.withEnclave { enclave ->
+                        enclave.encrypt("test".encodeToByteArray(), ByteArray(32))
                     }
-
-                result.isSuccess shouldBe true
-                actionExecuted shouldBe true
+                }.isSuccess shouldBe true
             }
 
-            test("UC-6.2: Cancel clears wrong password attempts") {
-                val enclave =
-                    MockEnclave(
-                        MockEnclave.MockBehavior.DecryptFails(
-                            EnclaveError.DecryptionFailed(DecryptFailure.WrongPassword),
-                        ),
-                    )
+            test("withEnclave() propagates action failure") {
+                val error = EnclaveError.EncryptionFailed("Test failure")
+                val enclave = MockEnclave(MockEnclave.MockBehavior.EncryptFails(error))
                 val orchestrator = EnclaveOrchestrator(enclave)
 
-                orchestrator.generateKey(userId, password, expiration)
-                orchestrator.decrypt("test".encodeToByteArray(), ByteArray(32))
+                orchestrator.unlock(userId, password, expiration)
 
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.WrongPasswordSuspected>()
-
-                orchestrator.cancel()
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.Cancelled>()
-
-                // After cancel and regenerate, counter should be reset
-                val enclave2 = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator2 = EnclaveOrchestrator(enclave2)
-                orchestrator2.generateKey(userId, password, expiration)
-                orchestrator2.state.value.shouldBeInstanceOf<EnclaveFlow.Available>()
+                val exception =
+                    runCatching {
+                        orchestrator.withEnclave { enclave ->
+                            enclave.encrypt("test".encodeToByteArray(), ByteArray(32))
+                        }
+                    }.exceptionOrNull()
+                exception.shouldBeInstanceOf<EnclaveError.EncryptionFailed>()
             }
+        }
 
-            test("UC-6.3: Successful operation resets wrong password counter") {
+        context("Enclave Operations via withEnclave") {
+            test("Encrypt via withEnclave succeeds") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
                 val orchestrator = EnclaveOrchestrator(enclave)
 
-                orchestrator.generateKey(userId, password, expiration)
+                orchestrator.unlock(userId, password, expiration)
 
-                val message = "test".encodeToByteArray()
+                val message = "Hello, World!".encodeToByteArray()
+                val receiverPubKey = ByteArray(32) { 1 }
+
+                val (ciphertext, nonce) = orchestrator.withEnclave { it.encrypt(message, receiverPubKey) }
+                ciphertext.isNotEmpty() shouldBe true
+                nonce.isNotEmpty() shouldBe true
+            }
+
+            test("Decrypt via withEnclave succeeds") {
+                val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
+                val orchestrator = EnclaveOrchestrator(enclave)
+
+                orchestrator.unlock(userId, password, expiration)
+
+                val message = "Hello, World!".encodeToByteArray()
+                val senderPubKey = ByteArray(32) { 1 }
+
+                // First encrypt
+                val (ciphertext, pubkey) = orchestrator.withEnclave { it.encrypt(message, senderPubKey) }
+
+                // MockEncryption uses simple XOR, so just decrypt the ciphertext
+                val decrypted = orchestrator.withEnclave { it.decrypt(ciphertext, senderPubKey) }
+                decrypted.decodeToString() shouldBe "Hello, World!"
+            }
+
+            test("Decrypt with wrong password error") {
+                val error = EnclaveError.DecryptionFailed(DecryptFailure.WrongPassword)
+                val enclave = MockEnclave(MockEnclave.MockBehavior.DecryptFails(error))
+                val orchestrator = EnclaveOrchestrator(enclave)
+
+                orchestrator.unlock(userId, password, expiration)
+
+                val ciphertext = "encrypted".encodeToByteArray()
                 val pubkey = ByteArray(32)
 
-                val result = orchestrator.encrypt(message, pubkey)
-                result.isSuccess shouldBe true
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.Available>()
-            }
+                val exception =
+                    runCatching {
+                        orchestrator.withEnclave { it.decrypt(ciphertext, pubkey) }
+                    }.exceptionOrNull()
 
-            test("UC-6.4: Pending action fails - stops execution") {
+                exception.shouldBeInstanceOf<EnclaveError.DecryptionFailed>()
+                (exception as EnclaveError.DecryptionFailed).reason shouldBe DecryptFailure.WrongPassword
+            }
+        }
+
+        context("State Transitions") {
+            test("Full lifecycle: unlock → use → lock → can't use") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
                 val orchestrator = EnclaveOrchestrator(enclave)
 
-                var action1Executed = false
-                var action2Executed = false
-                var action3Executed = false
+                // Unlock
+                orchestrator.unlock(userId, password, expiration)
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Unlocked>()
 
-                orchestrator.requireEnclave { action1Executed = true }
-                orchestrator.requireEnclave {
-                    action2Executed = true
-                    throw RuntimeException("Test error")
-                }
-                orchestrator.requireEnclave { action3Executed = true }
+                // Use enclave
+                orchestrator.withEnclave {
+                    it.encrypt("data".encodeToByteArray(), ByteArray(32))
+                } // Should not throw
 
-                orchestrator.generateKey(userId, password, expiration)
+                // Lock
+                orchestrator.lock()
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Locked>()
 
-                action1Executed shouldBe true
-                action2Executed shouldBe true
-                action3Executed shouldBe false // Should not execute after error
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.Error>()
+                // Can't use after lock
+                val exception =
+                    runCatching {
+                        orchestrator.withEnclave {
+                            it.encrypt("data".encodeToByteArray(), ByteArray(32))
+                        }
+                    }.exceptionOrNull()
+                exception.shouldBeInstanceOf<EnclaveError.NoKey>()
             }
 
-            test("UC-6.5: requireEnclave after Cancelled re-triggers flow") {
+            test("unlock → lock → unlock again") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
                 val orchestrator = EnclaveOrchestrator(enclave)
 
-                orchestrator.checkStatus()
-                orchestrator.cancel()
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.Cancelled>()
+                // First unlock
+                orchestrator.unlock(userId, password, expiration)
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Unlocked>()
 
-                var actionExecuted = false
-                orchestrator.requireEnclave { actionExecuted = true }
+                // Lock
+                orchestrator.lock()
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Locked>()
 
-                orchestrator.state.value.shouldBeInstanceOf<EnclaveFlow.RequiresKey>()
-                actionExecuted shouldBe false
+                // Unlock again
+                orchestrator.unlock(userId, "new-password", expiration)
+                orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Unlocked>()
             }
         }
     })

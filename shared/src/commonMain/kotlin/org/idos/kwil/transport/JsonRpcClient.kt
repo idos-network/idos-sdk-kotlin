@@ -114,7 +114,8 @@ internal class JsonRpcClient(
 
         if (jsonRpcResponse.error != null) {
             val errorCode = jsonRpcResponse.error.code ?: -1
-            val errorMessage = jsonRpcResponse.error.message ?: "Unknown error"
+            val errorMessage =
+                jsonRpcResponse.error.data?.toString() ?: jsonRpcResponse.error.message ?: "Unknown error"
 
             throw TransportError.HttpError(
                 statusCode = errorCode,

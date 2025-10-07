@@ -33,6 +33,9 @@ class MockEnclave(
             val error: EnclaveError,
         ) : MockBehavior()
 
+        /** Delete key fails */
+        data object DeleteKeyFails : MockBehavior()
+
         /** Key expired */
         data object KeyExpired : MockBehavior()
 
@@ -55,28 +58,32 @@ class MockEnclave(
         userId: UuidString,
         password: String,
         expiration: Long,
-    ): Result<ByteArray> {
+    ): ByteArray {
+        println("*****************")
         generateKeyCallCount++
         return when (behavior) {
-            is MockBehavior.KeyGenerationFails -> Result.failure(behavior.error)
+            is MockBehavior.KeyGenerationFails -> throw behavior.error
             else -> super.generateKey(userId, password, expiration)
         }
     }
 
-    override suspend fun deleteKey(): Result<Unit> {
+    override suspend fun deleteKey() {
         deleteKeyCallCount++
-        return super.deleteKey()
+        when (behavior) {
+            is MockBehavior.DeleteKeyFails -> throw EnclaveError.StorageFailed("Delete failed")
+            else -> super.deleteKey()
+        }
     }
 
     override suspend fun decrypt(
         message: ByteArray,
         senderPublicKey: ByteArray,
-    ): Result<ByteArray> {
+    ): ByteArray {
         decryptCallCount++
         return when (behavior) {
-            is MockBehavior.DecryptFails -> Result.failure(behavior.error)
-            MockBehavior.NoKey -> Result.failure(EnclaveError.NoKey())
-            MockBehavior.KeyExpired -> Result.failure(EnclaveError.KeyExpired())
+            is MockBehavior.DecryptFails -> throw behavior.error
+            MockBehavior.NoKey -> throw EnclaveError.NoKey()
+            MockBehavior.KeyExpired -> throw EnclaveError.KeyExpired()
             else -> super.decrypt(message, senderPublicKey)
         }
     }
@@ -84,21 +91,21 @@ class MockEnclave(
     override suspend fun encrypt(
         message: ByteArray,
         receiverPublicKey: ByteArray,
-    ): Result<Pair<ByteArray, ByteArray>> {
+    ): Pair<ByteArray, ByteArray> {
         encryptCallCount++
         return when (behavior) {
-            is MockBehavior.EncryptFails -> Result.failure(behavior.error)
-            MockBehavior.NoKey -> Result.failure(EnclaveError.NoKey())
-            MockBehavior.KeyExpired -> Result.failure(EnclaveError.KeyExpired())
+            is MockBehavior.EncryptFails -> throw behavior.error
+            MockBehavior.NoKey -> throw EnclaveError.NoKey()
+            MockBehavior.KeyExpired -> throw EnclaveError.KeyExpired()
             else -> super.encrypt(message, receiverPublicKey)
         }
     }
 
-    override suspend fun hasValidKey(): Result<Unit> {
+    override suspend fun hasValidKey() {
         hasValidKeyCallCount++
-        return when (behavior) {
-            MockBehavior.NoKey -> Result.failure(EnclaveError.NoKey())
-            MockBehavior.KeyExpired -> Result.failure(EnclaveError.KeyExpired())
+        when (behavior) {
+            MockBehavior.NoKey -> throw EnclaveError.NoKey()
+            MockBehavior.KeyExpired -> throw EnclaveError.KeyExpired()
             else -> super.hasValidKey()
         }
     }

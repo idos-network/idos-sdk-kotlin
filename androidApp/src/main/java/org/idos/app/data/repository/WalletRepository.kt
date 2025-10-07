@@ -18,10 +18,9 @@ class WalletRepositoryImpl(
             emit(
                 dataProvider
                     .getWallets()
-                    .getOrThrow()
                     .map { it.toWallet() },
             )
         }
 }
 
-fun org.idos.kwil.domain.generated.view.GetWalletsResponse.toWallet(): Wallet = Wallet(address = this.address, network = this.walletType)
+fun GetWalletsResponse.toWallet(): Wallet = Wallet(address = this.address, network = this.walletType)

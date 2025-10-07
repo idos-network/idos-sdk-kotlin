@@ -1,6 +1,7 @@
 package org.idos.enclave
 
 import org.idos.kwil.types.UuidString
+import kotlin.coroutines.cancellation.CancellationException
 
 // https://github.com/idos-network/idos-sdk-js/blob/main/packages/utils/src/encryption/index.ts
 abstract class Encryption(
@@ -13,17 +14,22 @@ abstract class Encryption(
         ): ByteArray = KeyDerivation.deriveKey(password, salt)
     }
 
-    abstract suspend fun encrypt(
+    @Throws(CancellationException::class, EnclaveError::class)
+    internal abstract suspend fun publicKey(secret: ByteArray): ByteArray
+
+    @Throws(CancellationException::class, EnclaveError::class)
+    internal abstract suspend fun encrypt(
         message: ByteArray,
         receiverPublicKey: ByteArray,
     ): Pair<ByteArray, ByteArray>
 
-    abstract suspend fun decrypt(
+    @Throws(CancellationException::class, EnclaveError::class)
+    internal abstract suspend fun decrypt(
         fullMessage: ByteArray,
         senderPublicKey: ByteArray,
     ): ByteArray
 
-    suspend fun generateKey(
+    internal suspend fun generateKey(
         userId: UuidString,
         password: String,
     ): ByteArray =
@@ -37,14 +43,12 @@ abstract class Encryption(
             throw EnclaveError.KeyGenerationFailed(error.message ?: "Unknown error")
         }
 
-    suspend fun deleteKey() =
+    internal suspend fun deleteKey() =
         runCatching {
             storage.deleteKey()
         }.getOrElse { error ->
             throw EnclaveError.StorageFailed(error.message ?: "Failed to delete key")
         }
 
-    protected suspend fun getSecretKey(): ByteArray = storage.retrieveKey() ?: throw EnclaveError.NoKey()
-
-    protected abstract suspend fun publicKey(secret: ByteArray): ByteArray
+    internal suspend fun getSecretKey(): ByteArray = storage.retrieveKey() ?: throw EnclaveError.NoKey()
 }

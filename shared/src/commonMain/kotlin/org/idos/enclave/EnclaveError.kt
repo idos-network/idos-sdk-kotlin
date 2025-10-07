@@ -1,5 +1,8 @@
 package org.idos.enclave
 
+import org.idos.kwil.domain.DomainError
+import org.idos.kwil.protocol.MissingAuthenticationException
+
 /**
  * Type-safe error hierarchy for enclave operations.
  * Provides exhaustive when expressions and iOS-compatible error handling.
@@ -95,3 +98,17 @@ sealed class DecryptFailure(
         val message: String,
     ) : DecryptFailure(message)
 }
+
+@PublishedApi
+internal suspend inline fun <T> runCatchingErrorAsync(crossinline block: suspend () -> T): T =
+    try {
+        block()
+    } catch (e: EnclaveError) {
+        // Already a EnclaveError, pass through
+        throw e
+    } catch (e: Exception) {
+        throw EnclaveError.Unknown(
+            e.message ?: "An unexpected error occurred",
+            cause = e,
+        )
+    }

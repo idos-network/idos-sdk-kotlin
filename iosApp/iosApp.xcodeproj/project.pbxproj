@@ -31,7 +31,6 @@
 		C27D81992E8C27A400F6CADF /* EnclaveState.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D81822E8C27A400F6CADF /* EnclaveState.swift */; };
 		C27D819A2E8C27A400F6CADF /* WalletsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D817B2E8C27A400F6CADF /* WalletsViewModel.swift */; };
 		C27D819B2E8C27A400F6CADF /* CredentialDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D816D2E8C27A400F6CADF /* CredentialDetailViewModel.swift */; };
-		C27D819C2E8C27A400F6CADF /* BaseEnclaveViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D81802E8C27A400F6CADF /* BaseEnclaveViewModel.swift */; };
 		C27D819D2E8C27A400F6CADF /* CredentialsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D816F2E8C27A400F6CADF /* CredentialsViewModel.swift */; };
 		C27D81A22E8C27A500F6CADF /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D81A12E8C27A500F6CADF /* Config.swift */; };
 		C27D81A32E8C27A500F6CADF /* EthSigner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D81A42E8C27A500F6CADF /* EthSigner.swift */; };
@@ -45,6 +44,7 @@
 		C2974AC22E8D2DBE00AADFBE /* DataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974ABF2E8D2DBE00AADFBE /* DataProvider.swift */; };
 		C2974AC42E8D30FE00AADFBE /* ByteArrays.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AC32E8D30FA00AADFBE /* ByteArrays.swift */; };
 		C2974AC62E8DBE5B00AADFBE /* Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AC52E8DBE5700AADFBE /* Strings.swift */; };
+		C2974AD32E95751400AADFBE /* Interop.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AD22E95751000AADFBE /* Interop.swift */; };
 		D67AE0A494A8203A06DA4BA0 /* Pods_iosApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DB7BD996663771C2257CCFAE /* Pods_iosApp.framework */; };
 /* End PBXBuildFile section */
 
@@ -73,7 +73,6 @@
 		C27D817A2E8C27A400F6CADF /* WalletsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletsView.swift; sourceTree = "<group>"; };
 		C27D817B2E8C27A400F6CADF /* WalletsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletsViewModel.swift; sourceTree = "<group>"; };
 		C27D817E2E8C27A400F6CADF /* KeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyManager.swift; sourceTree = "<group>"; };
-		C27D81802E8C27A400F6CADF /* BaseEnclaveViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseEnclaveViewModel.swift; sourceTree = "<group>"; };
 		C27D81812E8C27A400F6CADF /* BaseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseViewModel.swift; sourceTree = "<group>"; };
 		C27D81822E8C27A400F6CADF /* EnclaveState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnclaveState.swift; sourceTree = "<group>"; };
 		C27D81832E8C27A400F6CADF /* KeyGenerationDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyGenerationDialog.swift; sourceTree = "<group>"; };
@@ -90,6 +89,7 @@
 		C2974ABF2E8D2DBE00AADFBE /* DataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataProvider.swift; sourceTree = "<group>"; };
 		C2974AC32E8D30FA00AADFBE /* ByteArrays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteArrays.swift; sourceTree = "<group>"; };
 		C2974AC52E8DBE5700AADFBE /* Strings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Strings.swift; sourceTree = "<group>"; };
+		C2974AD22E95751000AADFBE /* Interop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Interop.swift; sourceTree = "<group>"; };
 		DB7BD996663771C2257CCFAE /* Pods_iosApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_iosApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		FB21B815C23CCBDB0C1EC03A /* Pods-iosApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosApp.debug.xcconfig"; path = "Target Support Files/Pods-iosApp/Pods-iosApp.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -127,6 +127,7 @@
 		7555FF7D242A565900829871 /* iosApp */ = {
 			isa = PBXGroup;
 			children = (
+				C2974ACA2E93C17B00AADFBE /* Utils */,
 				7555FFAF242A642300829871 /* iosApp.swift */,
 				C27D81602E8C27A400F6CADF /* App */,
 				C27D81662E8C27A400F6CADF /* Core */,
@@ -158,15 +159,6 @@
 			path = App;
 			sourceTree = "<group>";
 		};
-		C27D81612E8C27A400F6CADF /* Extensions */ = {
-			isa = PBXGroup;
-			children = (
-				C2974AC52E8DBE5700AADFBE /* Strings.swift */,
-				C2974AC32E8D30FA00AADFBE /* ByteArrays.swift */,
-			);
-			path = Extensions;
-			sourceTree = "<group>";
-		};
 		C27D81632E8C27A400F6CADF /* Navigation */ = {
 			isa = PBXGroup;
 			children = (
@@ -187,7 +179,6 @@
 			isa = PBXGroup;
 			children = (
 				C27D81A12E8C27A500F6CADF /* Config.swift */,
-				C27D81612E8C27A400F6CADF /* Extensions */,
 				C27D81632E8C27A400F6CADF /* Navigation */,
 				C27D81652E8C27A400F6CADF /* Theme */,
 			);
@@ -305,7 +296,6 @@
 		C27D81842E8C27A400F6CADF /* Base */ = {
 			isa = PBXGroup;
 			children = (
-				C27D81802E8C27A400F6CADF /* BaseEnclaveViewModel.swift */,
 				C27D81812E8C27A400F6CADF /* BaseViewModel.swift */,
 				C27D81822E8C27A400F6CADF /* EnclaveState.swift */,
 				C27D81832E8C27A400F6CADF /* KeyGenerationDialog.swift */,
@@ -336,6 +326,16 @@
 				C2974ABF2E8D2DBE00AADFBE /* DataProvider.swift */,
 			);
 			path = Network;
+			sourceTree = "<group>";
+		};
+		C2974ACA2E93C17B00AADFBE /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				C2974AD22E95751000AADFBE /* Interop.swift */,
+				C2974AC52E8DBE5700AADFBE /* Strings.swift */,
+				C2974AC32E8D30FA00AADFBE /* ByteArrays.swift */,
+			);
+			path = Utils;
 			sourceTree = "<group>";
 		};
 		D15D6754A4706ECC11A2C46D /* Pods */ = {
@@ -543,9 +543,9 @@
 				C27D81982E8C27A400F6CADF /* SettingsView.swift in Sources */,
 				C27D81992E8C27A400F6CADF /* EnclaveState.swift in Sources */,
 				C2974AB22E8D277400AADFBE /* Credential.swift in Sources */,
+				C2974AD32E95751400AADFBE /* Interop.swift in Sources */,
 				C27D819A2E8C27A400F6CADF /* WalletsViewModel.swift in Sources */,
 				C27D819B2E8C27A400F6CADF /* CredentialDetailViewModel.swift in Sources */,
-				C27D819C2E8C27A400F6CADF /* BaseEnclaveViewModel.swift in Sources */,
 				C27D819D2E8C27A400F6CADF /* CredentialsViewModel.swift in Sources */,
 				C27D81A22E8C27A500F6CADF /* Config.swift in Sources */,
 				C27D81A32E8C27A500F6CADF /* EthSigner.swift in Sources */,

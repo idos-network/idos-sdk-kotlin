@@ -7,6 +7,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import org.idos.app.data.DataProvider
+import org.idos.app.data.StorageManager
 import org.idos.app.data.model.CredentialDetail
 import org.idos.app.data.repository.CredentialsRepository
 import org.idos.app.navigation.NavRoute
@@ -75,7 +76,7 @@ sealed class EnclaveUiState {
 class CredentialDetailViewModel(
     private val credentialsRepository: CredentialsRepository,
     private val navigationManager: NavigationManager,
-    private val dataProvider: DataProvider,
+    private val storageManager: StorageManager,
     private val orchestrator: EnclaveOrchestrator,
     savedStateHandle: SavedStateHandle,
 ) : BaseViewModel<CredentialDetailState, CredentialDetailEvent>() {
@@ -144,46 +145,47 @@ class CredentialDetailViewModel(
         if (currentState.decryptedContent != null) return // Already decrypted
 
         viewModelScope.launch {
-            orchestrator
-                .withEnclave { enclave ->
-                    decryptCredential(currentState.credential, enclave)
-                }.mapCatching { decryptedString ->
-                    val json = Json.parseToJsonElement(decryptedString)
-                    updateState {
-                        (this as CredentialDetailState.Loaded).copy(decryptedContent = json)
+            try {
+                orchestrator
+                    .withEnclave { enclave ->
+                        val decryptedString = decryptCredential(currentState.credential, enclave)
+                        val json = Json.parseToJsonElement(decryptedString)
+                        updateState {
+                            (this as CredentialDetailState.Loaded).copy(decryptedContent = json)
+                        }
                     }
-                }.onFailure { error ->
-                    when (error) {
-                        is EnclaveError.NoKey, is EnclaveError.KeyExpired -> {
-                            Timber.i("Enclave locked, prompting for password")
-                            _enclaveUiState.value = EnclaveUiState.RequiresUnlock
-                        }
+            } catch (e: Exception) {
+                when (e) {
+                    is EnclaveError.NoKey, is EnclaveError.KeyExpired -> {
+                        Timber.i("Enclave locked, prompting for password")
+                        _enclaveUiState.value = EnclaveUiState.RequiresUnlock
+                    }
 
-                        is EnclaveError.DecryptionFailed -> {
-                            val message =
-                                when {
-                                    error.reason == DecryptFailure.WrongPassword -> "Wrong password - key cannot decrypt this data"
-                                    else -> "Decryption failed: ${error.message}"
-                                }
-                            _enclaveUiState.value = EnclaveUiState.UnlockError(message, canRetry = true)
-                        }
+                    is EnclaveError.DecryptionFailed -> {
+                        val message =
+                            when {
+                                e.reason == DecryptFailure.WrongPassword -> "Wrong password - key cannot decrypt this data"
+                                else -> "Decryption failed: ${e.message}"
+                            }
+                        _enclaveUiState.value = EnclaveUiState.UnlockError(message, canRetry = true)
+                    }
 
-                        else -> {
-                            Timber.e(error, "Decryption error")
-                            updateState { CredentialDetailState.Error("Failed to decrypt: ${error.message}") }
-                        }
+                    else -> {
+                        Timber.e(e, "Decryption error")
+                        updateState { CredentialDetailState.Error("Failed to decrypt: ${e.message}") }
                     }
                 }
+            }
         }
     }
 
     private suspend fun decryptCredential(
         data: CredentialDetail,
         enclave: Enclave,
-    ): Result<String> {
+    ): String {
         val content = Base64String(data.content).toByteArray()
         val pubkey = Base64String(data.encryptorPublicKey).toByteArray()
-        return enclave.decrypt(content, pubkey).map { it.decodeToString() }
+        return enclave.decrypt(content, pubkey).decodeToString()
     }
 
     private fun unlockEnclave(
@@ -191,23 +193,18 @@ class CredentialDetailViewModel(
         expiration: Duration,
     ) {
         viewModelScope.launch {
-            dataProvider
-                .getUser()
-                .map {
-                    orchestrator
-                        .unlock(it.id, password, expiration.inWholeMilliseconds)
-                        .onSuccess {
-                            Timber.i("Enclave unlocked successfully")
-                            // State observer will trigger decrypt
-                        }.onFailure { error ->
-                            Timber.e(error, "Failed to unlock enclave")
-                            _enclaveUiState.value =
-                                EnclaveUiState.UnlockError(
-                                    error.message ?: "Failed to unlock enclave",
-                                    canRetry = false,
-                                )
-                        }
-                }
+            try {
+                val user = storageManager.getStoredUser() ?: error("no user stored")
+                orchestrator.unlock(user.id, password, expiration.inWholeMilliseconds)
+                Timber.i("Enclave unlocked successfully")
+            } catch (e: EnclaveError) {
+                Timber.e(e, "Failed to unlock enclave")
+                _enclaveUiState.value =
+                    EnclaveUiState.UnlockError(
+                        e.message ?: "Failed to unlock enclave",
+                        canRetry = false,
+                    )
+            }
         }
     }
 

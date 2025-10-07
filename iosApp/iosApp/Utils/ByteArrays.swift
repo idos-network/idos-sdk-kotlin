@@ -1,3 +1,4 @@
+import Foundation
 import idos_sdk
 
 extension KotlinByteArray {

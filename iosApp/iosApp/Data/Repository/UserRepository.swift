@@ -23,7 +23,7 @@ protocol UserRepositoryProtocol: AnyObject {
     var userState: UserState { get }
     var userStatePublisher: AnyPublisher<UserState, Never> { get }
 
-    func fetchAndStoreUser() async throws
+    func fetchAndStoreUser() async throws -> Void
     func getStoredUser() -> User?
     func clearUserProfile()
     func hasStoredProfile() -> Bool
@@ -62,7 +62,7 @@ class UserRepository: UserRepositoryProtocol {
     // MARK: - Public Methods
 
     /// Fetches user data from the network and stores it
-    func fetchAndStoreUser() async throws {
+    func fetchAndStoreUser() async throws -> Void {
         print("🔄 UserRepository: Starting fetchAndStoreUser")
 
         // 1. Get wallet address from storage
@@ -81,41 +81,31 @@ class UserRepository: UserRepositoryProtocol {
             throw UserError.noKeyFound
         }
 
+        // 3. Check if user has profile
+        print("🔍 UserRepository: Checking if user has profile for address: \(address)")
         do {
-            // 3. Check if user has profile
-            print("🔍 UserRepository: Checking if user has profile for address: \(address)")
-            let hasProfile = try await dataProvider.hasUserProfile(address: address.addressWithPrefix())
-            guard hasProfile else {
-                print("⚠️ UserRepository: No user profile found")
-                throw UserError.noUserProfile
-            }
-            print("✅ UserRepository: User profile exists")
-
-            // 4. Fetch user data
-            print("📥 UserRepository: Fetching user data")
+            let hasProfile = try await dataProvider.hasUserProfile(address: address)
+            guard hasProfile else { throw UserError.noUserProfile }
+            
             let user = try await dataProvider.getUser()
-
-            // 5. Convert to User and save
+            guard let userId = user.id as? String else { throw UserError.noUserProfile }
+            
             let userModel = User(
-                id: user.id as! String,
+                id: userId,
                 walletAddress: address,
-                lastUpdated: 0
-            )
-
+                lastUpdated: 0)
+            
             await MainActor.run {
-                print("💾 UserRepository: Saving user profile to storage")
+                print("💾 Saving user profile")
                 storageManager.saveUserProfile(userModel)
-                print("✅ UserRepository: User profile saved successfully")
+                print("✅ User profile saved")
             }
-
-        } catch let error as UserError {
-            throw error
         } catch {
-            print("❌ UserRepository: Network error - \(error.localizedDescription)")
-            throw UserError.networkError(error)
+            print("⚠️ No user profile found")
+            throw UserError.noUserProfile
         }
     }
-
+    
     /// Returns the stored user if available
     func getStoredUser() -> User? {
         storageManager.getStoredUser()
@@ -141,54 +131,54 @@ class UserRepository: UserRepositoryProtocol {
 // MARK: - Mock Implementation
 
 #if DEBUG
-    class MockUserRepository: UserRepositoryProtocol {
-        private let stateSubject: CurrentValueSubject<UserState, Never>
+class MockUserRepository: UserRepositoryProtocol {
+    private let stateSubject: CurrentValueSubject<UserState, Never>
 
-        var userState: UserState {
-            stateSubject.value
-        }
-
-        var userStatePublisher: AnyPublisher<UserState, Never> {
-            stateSubject.eraseToAnyPublisher()
-        }
-
-        init(initialState: UserState = .loadingUser) {
-            self.stateSubject = CurrentValueSubject<UserState, Never>(initialState)
-        }
-
-        func fetchAndStoreUser() async throws {
-            stateSubject.send(.loadingUser)
-            try? await Task.sleep(nanoseconds: 1_000_000_000)  // Simulate network delay
-
-            let mockUser = User(
-                id: "user123",
-                walletAddress: "0x123...",
-                lastUpdated: 0
-            )
-
-            stateSubject.send(.connectedUser(user: mockUser))
-        }
-
-        func getStoredUser() -> User? {
-            if case .connectedUser(let user) = userState {
-                return user
-            }
-            return nil
-        }
-
-        func clearUserProfile() {
-            stateSubject.send(.noUser)
-        }
-
-        func hasStoredProfile() -> Bool {
-            if case .connectedUser = userState {
-                return true
-            }
-            return false
-        }
-
-        func saveWalletAddress(_ address: String) {
-            stateSubject.send(.connectedWallet(address: address))
-        }
+    var userState: UserState {
+        stateSubject.value
     }
+
+    var userStatePublisher: AnyPublisher<UserState, Never> {
+        stateSubject.eraseToAnyPublisher()
+    }
+
+    init(initialState: UserState = .loadingUser) {
+        self.stateSubject = CurrentValueSubject<UserState, Never>(initialState)
+    }
+
+    func fetchAndStoreUser() async throws -> Void {
+        stateSubject.send(.loadingUser)
+        try? await Task.sleep(nanoseconds: 1_000_000_000)  // Simulate network delay
+
+        let mockUser = User(
+            id: "user123",
+            walletAddress: "0x123...",
+            lastUpdated: 0
+        )
+            
+        stateSubject.send(.connectedUser(user: mockUser))
+    }
+
+    func getStoredUser() -> User? {
+        if case .connectedUser(let user) = userState {
+            return user
+        }
+        return nil
+    }
+
+    func clearUserProfile() {
+        stateSubject.send(.noUser)
+    }
+
+    func hasStoredProfile() -> Bool {
+        if case .connectedUser = userState {
+            return true
+        }
+        return false
+    }
+
+    func saveWalletAddress(_ address: String) {
+        stateSubject.send(.connectedWallet(address: address))
+    }
+}
 #endif

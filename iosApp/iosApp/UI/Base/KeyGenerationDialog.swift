@@ -7,7 +7,6 @@ struct KeyGenerationDialog: View {
     @State private var showPassword: Bool = false
     @State private var selectedExpiration: KeyExpiration = .oneWeek
 
-    let userId: String
     let isGenerating: Bool
     let onGenerate: (String, KeyExpiration) -> Void
     let onDismiss: () -> Void

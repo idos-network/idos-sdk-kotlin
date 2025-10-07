@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.kotest)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
+    id("co.touchlab.skie") version "0.10.6"
 }
 
 kotlin {

@@ -45,7 +45,7 @@ value class Base64String(
 value class HexString(
     override val value: String,
 ) : StringValue {
-    val prefixedValue get() = "0x$value"
+    val prefixedValue get() = if (value.startsWith("0x")) value else "0x$value"
 
     init {
         require(value.isEmpty() || value.matches(Regex("^[0-9a-fA-F]+$"))) { "Invalid hex string" }

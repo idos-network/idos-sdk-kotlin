@@ -1,7 +1,6 @@
 package org.idos.kwil.domain
 
 import org.idos.kwil.domain.generated.ExecuteAction
-import org.idos.kwil.domain.NoParamsAction
 import org.idos.kwil.domain.generated.ViewAction
 import org.idos.kwil.protocol.KwilProtocol
 import org.idos.kwil.protocol.MissingAuthenticationException
@@ -20,11 +19,10 @@ import org.idos.kwil.types.HexString
  * @param chainId Chain identifier
  * @param signer Cryptographic signer for transactions
  */
-class ActionExecutor internal constructor(
+class ActionExecutor constructor(
     baseUrl: String,
     chainId: String,
-    @PublishedApi
-    internal val signer: Signer,
+    @PublishedApi internal val signer: Signer,
 ) {
     @PublishedApi
     internal val client = KwilProtocol(baseUrl, chainId)
@@ -41,8 +39,8 @@ class ActionExecutor internal constructor(
     suspend inline fun <I, reified O> call(
         action: ViewAction<I, O>,
         input: I,
-    ): Result<List<O>> =
-        runCatchingError {
+    ): List<O> =
+        runCatchingAuth {
             client.callAction(action, input, signer)
         }
 
@@ -52,8 +50,8 @@ class ActionExecutor internal constructor(
      * @param action The no-params view action descriptor
      * @return Result containing list of result rows or error
      */
-    suspend inline fun <reified O> call(action: NoParamsAction<O>): Result<List<O>> =
-        runCatchingError {
+    suspend inline fun <reified O> call(action: NoParamsAction<O>): List<O> =
+        runCatchingAuth {
             client.callAction(action, signer)
         }
 
@@ -71,7 +69,7 @@ class ActionExecutor internal constructor(
     suspend inline fun <I, reified O> callSingle(
         action: ViewAction<I, O>,
         input: I,
-    ): Result<O> = call(action, input).mapCatching { it.single() }
+    ): O = call(action, input).firstOrNull() ?: throw DomainError.NotFound(action.name)
 
     /**
      * Executes a no-params view action and returns a single result.
@@ -81,7 +79,8 @@ class ActionExecutor internal constructor(
      * @param action The no-params view action descriptor
      * @return Result containing single result or error
      */
-    suspend inline fun <reified O> callSingle(action: NoParamsAction<O>): Result<O> = call(action).mapCatching { it.single() }
+    suspend inline fun <reified O> callSingle(action: NoParamsAction<O>): O =
+        call(action).firstOrNull() ?: throw DomainError.NotFound(action.name)
 
     /**
      * Executes a mutative action (transaction).
@@ -98,80 +97,33 @@ class ActionExecutor internal constructor(
         action: ExecuteAction<I>,
         input: I,
         synchronous: Boolean = true,
-    ): Result<HexString> =
-        runCatchingError {
+    ): HexString =
+        runCatchingAuth {
             client.executeAction(action, input, signer, synchronous)
         }
 
     /**
      * Wraps a suspending block with exception handling and automatic authentication retry.
      *
-     * Converts all exceptions to appropriate DomainError types:
-     * - DomainError → preserved (already domain error)
-     * - MissingAuthenticationException → auto-authenticate and retry once
-     * - IllegalArgumentException → DomainError.ValidationError
-     * - Other exceptions → DomainError.Unknown
-     *
      * @param block The suspending block to execute
-     * @return Result containing the block's return value or error
+     * @return T containing the block's return value or error
      */
     @PublishedApi
-    internal suspend inline fun <T> runCatchingError(crossinline block: suspend () -> T): Result<T> =
+    internal suspend inline fun <T> runCatchingAuth(crossinline block: suspend () -> T): T =
         try {
-            Result.success(block())
-        } catch (e: DomainError) {
-            // Already a DomainError, pass through
-            Result.failure(e)
-        } catch (e: MissingAuthenticationException) {
+            runCatchingDomainErrorAsync { block() }
+        } catch (e: DomainError.AuthenticationRequired) {
             // Auto-authenticate and retry once
             try {
                 client.authenticate(signer)
-                Result.success(block())
+                block()
             } catch (retryError: Exception) {
-                Result.failure(
-                    DomainError.AuthenticationRequired(
-                        "Authentication failed: ${retryError.message}",
-                    ),
+                throw DomainError.AuthenticationRequired(
+                    "Authentication failed: ${retryError.message}",
                 )
             }
-        } catch (e: IllegalArgumentException) {
-            Result.failure(
-                DomainError.ValidationError(
-                    e.message ?: "Invalid input",
-                ),
-            )
         } catch (e: Exception) {
-            Result.failure(
-                DomainError.Unknown(
-                    e.message ?: "An unexpected error occurred",
-                    cause = e,
-                ),
-            )
+            // Already a DomainError, pass through
+            throw e
         }
-
-    companion object {
-        /**
-         * Creates a new ActionExecutor instance.
-         *
-         * @param baseUrl KWIL network URL (e.g., "https://nodes.staging.idos.network")
-         * @param chainId Chain identifier
-         * @param signer Cryptographic signer for transactions
-         * @return Result containing ActionExecutor or error
-         */
-        fun create(
-            baseUrl: String,
-            chainId: String,
-            signer: Signer,
-        ): Result<ActionExecutor> =
-            try {
-                Result.success(ActionExecutor(baseUrl, chainId, signer))
-            } catch (e: Exception) {
-                Result.failure(
-                    DomainError.Unknown(
-                        e.message ?: "Failed to create ActionExecutor",
-                        cause = e,
-                    ),
-                )
-            }
-    }
 }

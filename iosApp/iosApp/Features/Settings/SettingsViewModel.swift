@@ -48,18 +48,21 @@ class SettingsViewModel: BaseViewModel<SettingsState, SettingsEvent> {
     }
 
     private func checkKeyStatus() {
-        Task {
-            // Check orchestrator state instead of calling hasValidKey directly
-            for await flowState in orchestrator.state {
-                await MainActor.run {
-                    switch flowState {
-                    case is EnclaveFlowAvailable, is EnclaveFlowProcessing:
-                        state.hasEncryptionKey = true
-                    default:
-                        state.hasEncryptionKey = false
-                    }
-                }
-                break // Only check once
+        Task { @MainActor in
+            do {
+                try await orchestrator.checkStatus()
+            } catch {
+            }
+
+            // Check current state value
+            let currentState = orchestrator.state.value
+            switch currentState {
+            case is EnclaveState.Unlocked, is EnclaveState.Unlocking:
+                state.hasEncryptionKey = true
+            case is EnclaveState.Locked:
+                state.hasEncryptionKey = false
+            default:
+                state.hasEncryptionKey = false
             }
         }
     }
@@ -68,18 +71,16 @@ class SettingsViewModel: BaseViewModel<SettingsState, SettingsEvent> {
         state.isDeleting = true
         state.showDeleteConfirmation = false
 
-        Task {
+        Task { @MainActor in
             do {
-                try await orchestrator.resetKey()
-                await MainActor.run {
-                    state.hasEncryptionKey = false
-                    state.isDeleting = false
-                }
+                try await orchestrator.lock()
+                state.hasEncryptionKey = false
+                state.isDeleting = false
+                print("✅ SettingsViewModel: Encryption key deleted successfully")
             } catch {
-                await MainActor.run {
-                    state.error = "Failed to delete encryption key"
-                    state.isDeleting = false
-                }
+                state.error = error.localizedDescription
+                state.isDeleting = false
+                print("❌ SettingsViewModel: Delete failed - \(error.localizedDescription)")
             }
         }
     }

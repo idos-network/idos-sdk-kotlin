@@ -14,7 +14,7 @@ class DataProvider(
     signer: Signer,
     chainId: String,
 ) {
-    private val client = IdosClient.create(url, chainId, signer).getOrThrow()
+    private val client = IdosClient.create(url, chainId, signer)
 
     suspend fun getWallets() = client.wallets.getAll()
 

@@ -40,7 +40,12 @@ val networkModule =
         single { Json { ignoreUnknownKeys = true } }
         single { ApiClient() }
         single { DataProvider(STAGING_URL, get(), STAGING_CHAIN_ID) }
+    }
+
+val dataModule =
+    module {
         single { StorageManager(androidContext(), get()) }
+        single<MetadataStorage> { AndroidMetadataStorage(androidContext()) }
     }
 
 val repositoryModule =
@@ -56,7 +61,7 @@ val viewModelModule =
         viewModel { LoginViewModel(get(), get()) }
         viewModel { CredentialsViewModel(get(), get()) }
         viewModel { WalletsViewModel(get()) }
-        viewModel { SettingsViewModel() }
+        viewModel { SettingsViewModel(get()) }
         viewModel { MnemonicViewModel(get(), get()) }
         viewModel { (savedStateHandle: SavedStateHandle) ->
             CredentialDetailViewModel(
@@ -77,9 +82,7 @@ val navigationModule =
 val securityModule =
     module {
         single<Encryption> { AndroidEncryption(androidContext()) }
-        single<MetadataStorage> { AndroidMetadataStorage(androidContext()) }
-        single { Enclave(get(), get()) }
-        single { EnclaveOrchestrator(get()) }
+        single { EnclaveOrchestrator.create(get(), get()) }
         single { KeyManager(androidContext()) }
         single<Signer> { EthSigner(get(), get()) }
     }
@@ -87,6 +90,7 @@ val securityModule =
 val appModule =
     listOf(
         networkModule,
+        dataModule,
         repositoryModule,
         viewModelModule,
         securityModule,

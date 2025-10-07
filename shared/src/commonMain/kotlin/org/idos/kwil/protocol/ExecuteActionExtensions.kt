@@ -34,6 +34,7 @@ suspend fun <I> KwilProtocol.executeAction(
 ): HexString {
     // 1. Get account to fetch nonce
     val account = getAccount(signer.accountId())
+    val nonce = account.nonce + 1
 
     // 2. Encode the action payload
     val payload =
@@ -49,7 +50,7 @@ suspend fun <I> KwilProtocol.executeAction(
         buildTransaction(
             payload = payload,
             description = action.name,
-            nonce = account.nonce,
+            nonce = nonce,
             signer = signer,
         )
 
@@ -95,7 +96,7 @@ private fun KwilProtocol.buildTransaction(
                 desc = description,
                 payload = payload,
                 type = PayloadType.EXECUTE_ACTION,
-                fee = null,
+                fee = "0",
                 nonce = nonce,
                 chainId = this.chainId,
             ),
@@ -142,7 +143,7 @@ private suspend fun signTransaction(
         buildString {
             append("${tx.body.desc}\n\n")
             append("PayloadType: $payloadTypeStr\n")
-            append("PayloadDigest: ${HexString(digest).prefixedValue}\n")
+            append("PayloadDigest: ${HexString(digest).value}\n")
             append("Fee: ${tx.body.fee}\n")
             append("Nonce: ${tx.body.nonce}\n\n")
             append("Kwil Chain ID: ${tx.body.chainId}\n")

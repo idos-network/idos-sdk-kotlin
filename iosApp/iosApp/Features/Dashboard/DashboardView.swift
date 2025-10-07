@@ -42,48 +42,58 @@ struct DashboardView: View {
     }
 
     var body: some View {
-        NavigationView {
-            ZStack {
-                TabView(selection: $selectedTab) {
+        ZStack {
+            TabView(selection: $selectedTab) {
+                // Credentials Tab with NavigationView
+                NavigationView {
                     CredentialsView(
                         viewModel: diContainer.makeCredentialsViewModel()
                     )
-                    .tabItem {
-                        Label(DrawerItem.credentials.rawValue, systemImage: DrawerItem.credentials.icon)
-                    }
-                    .tag(DrawerItem.credentials)
+                    .navigationBarTitle("", displayMode: .inline)
+                }
+                .navigationViewStyle(StackNavigationViewStyle())
+                .tabItem {
+                    Label(DrawerItem.credentials.rawValue, systemImage: DrawerItem.credentials.icon)
+                }
+                .tag(DrawerItem.credentials)
 
+                // Wallets Tab with NavigationView
+                NavigationView {
                     WalletsView(
                         viewModel: diContainer.makeWalletsViewModel()
                     )
-                    .tabItem {
-                        Label(DrawerItem.wallets.rawValue, systemImage: DrawerItem.wallets.icon)
-                    }
-                    .tag(DrawerItem.wallets)
+                    .navigationBarTitle("", displayMode: .inline)
+                }
+                .navigationViewStyle(StackNavigationViewStyle())
+                .tabItem {
+                    Label(DrawerItem.wallets.rawValue, systemImage: DrawerItem.wallets.icon)
+                }
+                .tag(DrawerItem.wallets)
 
+                // Settings Tab with NavigationView
+                NavigationView {
                     SettingsView(
                         viewModel: diContainer.makeSettingsViewModel()
                     )
-                    .tabItem {
-                        Label(DrawerItem.settings.rawValue, systemImage: DrawerItem.settings.icon)
-                    }
-                    .tag(DrawerItem.settings)
+                    .navigationBarTitle("", displayMode: .inline)
                 }
+                .navigationViewStyle(StackNavigationViewStyle())
+                .tabItem {
+                    Label(DrawerItem.settings.rawValue, systemImage: DrawerItem.settings.icon)
+                }
+                .tag(DrawerItem.settings)
+            }
 
-                // Hidden NavigationLink for programmatic navigation (iOS 15 compatible)
-                if let credentialId = currentCredentialId {
-                    NavigationLink(
-                        destination: CredentialDetailView(
-                            viewModel: diContainer.makeCredentialDetailViewModel(credentialId: credentialId)
-                        ),
-                        isActive: isCredentialDetailActive
-                    ) { EmptyView() }
+            // Handle navigation to detail views
+            .onChange(of: navigationCoordinator.currentRoute) { route in
+                if case .credentialDetail = route {
+                    // The navigation to detail view is handled by the NavigationLink in CredentialsView
                 }
             }
         }
-        .navigationViewStyle(StackNavigationViewStyle())
     }
 }
+
 
 #Preview {
     let diContainer = DIContainer.shared

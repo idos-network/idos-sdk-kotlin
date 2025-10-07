@@ -7,7 +7,7 @@ struct AppConfig {
     let kwilNodeUrl: String
     let chainId: String
     
-    #if DEBUG
+#if DEBUG
     static let staging = AppConfig(
         kwilNodeUrl: "https://nodes.staging.idos.network",
         chainId: "idos-staging"
@@ -17,23 +17,22 @@ struct AppConfig {
         kwilNodeUrl: "https://nodes.staging.idos.network",
         chainId: "idos-staging"
     )
-    #else
+#else
     static let production = AppConfig(
         kwilNodeUrl: "https://nodes.idos.network",
         chainId: "idos-mainnet"
     )
-    #endif
+#endif
 }
 
 /// Central Dependency Injection container for the iOS app
 /// This follows the architecture pattern from the Android app using Koin
 class DIContainer: ObservableObject {
-    static let shared = DIContainer()
+    @MainActor static let shared = DIContainer()
 
     // MARK: - Security Layer
     let encryption: Encryption
     let metadataStorage: MetadataStorage
-    let enclave: Enclave
     let enclaveOrchestrator: EnclaveOrchestrator
     let keyManager: KeyManager
     let ethSigner: EthSigner
@@ -52,23 +51,20 @@ class DIContainer: ObservableObject {
 
     private init() {
         // Load appropriate configuration
-        #if DEBUG
+#if DEBUG
         let config = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" 
-            ? AppConfig.preview 
-            : AppConfig.staging
-        #else
+        ? AppConfig.preview 
+        : AppConfig.staging
+#else
         let config = AppConfig.production
-        #endif
+#endif
         
         // Initialize security components (matching Android's securityModule)
         let secureStorage = IosSecureStorage()
         self.encryption = IosEncryption(storage: secureStorage)
         self.metadataStorage = IosMetadataStorage()
-        self.enclave = Enclave(
-            encryption: encryption,
-            storage: metadataStorage
-        )
-        self.enclaveOrchestrator = EnclaveOrchestrator(enclave: enclave)
+        self.enclaveOrchestrator = EnclaveOrchestrator.companion.create(encryption: encryption,
+                                                                        storage: metadataStorage)
         self.keyManager = KeyManager()
 
         // Initialize data layer (matching Android's repositoryModule)
@@ -85,7 +81,7 @@ class DIContainer: ObservableObject {
         )
 
         // Initialize repositories (use mocks for previews)
-        #if DEBUG
+#if DEBUG
         let isPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
         if isPreview {
             self.credentialsRepository = MockCredentialsRepository()
@@ -100,7 +96,7 @@ class DIContainer: ObservableObject {
             )
             self.walletRepository = WalletRepository(dataProvider: dataProvider)
         }
-        #else
+#else
         self.credentialsRepository = CredentialsRepository(dataProvider: dataProvider)
         self.userRepository = UserRepository(
             dataProvider: dataProvider,
@@ -108,7 +104,7 @@ class DIContainer: ObservableObject {
             keyManager: keyManager
         )
         self.walletRepository = WalletRepository(dataProvider: dataProvider)
-        #endif
+#endif
 
         // Initialize navigation (matching Android's navigationModule)
         self.navigationCoordinator = NavigationCoordinator()

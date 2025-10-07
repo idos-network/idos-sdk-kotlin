@@ -1,6 +1,4 @@
 import Foundation
-import Combine
-
 
 /// User state matching Android's UserState sealed class
 enum UserState: Equatable {
