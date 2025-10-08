@@ -1,6 +1,8 @@
 package org.idos
 
 import org.idos.kwil.domain.DomainError
+import org.idos.kwil.domain.ExecuteAction
+import org.idos.kwil.domain.ViewAction
 import org.idos.kwil.domain.generated.execute.AddAttribute
 import org.idos.kwil.domain.generated.execute.AddAttributeParams
 import org.idos.kwil.domain.generated.execute.AddCredential
@@ -64,6 +66,33 @@ import kotlin.coroutines.cancellation.CancellationException
  * - Execute actions (transactions) return HexString>
  * - All operations are suspend functions
  */
+
+/**
+ * Executes an execute action (write) with generic input types.
+ *
+ * @param action The execute action descriptor
+ * @param input List of action input parameters
+ * @return Hex string of transaction
+ */
+@Throws(CancellationException::class, DomainError::class)
+suspend fun <I> IdosClient.execute(
+    action: ExecuteAction<I>,
+    input: List<I>,
+    synchronous: Boolean = true,
+): HexString = executor.execute(action, input, synchronous)
+
+/**
+ * Executes a view action (read-only query) with generic input and output types.
+ *
+ * @param action The view action descriptor
+ * @param input Action input parameters
+ * @return List of result objects of type O
+ */
+@Throws(CancellationException::class, DomainError::class)
+suspend inline fun <I, reified O> IdosClient.call(
+    action: ViewAction<I, O>,
+    input: I,
+): List<O> = executor.call(action, input)
 
 // ============================================================================
 // WALLETS

@@ -29,7 +29,7 @@ import org.idos.kwil.security.signer.Signer
  * ```
  */
 class IdosClient internal constructor(
-    internal val executor: ActionExecutor,
+    @PublishedApi internal val executor: ActionExecutor,
     val chainId: String,
 ) {
     /**

@@ -3,10 +3,10 @@
 
 package org.idos.kwil.domain.generated.execute
 
-import org.idos.kwil.domain.generated.ExecuteAction
-import org.idos.kwil.serialization.KwilType
+import org.idos.kwil.domain.ExecuteAction
 import org.idos.kwil.domain.PositionalParams
 import org.idos.kwil.domain.PositionalTypes
+import org.idos.kwil.serialization.KwilType
 import org.idos.kwil.types.UuidString
 
 data class CreateCredentialsByDwgParams(
@@ -64,28 +64,30 @@ object CreateCredentialsByDwg : ExecuteAction<CreateCredentialsByDwgParams> {
             KwilType.Text(),
         )
 
-    override fun toPositionalParams(input: CreateCredentialsByDwgParams): PositionalParams =
-        listOf(
-            input.issuerAuthPublicKey,
-            input.originalEncryptorPublicKey,
-            input.originalCredentialId.value,
-            input.originalContent,
-            input.originalPublicNotes,
-            input.originalPublicNotesSignature,
-            input.originalBroaderSignature,
-            input.copyEncryptorPublicKey,
-            input.copyCredentialId.value,
-            input.copyContent,
-            input.copyPublicNotesSignature,
-            input.copyBroaderSignature,
-            input.contentHash,
-            input.dwgOwner,
-            input.dwgGrantee,
-            input.dwgIssuerPublicKey,
-            input.dwgId.value,
-            input.dwgAccessGrantTimelock,
-            input.dwgNotBefore,
-            input.dwgNotAfter,
-            input.dwgSignature,
-        )
+    override fun toPositionalParams(input: List<CreateCredentialsByDwgParams>): List<PositionalParams> =
+        input.map {
+            listOf(
+                it.issuerAuthPublicKey,
+                it.originalEncryptorPublicKey,
+                it.originalCredentialId.value,
+                it.originalContent,
+                it.originalPublicNotes,
+                it.originalPublicNotesSignature,
+                it.originalBroaderSignature,
+                it.copyEncryptorPublicKey,
+                it.copyCredentialId.value,
+                it.copyContent,
+                it.copyPublicNotesSignature,
+                it.copyBroaderSignature,
+                it.contentHash,
+                it.dwgOwner,
+                it.dwgGrantee,
+                it.dwgIssuerPublicKey,
+                it.dwgId.value,
+                it.dwgAccessGrantTimelock,
+                it.dwgNotBefore,
+                it.dwgNotAfter,
+                it.dwgSignature,
+            )
+        }
 }

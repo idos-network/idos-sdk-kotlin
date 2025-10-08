@@ -3,10 +3,10 @@
 
 package org.idos.kwil.domain.generated.execute
 
-import org.idos.kwil.domain.generated.ExecuteAction
-import org.idos.kwil.serialization.KwilType
+import org.idos.kwil.domain.ExecuteAction
 import org.idos.kwil.domain.PositionalParams
 import org.idos.kwil.domain.PositionalTypes
+import org.idos.kwil.serialization.KwilType
 import org.idos.kwil.types.UuidString
 
 data class CreateAgByDagForCopyParams(
@@ -33,13 +33,15 @@ object CreateAgByDagForCopy : ExecuteAction<CreateAgByDagForCopyParams> {
             KwilType.Text(),
         )
 
-    override fun toPositionalParams(input: CreateAgByDagForCopyParams): PositionalParams =
-        listOf(
-            input.dagOwnerWalletIdentifier,
-            input.dagGranteeWalletIdentifier,
-            input.dagDataId.value,
-            input.dagLockedUntil,
-            input.dagContentHash,
-            input.dagSignature,
-        )
+    override fun toPositionalParams(input: List<CreateAgByDagForCopyParams>): List<PositionalParams> =
+        input.map {
+            listOf(
+                it.dagOwnerWalletIdentifier,
+                it.dagGranteeWalletIdentifier,
+                it.dagDataId.value,
+                it.dagLockedUntil,
+                it.dagContentHash,
+                it.dagSignature,
+            )
+        }
 }

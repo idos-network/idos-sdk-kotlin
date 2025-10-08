@@ -13,8 +13,9 @@ import org.idos.kwil.domain.generated.view.GetCredentialOwned
 import org.idos.kwil.domain.generated.view.GetCredentialOwnedParams
 import org.idos.kwil.domain.generated.view.HasProfile
 import org.idos.kwil.domain.generated.view.HasProfileParams
-import org.idos.kwil.serialization.toMessage
 import org.idos.kwil.security.signer.JvmEthSigner
+import org.idos.kwil.serialization.toMessage
+import org.idos.kwil.serialization.toTransaction
 import org.idos.kwil.types.UuidString
 
 /**
@@ -70,15 +71,15 @@ class SerializationIntegrityTests :
                 val id = UuidString("550e8400-e29b-41d4-a716-446655440001")
                 val params = RevokeAccessGrantParams(id)
 
-                val message = RevokeAccessGrant.toMessage(params, signer)
+                val message = RevokeAccessGrant.toTransaction(params, signer)
 
                 println("revokeAccessGrant payload: ${message.body.payload}")
                 println("  - id: ${id.value}")
 
                 message.body.payload shouldNotBe null
                 message.body.payload shouldNotBe ""
-                message.body.payload?.value shouldBe
-                    "AAAEAAAAbWFpbhMAAAByZXZva2VfYWNjZXNzX2dyYW50AQAsAAAAAAAPAAAAAAAAAAAEdXVpZAAAAAAAAQARAAAAAVUOhADim0HUpxZEZlVEAAE="
+                message.body.payload.value shouldBe
+                    "AAAEAAAAbWFpbhMAAAByZXZva2VfYWNjZXNzX2dyYW50AQABACwAAAAAAA8AAAAAAAAAAAR1dWlkAAAAAAABABEAAAABVQ6EAOKbQdSnFkRmVUQAAQ=="
             }
 
             "addWallet should serialize correctly" {
@@ -93,7 +94,7 @@ class SerializationIntegrityTests :
                         signature = "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab",
                     )
 
-                val message = AddWallet.toMessage(params, signer)
+                val message = AddWallet.toTransaction(params, signer)
 
                 println("addWallet payload: ${message.body.payload}")
                 println("  - id: ${params.id.value}")
@@ -104,8 +105,8 @@ class SerializationIntegrityTests :
 
                 message.body.payload shouldNotBe null
                 message.body.payload shouldNotBe ""
-                message.body.payload?.value shouldBe
-                    "AAAEAAAAbWFpbgoAAABhZGRfd2FsbGV0BQAsAAAAAAAPAAAAAAAAAAAEdXVpZAAAAAAAAQARAAAAAVUOhADim0HUpxZEZlVEAAJGAAAAAAAPAAAAAAAAAAAEdGV4dAAAAAAAAQArAAAAATB4MTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3OKAAAAAAAA8AAAAAAAAAAAR0ZXh0AAAAAAABAIUAAAABMHgwNGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwOwAAAAAADwAAAAAAAAAABHRleHQAAAAAAAEAIAAAAAFTaWduIHRoaXMgbWVzc2FnZSB0byBhZGQgd2FsbGV0oAAAAAAADwAAAAAAAAAABHRleHQAAAAAAAEAhQAAAAEweGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWI="
+                message.body.payload.value shouldBe
+                    "AAAEAAAAbWFpbgoAAABhZGRfd2FsbGV0AQAFACwAAAAAAA8AAAAAAAAAAAR1dWlkAAAAAAABABEAAAABVQ6EAOKbQdSnFkRmVUQAAkYAAAAAAA8AAAAAAAAAAAR0ZXh0AAAAAAABACsAAAABMHgxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4oAAAAAAADwAAAAAAAAAABHRleHQAAAAAAAEAhQAAAAEweDA0YWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTA7AAAAAAAPAAAAAAAAAAAEdGV4dAAAAAAAAQAgAAAAAVNpZ24gdGhpcyBtZXNzYWdlIHRvIGFkZCB3YWxsZXSgAAAAAAAPAAAAAAAAAAAEdGV4dAAAAAAAAQCFAAAAATB4YWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYg=="
             }
 
             "createAccessGrant should serialize correctly" {
@@ -121,7 +122,7 @@ class SerializationIntegrityTests :
                         inserterId = "0x9876543210fedcba9876543210fedcba98765432",
                     )
 
-                val message = CreateAccessGrant.toMessage(params, signer)
+                val message = CreateAccessGrant.toTransaction(params, signer)
 
                 println("createAccessGrant payload: ${message.body.payload}")
                 println("  - granteeWalletIdentifier: ${params.granteeWalletIdentifier}")
@@ -133,8 +134,8 @@ class SerializationIntegrityTests :
 
                 message.body.payload shouldNotBe null
                 message.body.payload shouldNotBe ""
-                message.body.payload?.value shouldBe
-                    "AAAEAAAAbWFpbhMAAABjcmVhdGVfYWNjZXNzX2dyYW50BgBGAAAAAAAPAAAAAAAAAAAEdGV4dAAAAAAAAQArAAAAATB4MTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3OCwAAAAAAA8AAAAAAAAAAAR1dWlkAAAAAAABABEAAAABVQ6EAOKbQdSnFkRmVUQAAyQAAAAAAA8AAAAAAAAAAARpbnQ4AAAAAAABAAkAAAABAAAAAGd0hYBKAAAAAAAPAAAAAAAAAAAEdGV4dAAAAAAAAQAvAAAAAVFtWXdBUEp6djVDWnNuQTYyNXMzWGYybmVtdFlnUHBIZFdFejc5b2pXblBiZEciAAAAAAAPAAAAAAAAAAAEdGV4dAAAAAAAAQAHAAAAAXdhbGxldEYAAAAAAA8AAAAAAAAAAAR0ZXh0AAAAAAABACsAAAABMHg5ODc2NTQzMjEwZmVkY2JhOTg3NjU0MzIxMGZlZGNiYTk4NzY1NDMy"
+                message.body.payload.value shouldBe
+                    "AAAEAAAAbWFpbhMAAABjcmVhdGVfYWNjZXNzX2dyYW50AQAGAEYAAAAAAA8AAAAAAAAAAAR0ZXh0AAAAAAABACsAAAABMHgxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4LAAAAAAADwAAAAAAAAAABHV1aWQAAAAAAAEAEQAAAAFVDoQA4ptB1KcWRGZVRAADJAAAAAAADwAAAAAAAAAABGludDgAAAAAAAEACQAAAAEAAAAAZ3SFgEoAAAAAAA8AAAAAAAAAAAR0ZXh0AAAAAAABAC8AAAABUW1Zd0FQSnp2NUNac25BNjI1czNYZjJuZW10WWdQcEhkV0V6NzlvalduUGJkRyIAAAAAAA8AAAAAAAAAAAR0ZXh0AAAAAAABAAcAAAABd2FsbGV0RgAAAAAADwAAAAAAAAAABHRleHQAAAAAAAEAKwAAAAEweDk4NzY1NDMyMTBmZWRjYmE5ODc2NTQzMjEwZmVkY2JhOTg3NjU0MzI="
             }
 
             "addCredential should serialize correctly" {
@@ -151,7 +152,7 @@ class SerializationIntegrityTests :
                         broaderSignature = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12",
                     )
 
-                val message = AddCredential.toMessage(params, signer)
+                val message = AddCredential.toTransaction(params, signer)
 
                 println("addCredential payload: ${message.body.payload}")
                 println("  - id: ${params.id.value}")
@@ -164,8 +165,8 @@ class SerializationIntegrityTests :
 
                 message.body.payload shouldNotBe null
                 message.body.payload shouldNotBe ""
-                message.body.payload?.value shouldBe
-                    "AAAEAAAAbWFpbg4AAABhZGRfY3JlZGVudGlhbAcALAAAAAAADwAAAAAAAAAABHV1aWQAAAAAAAEAEQAAAAFVDoQA4ptB1KcWRGZVRAAEoAAAAAAADwAAAAAAAAAABHRleHQAAAAAAAEAhQAAAAEweDA0YWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTCgAAAAAAAPAAAAAAAAAAAEdGV4dAAAAAAAAQCFAAAAATB4MDRmZWRjYmEwOTg3NjU0MzIxZmVkY2JhMDk4NzY1NDMyMWZlZGNiYTA5ODc2NTQzMjFmZWRjYmEwOTg3NjU0MzIxZmVkY2JhMDk4NzY1NDMyMWZlZGNiYTA5ODc2NTQzMjFmZWRjYmEwOTg3NjU0MzIxZmVkY2JhMDk4NzY1NDMyMUcAAAAAAA8AAAAAAAAAAAR0ZXh0AAAAAAABACwAAAABZW5jcnlwdGVkX2NyZWRlbnRpYWxfY29udGVudF9iYXNlNjRfZW5jb2RlZD4AAAAAAA8AAAAAAAAAAAR0ZXh0AAAAAAABACMAAAABeyJ0eXBlIjoicGFzc3BvcnQiLCJjb3VudHJ5IjoiVVMifaAAAAAAAA8AAAAAAAAAAAR0ZXh0AAAAAAABAIUAAAABMHhhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFioAAAAAAADwAAAAAAAAAABHRleHQAAAAAAAEAhQAAAAEweDEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTI="
+                message.body.payload.value shouldBe
+                    "AAAEAAAAbWFpbg4AAABhZGRfY3JlZGVudGlhbAEABwAsAAAAAAAPAAAAAAAAAAAEdXVpZAAAAAAAAQARAAAAAVUOhADim0HUpxZEZlVEAASgAAAAAAAPAAAAAAAAAAAEdGV4dAAAAAAAAQCFAAAAATB4MDRhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MKAAAAAAAA8AAAAAAAAAAAR0ZXh0AAAAAAABAIUAAAABMHgwNGZlZGNiYTA5ODc2NTQzMjFmZWRjYmEwOTg3NjU0MzIxZmVkY2JhMDk4NzY1NDMyMWZlZGNiYTA5ODc2NTQzMjFmZWRjYmEwOTg3NjU0MzIxZmVkY2JhMDk4NzY1NDMyMWZlZGNiYTA5ODc2NTQzMjFmZWRjYmEwOTg3NjU0MzIxRwAAAAAADwAAAAAAAAAABHRleHQAAAAAAAEALAAAAAFlbmNyeXB0ZWRfY3JlZGVudGlhbF9jb250ZW50X2Jhc2U2NF9lbmNvZGVkPgAAAAAADwAAAAAAAAAABHRleHQAAAAAAAEAIwAAAAF7InR5cGUiOiJwYXNzcG9ydCIsImNvdW50cnkiOiJVUyJ9oAAAAAAADwAAAAAAAAAABHRleHQAAAAAAAEAhQAAAAEweGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWKgAAAAAAAPAAAAAAAAAAAEdGV4dAAAAAAAAQCFAAAAATB4MTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMg=="
             }
 
             "should detect breaking changes in payload format" {

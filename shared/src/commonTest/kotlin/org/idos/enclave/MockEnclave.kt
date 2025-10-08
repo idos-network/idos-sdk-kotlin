@@ -59,7 +59,6 @@ class MockEnclave(
         password: String,
         expiration: Long,
     ): ByteArray {
-        println("*****************")
         generateKeyCallCount++
         return when (behavior) {
             is MockBehavior.KeyGenerationFails -> throw behavior.error

@@ -1,9 +1,6 @@
 package org.idos.kwil.domain
 
-import org.idos.kwil.domain.generated.ExecuteAction
-import org.idos.kwil.domain.generated.ViewAction
 import org.idos.kwil.protocol.KwilProtocol
-import org.idos.kwil.protocol.MissingAuthenticationException
 import org.idos.kwil.protocol.callAction
 import org.idos.kwil.protocol.executeAction
 import org.idos.kwil.security.signer.Signer
@@ -97,6 +94,12 @@ class ActionExecutor constructor(
         action: ExecuteAction<I>,
         input: I,
         synchronous: Boolean = true,
+    ): HexString = execute(action, listOf(input), synchronous)
+
+    suspend fun <I> execute(
+        action: ExecuteAction<I>,
+        input: List<I>,
+        synchronous: Boolean = true,
     ): HexString =
         runCatchingAuth {
             client.executeAction(action, input, signer, synchronous)
@@ -114,13 +117,9 @@ class ActionExecutor constructor(
             runCatchingDomainErrorAsync { block() }
         } catch (e: DomainError.AuthenticationRequired) {
             // Auto-authenticate and retry once
-            try {
+            runCatchingDomainErrorAsync {
                 client.authenticate(signer)
                 block()
-            } catch (retryError: Exception) {
-                throw DomainError.AuthenticationRequired(
-                    "Authentication failed: ${retryError.message}",
-                )
             }
         } catch (e: Exception) {
             // Already a DomainError, pass through

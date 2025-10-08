@@ -3,10 +3,10 @@
 
 package org.idos.kwil.domain.generated.execute
 
-import org.idos.kwil.domain.generated.ExecuteAction
-import org.idos.kwil.serialization.KwilType
+import org.idos.kwil.domain.ExecuteAction
 import org.idos.kwil.domain.PositionalParams
 import org.idos.kwil.domain.PositionalTypes
+import org.idos.kwil.serialization.KwilType
 import org.idos.kwil.types.UuidString
 
 data class AddUserAsInserterParams(
@@ -27,10 +27,12 @@ object AddUserAsInserter : ExecuteAction<AddUserAsInserterParams> {
             KwilType.Text(),
         )
 
-    override fun toPositionalParams(input: AddUserAsInserterParams): PositionalParams =
-        listOf(
-            input.id.value,
-            input.recipientEncryptionPublicKey,
-            input.encryptionPasswordStore,
-        )
+    override fun toPositionalParams(input: List<AddUserAsInserterParams>): List<PositionalParams> =
+        input.map {
+            listOf(
+                it.id.value,
+                it.recipientEncryptionPublicKey,
+                it.encryptionPasswordStore,
+            )
+        }
 }

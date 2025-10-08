@@ -3,10 +3,10 @@
 
 package org.idos.kwil.domain.generated.execute
 
-import org.idos.kwil.domain.generated.ExecuteAction
-import org.idos.kwil.serialization.KwilType
+import org.idos.kwil.domain.ExecuteAction
 import org.idos.kwil.domain.PositionalParams
 import org.idos.kwil.domain.PositionalTypes
+import org.idos.kwil.serialization.KwilType
 
 data class EditPublicNotesAsIssuerParams(
     val publicNotesId: String,
@@ -24,9 +24,11 @@ object EditPublicNotesAsIssuer : ExecuteAction<EditPublicNotesAsIssuerParams> {
             KwilType.Text(),
         )
 
-    override fun toPositionalParams(input: EditPublicNotesAsIssuerParams): PositionalParams =
-        listOf(
-            input.publicNotesId,
-            input.publicNotes,
-        )
+    override fun toPositionalParams(input: List<EditPublicNotesAsIssuerParams>): List<PositionalParams> =
+        input.map {
+            listOf(
+                it.publicNotesId,
+                it.publicNotes,
+            )
+        }
 }

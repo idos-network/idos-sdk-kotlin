@@ -5,7 +5,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import org.idos.kwil.domain.Empty
 import org.idos.kwil.domain.NoParamsAction
-import org.idos.kwil.domain.generated.ViewAction
+import org.idos.kwil.domain.ViewAction
 import org.idos.kwil.security.signer.Signer
 import org.idos.kwil.serialization.toMessage
 

@@ -3,10 +3,10 @@
 
 package org.idos.kwil.domain.generated.execute
 
-import org.idos.kwil.domain.generated.ExecuteAction
-import org.idos.kwil.serialization.KwilType
+import org.idos.kwil.domain.ExecuteAction
 import org.idos.kwil.domain.PositionalParams
 import org.idos.kwil.domain.PositionalTypes
+import org.idos.kwil.serialization.KwilType
 import org.idos.kwil.types.UuidString
 
 data class CreateCredentialCopyParams(
@@ -37,15 +37,17 @@ object CreateCredentialCopy : ExecuteAction<CreateCredentialCopyParams> {
             KwilType.Text(),
         )
 
-    override fun toPositionalParams(input: CreateCredentialCopyParams): PositionalParams =
-        listOf(
-            input.id.value,
-            input.originalCredentialId.value,
-            input.publicNotes,
-            input.publicNotesSignature,
-            input.broaderSignature,
-            input.content,
-            input.encryptorPublicKey,
-            input.issuerAuthPublicKey,
-        )
+    override fun toPositionalParams(input: List<CreateCredentialCopyParams>): List<PositionalParams> =
+        input.map {
+            listOf(
+                it.id.value,
+                it.originalCredentialId.value,
+                it.publicNotes,
+                it.publicNotesSignature,
+                it.broaderSignature,
+                it.content,
+                it.encryptorPublicKey,
+                it.issuerAuthPublicKey,
+            )
+        }
 }

@@ -3,10 +3,10 @@
 
 package org.idos.kwil.domain.generated.execute
 
-import org.idos.kwil.domain.generated.ExecuteAction
-import org.idos.kwil.serialization.KwilType
+import org.idos.kwil.domain.ExecuteAction
 import org.idos.kwil.domain.PositionalParams
 import org.idos.kwil.domain.PositionalTypes
+import org.idos.kwil.serialization.KwilType
 import org.idos.kwil.types.UuidString
 
 data class AddPassportingPeerAsOwnerParams(
@@ -29,11 +29,13 @@ object AddPassportingPeerAsOwner : ExecuteAction<AddPassportingPeerAsOwnerParams
             KwilType.Text(),
         )
 
-    override fun toPositionalParams(input: AddPassportingPeerAsOwnerParams): PositionalParams =
-        listOf(
-            input.id.value,
-            input.name,
-            input.issuerPublicKey,
-            input.passportingServerUrlBase,
-        )
+    override fun toPositionalParams(input: List<AddPassportingPeerAsOwnerParams>): List<PositionalParams> =
+        input.map {
+            listOf(
+                it.id.value,
+                it.name,
+                it.issuerPublicKey,
+                it.passportingServerUrlBase,
+            )
+        }
 }

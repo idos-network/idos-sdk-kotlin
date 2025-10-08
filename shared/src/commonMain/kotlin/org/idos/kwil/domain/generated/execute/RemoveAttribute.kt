@@ -3,10 +3,10 @@
 
 package org.idos.kwil.domain.generated.execute
 
-import org.idos.kwil.domain.generated.ExecuteAction
-import org.idos.kwil.serialization.KwilType
+import org.idos.kwil.domain.ExecuteAction
 import org.idos.kwil.domain.PositionalParams
 import org.idos.kwil.domain.PositionalTypes
+import org.idos.kwil.serialization.KwilType
 import org.idos.kwil.types.UuidString
 
 data class RemoveAttributeParams(
@@ -23,8 +23,10 @@ object RemoveAttribute : ExecuteAction<RemoveAttributeParams> {
             KwilType.Uuid(),
         )
 
-    override fun toPositionalParams(input: RemoveAttributeParams): PositionalParams =
-        listOf(
-            input.id.value,
-        )
+    override fun toPositionalParams(input: List<RemoveAttributeParams>): List<PositionalParams> =
+        input.map {
+            listOf(
+                it.id.value,
+            )
+        }
 }

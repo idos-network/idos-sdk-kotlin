@@ -1,10 +1,9 @@
 package org.idos.kwil.protocol
 
 import io.ktor.utils.io.core.toByteArray
-import kotlinx.serialization.json.Json
-import org.idos.kwil.domain.generated.ExecuteAction
+import org.idos.kwil.domain.ExecuteAction
 import org.idos.kwil.security.signer.Signer
-import org.idos.kwil.serialization.encodeExecuteAction
+import org.idos.kwil.serialization.toTransaction
 import org.idos.kwil.types.Base64String
 import org.idos.kwil.types.HexString
 import org.kotlincrypto.hash.sha2.SHA256
@@ -28,7 +27,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  */
 suspend fun <I> KwilProtocol.executeAction(
     action: ExecuteAction<I>,
-    input: I,
+    input: List<I>,
     signer: Signer,
     synchronous: Boolean = true,
 ): HexString {
@@ -36,23 +35,8 @@ suspend fun <I> KwilProtocol.executeAction(
     val account = getAccount(signer.accountId())
     val nonce = account.nonce + 1
 
-    // 2. Encode the action payload
-    val payload =
-        encodeExecuteAction(
-            action.namespace,
-            action.name,
-            action.toPositionalParams(input),
-            action.positionalTypes,
-        )
-
     // 3. Build transaction
-    val tx =
-        buildTransaction(
-            payload = payload,
-            description = action.name,
-            nonce = nonce,
-            signer = signer,
-        )
+    val tx = action.toTransaction(input, signer, nonce, chainId)
 
     // 4. Sign the transaction
     val signedTx = signTransaction(tx, signer)
@@ -73,36 +57,6 @@ suspend fun <I> KwilProtocol.executeAction(
 
     return HexString(response.txHash.value)
 }
-
-/**
- * Builds an unsigned transaction.
- *
- * @param payload The action payload (Base64 encoded)
- * @param description Transaction description
- * @param nonce Account nonce
- * @param signer The signer (for identifier and signature type)
- * @return Unsigned transaction
- */
-private fun KwilProtocol.buildTransaction(
-    payload: Base64String,
-    description: String,
-    nonce: Int,
-    signer: Signer,
-): TransactionBase64 =
-    Transaction(
-        signature = Signature(sig = null, type = signer.getSignatureType()),
-        body =
-            TxBody(
-                desc = description,
-                payload = payload,
-                type = PayloadType.EXECUTE_ACTION,
-                fee = "0",
-                nonce = nonce,
-                chainId = this.chainId,
-            ),
-        sender = signer.getIdentifier(),
-        serialization = SerializationType.SIGNED_MSG_CONCAT,
-    )
 
 /**
  * Signs a transaction using KWIL's signature scheme.
@@ -136,13 +90,10 @@ private suspend fun signTransaction(
 
     // Format the signature message (KWIL protocol specification)
     // Note: No preceding or succeeding whitespace allowed - exact format required
-    val json = Json { encodeDefaults = false }
-    val payloadTypeStr = json.encodeToString(PayloadType.serializer(), tx.body.type).replace("\"", "")
-
     val signatureMessage =
         buildString {
             append("${tx.body.desc}\n\n")
-            append("PayloadType: $payloadTypeStr\n")
+            append("PayloadType: ${tx.body.type.value}\n")
             append("PayloadDigest: ${HexString(digest).value}\n")
             append("Fee: ${tx.body.fee}\n")
             append("Nonce: ${tx.body.nonce}\n\n")

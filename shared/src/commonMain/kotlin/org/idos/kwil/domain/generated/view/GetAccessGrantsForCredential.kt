@@ -5,10 +5,10 @@ package org.idos.kwil.domain.generated.view
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.idos.kwil.domain.generated.ViewAction
-import org.idos.kwil.serialization.KwilType
 import org.idos.kwil.domain.PositionalParams
 import org.idos.kwil.domain.PositionalTypes
+import org.idos.kwil.domain.ViewAction
+import org.idos.kwil.serialization.KwilType
 import org.idos.kwil.types.UuidString
 
 @Serializable

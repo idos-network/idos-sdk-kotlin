@@ -3,10 +3,10 @@
 
 package org.idos.kwil.domain.generated.execute
 
-import org.idos.kwil.domain.generated.ExecuteAction
-import org.idos.kwil.serialization.KwilType
+import org.idos.kwil.domain.ExecuteAction
 import org.idos.kwil.domain.PositionalParams
 import org.idos.kwil.domain.PositionalTypes
+import org.idos.kwil.serialization.KwilType
 import org.idos.kwil.types.UuidString
 
 data class AddDelegateAsOwnerParams(
@@ -25,9 +25,11 @@ object AddDelegateAsOwner : ExecuteAction<AddDelegateAsOwnerParams> {
             KwilType.Uuid(),
         )
 
-    override fun toPositionalParams(input: AddDelegateAsOwnerParams): PositionalParams =
-        listOf(
-            input.address,
-            input.inserterId.value,
-        )
+    override fun toPositionalParams(input: List<AddDelegateAsOwnerParams>): List<PositionalParams> =
+        input.map {
+            listOf(
+                it.address,
+                it.inserterId.value,
+            )
+        }
 }

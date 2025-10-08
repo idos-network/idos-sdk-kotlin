@@ -3,10 +3,10 @@
 
 package org.idos.kwil.domain.generated.execute
 
-import org.idos.kwil.domain.generated.ExecuteAction
-import org.idos.kwil.serialization.KwilType
+import org.idos.kwil.domain.ExecuteAction
 import org.idos.kwil.domain.PositionalParams
 import org.idos.kwil.domain.PositionalTypes
+import org.idos.kwil.serialization.KwilType
 import org.idos.kwil.types.UuidString
 
 data class CreateAccessGrantParams(
@@ -33,13 +33,15 @@ object CreateAccessGrant : ExecuteAction<CreateAccessGrantParams> {
             KwilType.Text(),
         )
 
-    override fun toPositionalParams(input: CreateAccessGrantParams): PositionalParams =
-        listOf(
-            input.granteeWalletIdentifier,
-            input.dataId.value,
-            input.lockedUntil,
-            input.contentHash,
-            input.inserterType,
-            input.inserterId,
-        )
+    override fun toPositionalParams(input: List<CreateAccessGrantParams>): List<PositionalParams> =
+        input.map {
+            listOf(
+                it.granteeWalletIdentifier,
+                it.dataId.value,
+                it.lockedUntil,
+                it.contentHash,
+                it.inserterType,
+                it.inserterId,
+            )
+        }
 }

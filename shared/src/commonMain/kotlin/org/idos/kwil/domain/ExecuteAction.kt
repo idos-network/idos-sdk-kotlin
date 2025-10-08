@@ -1,7 +1,4 @@
-package org.idos.kwil.domain.generated
-
-import org.idos.kwil.domain.PositionalParams
-import org.idos.kwil.domain.PositionalTypes
+package org.idos.kwil.domain
 
 /**
  * Base interface for all generated execute action descriptors.
@@ -29,5 +26,5 @@ interface ExecuteAction<in I> {
     /**
      * Converts the strongly-typed input into a list of positional parameters.
      */
-    fun toPositionalParams(input: I): PositionalParams
+    fun toPositionalParams(input: List<I>): List<PositionalParams>
 }

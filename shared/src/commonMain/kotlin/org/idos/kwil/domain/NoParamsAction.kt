@@ -1,9 +1,5 @@
 package org.idos.kwil.domain
 
-import org.idos.kwil.domain.generated.ViewAction
-import org.idos.kwil.domain.PositionalParams
-import org.idos.kwil.domain.PositionalTypes
-
 /**
  * Sentinel object representing absence of parameters for no-params actions.
  */

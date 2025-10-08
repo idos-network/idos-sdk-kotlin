@@ -3,10 +3,10 @@
 
 package org.idos.kwil.domain.generated.execute
 
-import org.idos.kwil.domain.generated.ExecuteAction
-import org.idos.kwil.serialization.KwilType
+import org.idos.kwil.domain.ExecuteAction
 import org.idos.kwil.domain.PositionalParams
 import org.idos.kwil.domain.PositionalTypes
+import org.idos.kwil.serialization.KwilType
 import org.idos.kwil.types.UuidString
 
 data class ShareCredentialThroughDagParams(
@@ -49,21 +49,23 @@ object ShareCredentialThroughDag : ExecuteAction<ShareCredentialThroughDagParams
             KwilType.Text(),
         )
 
-    override fun toPositionalParams(input: ShareCredentialThroughDagParams): PositionalParams =
-        listOf(
-            input.id.value,
-            input.userId.value,
-            input.issuerAuthPublicKey,
-            input.encryptorPublicKey,
-            input.content,
-            input.contentHash,
-            input.publicNotes,
-            input.publicNotesSignature,
-            input.broaderSignature,
-            input.originalCredentialId.value,
-            input.dagOwnerWalletIdentifier,
-            input.dagGranteeWalletIdentifier,
-            input.dagLockedUntil,
-            input.dagSignature,
-        )
+    override fun toPositionalParams(input: List<ShareCredentialThroughDagParams>): List<PositionalParams> =
+        input.map {
+            listOf(
+                it.id.value,
+                it.userId.value,
+                it.issuerAuthPublicKey,
+                it.encryptorPublicKey,
+                it.content,
+                it.contentHash,
+                it.publicNotes,
+                it.publicNotesSignature,
+                it.broaderSignature,
+                it.originalCredentialId.value,
+                it.dagOwnerWalletIdentifier,
+                it.dagGranteeWalletIdentifier,
+                it.dagLockedUntil,
+                it.dagSignature,
+            )
+        }
 }

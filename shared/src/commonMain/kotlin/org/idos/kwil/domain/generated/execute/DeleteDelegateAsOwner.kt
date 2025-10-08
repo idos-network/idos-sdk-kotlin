@@ -3,10 +3,10 @@
 
 package org.idos.kwil.domain.generated.execute
 
-import org.idos.kwil.domain.generated.ExecuteAction
-import org.idos.kwil.serialization.KwilType
+import org.idos.kwil.domain.ExecuteAction
 import org.idos.kwil.domain.PositionalParams
 import org.idos.kwil.domain.PositionalTypes
+import org.idos.kwil.serialization.KwilType
 
 data class DeleteDelegateAsOwnerParams(
     val address: String,
@@ -22,8 +22,10 @@ object DeleteDelegateAsOwner : ExecuteAction<DeleteDelegateAsOwnerParams> {
             KwilType.Text(),
         )
 
-    override fun toPositionalParams(input: DeleteDelegateAsOwnerParams): PositionalParams =
-        listOf(
-            input.address,
-        )
+    override fun toPositionalParams(input: List<DeleteDelegateAsOwnerParams>): List<PositionalParams> =
+        input.map {
+            listOf(
+                it.address,
+            )
+        }
 }

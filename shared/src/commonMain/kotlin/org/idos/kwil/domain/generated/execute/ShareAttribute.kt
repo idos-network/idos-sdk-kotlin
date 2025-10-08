@@ -3,10 +3,10 @@
 
 package org.idos.kwil.domain.generated.execute
 
-import org.idos.kwil.domain.generated.ExecuteAction
-import org.idos.kwil.serialization.KwilType
+import org.idos.kwil.domain.ExecuteAction
 import org.idos.kwil.domain.PositionalParams
 import org.idos.kwil.domain.PositionalTypes
+import org.idos.kwil.serialization.KwilType
 import org.idos.kwil.types.UuidString
 
 data class ShareAttributeParams(
@@ -29,11 +29,13 @@ object ShareAttribute : ExecuteAction<ShareAttributeParams> {
             KwilType.Text(),
         )
 
-    override fun toPositionalParams(input: ShareAttributeParams): PositionalParams =
-        listOf(
-            input.id.value,
-            input.originalAttributeId.value,
-            input.attributeKey,
-            input.value,
-        )
+    override fun toPositionalParams(input: List<ShareAttributeParams>): List<PositionalParams> =
+        input.map {
+            listOf(
+                it.id.value,
+                it.originalAttributeId.value,
+                it.attributeKey,
+                it.value,
+            )
+        }
 }

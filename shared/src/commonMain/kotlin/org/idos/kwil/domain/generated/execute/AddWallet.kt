@@ -3,10 +3,10 @@
 
 package org.idos.kwil.domain.generated.execute
 
-import org.idos.kwil.domain.generated.ExecuteAction
-import org.idos.kwil.serialization.KwilType
+import org.idos.kwil.domain.ExecuteAction
 import org.idos.kwil.domain.PositionalParams
 import org.idos.kwil.domain.PositionalTypes
+import org.idos.kwil.serialization.KwilType
 import org.idos.kwil.types.UuidString
 
 data class AddWalletParams(
@@ -31,12 +31,14 @@ object AddWallet : ExecuteAction<AddWalletParams> {
             KwilType.Text(),
         )
 
-    override fun toPositionalParams(input: AddWalletParams): PositionalParams =
-        listOf(
-            input.id.value,
-            input.address,
-            input.publicKey,
-            input.message,
-            input.signature,
-        )
+    override fun toPositionalParams(input: List<AddWalletParams>): List<PositionalParams> =
+        input.map {
+            listOf(
+                it.id.value,
+                it.address,
+                it.publicKey,
+                it.message,
+                it.signature,
+            )
+        }
 }

@@ -1,7 +1,4 @@
-package org.idos.kwil.domain.generated
-
-import org.idos.kwil.domain.PositionalParams
-import org.idos.kwil.domain.PositionalTypes
+package org.idos.kwil.domain
 
 /**
  * Base interface for all generated VIEW action descriptors.

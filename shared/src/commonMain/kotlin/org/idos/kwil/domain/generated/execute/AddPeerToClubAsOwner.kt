@@ -3,10 +3,10 @@
 
 package org.idos.kwil.domain.generated.execute
 
-import org.idos.kwil.domain.generated.ExecuteAction
-import org.idos.kwil.serialization.KwilType
+import org.idos.kwil.domain.ExecuteAction
 import org.idos.kwil.domain.PositionalParams
 import org.idos.kwil.domain.PositionalTypes
+import org.idos.kwil.serialization.KwilType
 import org.idos.kwil.types.UuidString
 
 data class AddPeerToClubAsOwnerParams(
@@ -25,9 +25,11 @@ object AddPeerToClubAsOwner : ExecuteAction<AddPeerToClubAsOwnerParams> {
             KwilType.Uuid(),
         )
 
-    override fun toPositionalParams(input: AddPeerToClubAsOwnerParams): PositionalParams =
-        listOf(
-            input.passportingClubId.value,
-            input.passportingPeerId.value,
-        )
+    override fun toPositionalParams(input: List<AddPeerToClubAsOwnerParams>): List<PositionalParams> =
+        input.map {
+            listOf(
+                it.passportingClubId.value,
+                it.passportingPeerId.value,
+            )
+        }
 }

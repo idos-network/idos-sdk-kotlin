@@ -156,21 +156,23 @@ internal object BroadcastSyncTypeSerializer : KSerializer<BroadcastSyncType> {
  * Payload type for KWIL transactions.
  */
 @Serializable
-enum class PayloadType {
+enum class PayloadType(
+    val value: String,
+) {
     @SerialName("invalid")
-    INVALID_PAYLOAD_TYPE,
+    INVALID_PAYLOAD_TYPE("invalid"),
 
     @SerialName("execute")
-    EXECUTE_ACTION,
+    EXECUTE_ACTION("execute"),
 
     @SerialName("call_action")
-    CALL_ACTION,
+    CALL_ACTION("call_action"),
 
     @SerialName("transfer")
-    TRANSFER,
+    TRANSFER("transfer"),
 
     @SerialName("raw_statement")
-    RAW_STATEMENT,
+    RAW_STATEMENT("raw_statement"),
 }
 
 @Serializable
