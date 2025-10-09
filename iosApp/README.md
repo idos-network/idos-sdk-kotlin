@@ -1,16 +1,17 @@
-# IDOS iOS App
+# idOS iOS App
 
-iOS application for the IDOS SDK, built using Kotlin Multiplatform Mobile (KMM) with SwiftUI.
+Native iOS application for the idOS SDK, built with SwiftUI and Kotlin Multiplatform.
 
-## Architecture
+## 🏗 Architecture
 
-The iOS app follows the same architecture as the Android app:
+The iOS app mirrors the Android app architecture for consistency:
 
-- **MVVM Pattern**: ViewModels manage state and business logic, Views observe and display
+- **MVVM Pattern**: State-driven ViewModels with event handling
 - **SwiftUI**: Modern declarative UI framework
-- **Shared Business Logic**: KMM shared module for cross-platform code
-- **Dependency Injection**: DIContainer pattern (similar to Android's Koin)
-- **Navigation**: NavigationCoordinator pattern (similar to Android's NavigationManager)
+- **Repository Pattern**: Clean data layer abstraction
+- **Dependency Injection**: Centralized DIContainer (matching Android's Koin)
+- **SKIE Integration**: Seamless Kotlin ↔ Swift interop for shared business logic
+- **Navigation Coordinator**: Centralized navigation management
 
 ## Project Structure
 
@@ -61,68 +62,79 @@ iosApp/
 └── iosApp.xcodeproj/
 ```
 
-## iOS Platform Implementations (Shared Module)
+## ✅ Completed iOS Platform Implementations
 
-The shared KMM module requires iOS-specific implementations:
+The shared Kotlin module uses SKIE for seamless Swift interop:
 
-### Completed Implementations
+### Core Implementations
 
-1. **MetadataStorage.ios.kt** - Uses UserDefaults for key metadata storage
-2. **Encryption.ios.kt** - ⚠️ Stub (requires implementation)
-3. **KeyDerivation.ios.kt** - ⚠️ Stub (requires implementation)
+1. **Encryption.ios.kt** - ✅ Implemented using Kotlin Multiplatform libsodium bindings
+   - NaCl Box encryption (Curve25519 + XSalsa20 + Poly1305)
+   - Secure key storage via `KeychainSecureStorage` (bundled with SDK)
+   - Full compatibility with Android encryption
 
-### Required Implementations
+2. **KeyDerivation.ios.kt** - ✅ Implemented using Kotlin Multiplatform libsodium
+   - SCrypt KDF with parameters: n=16384, r=8, p=1, dkLen=32
+   - Password normalization
+   - UUID salt validation
 
-#### 1. Encryption (Encryption.ios.kt)
+3. **MetadataStorage.ios.kt** - ✅ UserDefaults-based key metadata storage
 
-**Requirements:**
-- Implement NaCl Box encryption (Curve25519 + XSalsa20 + Poly1305)
-- Store keys securely in Keychain with `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`
-- Use Secure Enclave when available
-- Match Android's message format: nonce (24 bytes) + ciphertext
+4. **KeychainSecureStorage.swift** - ✅ Production-ready Keychain implementation
+   - `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` for maximum security
+   - Hardware-backed via Secure Enclave when available
+   - Bundled with SDK via SKIE
 
-**Recommended Libraries:**
-- CryptoKit (built-in, iOS 13+) - for basic crypto operations
-- SwiftSodium (libsodium wrapper) - for NaCl compatibility
-- Sodium framework - alternative libsodium binding
+### SKIE Integration Benefits
 
-#### 2. KeyDerivation (KeyDerivation.ios.kt)
+- **Automatic Conversion**: Kotlin suspend functions → Swift async/await
+- **Error Handling**: Kotlin exceptions → Swift throws
+- **Type Safety**: Sealed classes → Swift enums with `onEnum()` helper
+- **No Manual Bridging**: Direct Swift access to Kotlin APIs
 
-**Requirements:**
-- Implement SCrypt KDF with parameters: n=16384, r=8, p=1, dkLen=32
-- Normalize passwords using NFKC (String.precomposedStringWithCompatibilityMapping)
-- Validate salt as UUID
-
-**Recommended Libraries:**
-- CryptoKit (built-in) - has some KDF support
-- OpenSSL via CocoaPods - for SCrypt
-- Custom SCrypt implementation
-
-## Building the Project
+## 🚀 Setup & Building
 
 ### Prerequisites
 
-- macOS with Xcode 14.0+
-- CocoaPods (if using third-party crypto libraries)
-- Gradle (for building KMM shared module)
+- **Xcode**: 15.0+
+- **CocoaPods**: For TrustWallet dependency
+- **macOS**: 13.0+
+- **iOS**: 15.0+ deployment target
 
-### Build Steps
+### Installation Steps
 
-1. **Build the shared framework:**
+1. **Install CocoaPods Dependencies**
    ```bash
-   cd ../
-   ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+   cd iosApp
+   pod install
    ```
 
-2. **Open in Xcode:**
+2. **Configure Environment (Optional)**
+
+   Create `.env` in project root for development mnemonic:
    ```bash
-   open iosApp.xcodeproj
+   # At repository root (idos-sdk-kotlin/)
+   echo 'MNEMONIC_WORDS="your twelve word mnemonic phrase here"' > .env
    ```
 
-3. **Select target and run:**
+3. **Open Workspace** ⚠️ Important
+   ```bash
+   open iosApp.xcworkspace  # Always use .xcworkspace, NOT .xcodeproj
+   ```
+
+4. **Build & Run**
    - Select "iosApp" scheme
    - Choose simulator or device
-   - Press Cmd+R to build and run
+   - Press ⌘R to build and run
+
+### Build Process
+
+The Xcode build automatically:
+1. ✅ Checks CocoaPods dependencies
+2. ✅ Generates `Config.swift` from `.env` file
+3. ✅ Builds Kotlin shared framework via Gradle
+4. ✅ Compiles Swift code
+5. ✅ Embeds TrustWallet framework
 
 ## Key Features
 
@@ -139,11 +151,10 @@ The shared KMM module requires iOS-specific implementations:
 - List of encrypted credentials
 - Pull-to-refresh functionality
 - Credential detail view with JSON viewer
-- Copy to clipboard support
 - Automatic key generation prompt when needed
 
 ### 4. Enclave Integration
-- `BaseEnclaveViewModel` for screens requiring encryption
+- `CredentialViewModel` as example for screens requiring encryption
 - Automatic key generation dialog when key missing/expired
 - Password input with visibility toggle
 - Key expiration selection (1 Day, 1 Week, 1 Month)
@@ -240,65 +251,113 @@ try keyManager.deleteKey()
 - Key generation dialog
 - Credential list and detail views
 
-## Known Limitations
+## 🔧 Build Configuration
 
-1. **Encryption not implemented** - iOS platform encryption requires SwiftSodium or similar
-2. **Key derivation not implemented** - Requires SCrypt library
-3. **Mnemonic derivation not implemented** - Requires BIP39/BIP44 library (e.g., web3.swift)
-4. **API integration incomplete** - Currently uses mock data
-5. **No Ethereum signing** - Requires secp256k1 implementation
+### Build Phases
 
-## Next Steps
+1. **[CP] Check Pods Manifest.lock** - CocoaPods verification
+2. **Generate Config** - Creates `Config.swift` from `.env` file
+3. **Build Kotlin Framework** - Compiles shared Kotlin module
+4. **Sources** - Compiles Swift code
+5. **[CP] Embed Pods Frameworks** - Embeds TrustWallet framework
 
-### Phase 1: Complete Cryptography
-1. Add SwiftSodium via CocoaPods
-2. Implement `Encryption.ios.kt` using libsodium
-3. Implement `KeyDerivation.ios.kt` with SCrypt
-4. Test encryption compatibility with Android
+### Key Build Settings
 
-### Phase 2: Wallet Integration
-1. Add web3.swift or similar library
-2. Implement BIP39/BIP44 mnemonic derivation
-3. Implement Ethereum key derivation
-4. Add transaction signing
+- **ENABLE_USER_SCRIPT_SANDBOXING**: `NO` (disabled for Kotlin framework build)
+- **IPHONEOS_DEPLOYMENT_TARGET**: `15.6`
+- **SWIFT_VERSION**: `5.0`
+- **DEVELOPMENT_TEAM**: Set for code signing
 
-### Phase 3: API Integration
-1. Create API client wrapper
-2. Implement UserRepository
-3. Implement CredentialsRepository
-4. Implement WalletRepository
-5. Add proper error handling
+### Build Configuration Notes
 
-### Phase 4: Polish
-1. Add splash screen
-2. Improve animations and transitions
-3. Add loading indicators
-4. Improve error messages
-5. Add localization support
+#### User Script Sandboxing Disabled
 
-## Dependencies
+**Why it's disabled:**
+- The "Build Kotlin Framework" phase runs `./gradlew :shared:embedAndSignAppleFrameworkForXcode`
+- Gradle needs broad file system access to:
+  - Read/write to `.gradle` cache
+  - Access Kotlin compiler
+  - Download dependencies
+  - Generate framework files
+- Xcode's sandbox restrictions are incompatible with Gradle's operation
 
-### Required CocoaPods (to be added)
+**Security implications:**
+- Build scripts have full file system access during build
+- This is standard for projects with complex build dependencies
+- CocoaPods and other build tools operate the same way
 
-```ruby
-pod 'SwiftSodium', '~> 0.9.1'        # For NaCl encryption
-pod 'web3.swift', '~> 1.6.0'         # For Ethereum wallet
-pod 'CryptoSwift', '~> 1.8.0'        # For additional crypto
+**Note:** If sandboxing were enabled, you'd see:
+```
+Sandbox: deny(1) file-read-data /Users/.../generate-config.sh
 ```
 
-## Compatibility
+#### TrustWallet Quoted Include Warnings
 
-- **iOS**: 15.0+
-- **Swift**: 5.0+
-- **Xcode**: 14.0+
+TrustWallet uses `"quoted"` includes instead of `<angle-bracketed>`. Fixed in `Podfile`:
 
-## Support
+```ruby
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      # Disable warning for TrustWallet's header style
+      config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
+    end
+  end
+end
+```
 
-For issues and questions:
-- Check the main project README
-- Review the Android implementation for reference
-- Consult the IOS_IMPLEMENTATION_CONTEXT.md for detailed architecture
+**Error without fix**: `double-quoted include "TWBase.h" in framework header, expected angle-bracketed instead`
 
-## License
+### Common Build Issues
 
-See main project LICENSE file.
+| Issue | Solution |
+|-------|----------|
+| "Framework not found idos_sdk" | Run `./gradlew :shared:embedAndSignAppleFrameworkForXcode` from project root |
+| "Module compiled with Swift X.Y" | Clean build folder (⌘⇧K) and rebuild |
+| "Task ... execution failed" (Gradle) | Check Gradle daemon: `./gradlew --stop` then rebuild |
+| Quoted include warnings | Fixed in Podfile post_install hook ✅ |
+| Build script permissions | Sandboxing disabled for Gradle compatibility ✅ |
+
+## 📚 Dependencies
+
+### CocoaPods
+
+```ruby
+# Podfile
+pod 'TrustWalletCore', '~> 4.0'  # Ethereum wallet operations
+```
+
+**TrustWalletCore** provides:
+- BIP39 mnemonic generation
+- BIP44 hierarchical key derivation
+- secp256k1 signing for Ethereum
+- Production-proven (used by Trust Wallet app)
+
+### Kotlin Multiplatform Framework
+
+- **idos_sdk**: Shared business logic framework
+  - Automatically built by Gradle during Xcode build
+  - Located at `../shared/build/xcode-frameworks/`
+  - Includes SKIE for seamless Swift interop
+
+## 📖 Additional Resources
+
+- **[iOS SDK Documentation](../shared/src/iosMain/README.md)** - Kotlin ↔ Swift interop guide
+- **[Main README](../README.md)** - Overall SDK documentation
+- **[Architecture Guide](../ARCHITECTURE.md)** - Technical architecture details
+- **[SKIE Documentation](https://skie.touchlab.co/)** - Kotlin/Swift interop
+
+## 🤝 Contributing
+
+When contributing iOS code:
+
+1. Follow Swift naming conventions (camelCase, PascalCase for types)
+2. Mirror Android's architecture patterns where possible
+3. Use MVVM with state-driven ViewModels
+4. Document any iOS-specific workarounds
+5. Update this README for significant changes
+6. Test on both simulator and device
+
+## 📄 License
+
+Same license as the main SDK - see repository root.
