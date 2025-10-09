@@ -28,8 +28,8 @@ object DeletePeerFromClubAsOwner : ExecuteAction<DeletePeerFromClubAsOwnerParams
     override fun toPositionalParams(input: List<DeletePeerFromClubAsOwnerParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.passportingClubId.value,
-                it.passportingPeerId.value,
+                it.passportingClubId,
+                it.passportingPeerId,
             )
         }
 }

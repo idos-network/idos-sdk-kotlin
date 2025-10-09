@@ -34,7 +34,7 @@ abstract class Encryption(
         password: String,
     ): ByteArray =
         runCatching {
-            val secretKey = keyDerivation(password, userId.value)
+            val secretKey = keyDerivation(password, userId)
             storage.storeKey(secretKey)
             val pubkey = publicKey(secretKey)
             secretKey.fill(0)

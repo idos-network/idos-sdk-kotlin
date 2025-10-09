@@ -11,7 +11,6 @@ import kotlinx.serialization.encoding.Encoder
 import org.idos.kwil.domain.AccessModifier
 import org.idos.kwil.domain.PositionalParams
 import org.idos.kwil.domain.PositionalTypes
-import org.idos.kwil.protocol.TransactionBase64
 import org.idos.kwil.security.signer.KeyType
 import org.idos.kwil.security.signer.SignatureType
 import org.idos.kwil.types.Base64String
@@ -343,7 +342,7 @@ data class AccountResponse(
 @Serializable
 data class BroadcastResponse(
     @SerialName("tx_hash")
-    val txHash: Base64String,
+    val txHash: HexString,
     val result: BroadcastResult? = null,
 )
 

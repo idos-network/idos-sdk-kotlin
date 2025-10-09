@@ -60,7 +60,7 @@ class DIContainer: ObservableObject {
 #endif
         
         // Initialize security components (matching Android's securityModule)
-        let secureStorage = IosSecureStorage()
+        let secureStorage = KeychainSecureStorage()  // From SDK via SKIE
         self.encryption = IosEncryption(storage: secureStorage)
         self.metadataStorage = IosMetadataStorage()
         self.enclaveOrchestrator = EnclaveOrchestrator.companion.create(encryption: encryption,
@@ -147,6 +147,7 @@ class DIContainer: ObservableObject {
 
     func makeWalletsViewModel() -> WalletsViewModel {
         WalletsViewModel(
+            walletRepository: walletRepository,
             navigationCoordinator: navigationCoordinator
         )
     }

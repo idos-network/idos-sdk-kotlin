@@ -29,7 +29,7 @@ class DashboardViewModel(
                 if (userState is ConnectedUser) {
                     updateState {
                         copy(
-                            ethAddress = userState.user.walletAddress.prefixedValue,
+                            ethAddress = userState.user.walletAddress.hex,
                             error = null,
                         )
                     }

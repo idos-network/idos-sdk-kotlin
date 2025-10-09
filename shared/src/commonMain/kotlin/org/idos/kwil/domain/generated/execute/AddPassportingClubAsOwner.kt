@@ -28,7 +28,7 @@ object AddPassportingClubAsOwner : ExecuteAction<AddPassportingClubAsOwnerParams
     override fun toPositionalParams(input: List<AddPassportingClubAsOwnerParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
+                it.id,
                 it.name,
             )
         }

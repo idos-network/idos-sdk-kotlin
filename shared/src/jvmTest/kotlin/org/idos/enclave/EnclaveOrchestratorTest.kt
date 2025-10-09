@@ -11,7 +11,7 @@ import org.idos.kwil.types.UuidString
  */
 class EnclaveOrchestratorTest :
     FunSpec({
-        val userId = UuidString("550e8400-e29b-41d4-a716-446655440000")
+        val userId = "550e8400-e29b-41d4-a716-446655440000"
         val password = "test-password"
         val expiration = 3600000L // 1 hour
 

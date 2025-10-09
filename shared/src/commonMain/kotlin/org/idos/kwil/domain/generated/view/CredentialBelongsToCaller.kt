@@ -20,7 +20,8 @@ data class CredentialBelongsToCallerParams(
     val id: UuidString,
 )
 
-object CredentialBelongsToCaller : ViewAction<CredentialBelongsToCallerParams, CredentialBelongsToCallerResponse> {
+object CredentialBelongsToCaller :
+    ViewAction<CredentialBelongsToCallerParams, CredentialBelongsToCallerResponse> {
     override val name: String = "credential_belongs_to_caller"
     override val namespace: String = "main"
 
@@ -31,6 +32,6 @@ object CredentialBelongsToCaller : ViewAction<CredentialBelongsToCallerParams, C
 
     override fun toPositionalParams(input: CredentialBelongsToCallerParams): PositionalParams =
         listOf(
-            input.id.value,
+            input.id,
         )
 }

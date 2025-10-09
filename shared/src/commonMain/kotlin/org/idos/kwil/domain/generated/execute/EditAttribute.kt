@@ -30,7 +30,7 @@ object EditAttribute : ExecuteAction<EditAttributeParams> {
     override fun toPositionalParams(input: List<EditAttributeParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
+                it.id,
                 it.attributeKey,
                 it.value,
             )

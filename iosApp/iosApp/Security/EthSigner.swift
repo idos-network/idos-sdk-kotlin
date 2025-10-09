@@ -4,7 +4,7 @@ import idos_sdk
 
 /// EthSigner provides Ethereum wallet functionality matching Android's EthSigner.kt
 /// Handles BIP39 mnemonic derivation, key management, and EIP-191 signing
-class EthSigner: idos_sdk.EthSignerInterop {
+class EthSigner: idos_sdk.EthSigner {
     private let keyManager: KeyManager
     private let storageManager: StorageManager
 
@@ -29,12 +29,12 @@ class EthSigner: idos_sdk.EthSignerInterop {
 
     /// Get Ethereum address identifier
     /// Matches Android's EthSigner.getIdentifier()
-    override func getIdentifierInterop() -> String {
+    override func getIdentifier() -> String {
         let address = storageManager.getStoredWallet()
         guard let address = address else {
             fatalError("Wallet address not found in storage")
         }
-        return address
+        return address.removingPrefix("0x")
     }
 
     /// Sign message with EIP-191 personal sign
@@ -44,7 +44,7 @@ class EthSigner: idos_sdk.EthSignerInterop {
     /// - Returns: 65-byte signature as KotlinByteArray
     override func __sign(msg: KotlinByteArray) async throws -> KotlinByteArray {
         // Convert KotlinByteArray to Data
-        let message = msg.toData()
+        let message = msg.toNSData()
 
         // Get stored private key
         guard let privateKeyData = try? keyManager.getKey() else {
@@ -132,6 +132,6 @@ class EthSigner: idos_sdk.EthSignerInterop {
 
         let publicKey = privKey.getPublicKeySecp256k1(compressed: false)
         let address = AnyAddress(publicKey: publicKey, coin: .ethereum)
-        return address.description.addressNoPrefix()
+        return address.description
     }
 }

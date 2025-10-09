@@ -27,7 +27,8 @@ data class GetAccessGrantsForCredentialParams(
     val credentialId: UuidString,
 )
 
-object GetAccessGrantsForCredential : ViewAction<GetAccessGrantsForCredentialParams, GetAccessGrantsForCredentialResponse> {
+object GetAccessGrantsForCredential :
+    ViewAction<GetAccessGrantsForCredentialParams, GetAccessGrantsForCredentialResponse> {
     override val name: String = "get_access_grants_for_credential"
     override val namespace: String = "main"
 
@@ -38,6 +39,6 @@ object GetAccessGrantsForCredential : ViewAction<GetAccessGrantsForCredentialPar
 
     override fun toPositionalParams(input: GetAccessGrantsForCredentialParams): PositionalParams =
         listOf(
-            input.credentialId.value,
+            input.credentialId,
         )
 }

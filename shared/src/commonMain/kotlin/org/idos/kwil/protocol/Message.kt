@@ -15,7 +15,7 @@ import org.idos.kwil.types.HexString
 @Serializable
 data class MsgBody(
     val payload: Base64String? = null,
-    val challenge: HexString = HexString(""),
+    val challenge: HexString = "",
 )
 
 /**

@@ -18,7 +18,8 @@ data class UpdateUserPubKeyAsInserterParams(
 object UpdateUserPubKeyAsInserter : ExecuteAction<UpdateUserPubKeyAsInserterParams> {
     override val name: String = "update_user_pub_key_as_inserter"
     override val namespace: String = "main"
-    override val description: String = "Update user's encryption key and password store in idOS as inserter (profile creator)"
+    override val description: String =
+        "Update user's encryption key and password store in idOS as inserter (profile creator)"
 
     override val positionalTypes: PositionalTypes =
         listOf(
@@ -30,7 +31,7 @@ object UpdateUserPubKeyAsInserter : ExecuteAction<UpdateUserPubKeyAsInserterPara
     override fun toPositionalParams(input: List<UpdateUserPubKeyAsInserterParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
+                it.id,
                 it.recipientEncryptionPublicKey,
                 it.encryptionPasswordStore,
             )

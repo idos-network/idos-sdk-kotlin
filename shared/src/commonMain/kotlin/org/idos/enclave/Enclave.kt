@@ -17,11 +17,19 @@ data class KeyMetadata(
 
 /**
  * Enclave for secure encryption/decryption operations.
- * All operations return Result<T> for iOS compatibility.
  *
- * @see https://github.com/idos-network/idos-sdk-js/blob/main/packages/utils/src/enclave/local.ts
+ * **⚠️ Do not use directly - use [EnclaveOrchestrator] instead.**
+ *
+ * This class should only be accessed through [EnclaveOrchestrator], which provides:
+ * - Reactive state management via Flow
+ * - Proper lifecycle handling
+ * - UI-friendly error states
+ * - Automatic expiration checks
+ *
+ * @see EnclaveOrchestrator for the public API and usage documentation
+ * @see EnclaveError for error types and handling
  */
-open class Enclave(
+open class Enclave internal constructor(
     private val encryption: Encryption,
     private val storage: MetadataStorage,
 ) {
@@ -31,7 +39,8 @@ open class Enclave(
      * @param userId User identifier for key derivation
      * @param password Password for key derivation
      * @param expiration Key expiration time in milliseconds
-     * @return Result with public key bytes or error
+     * @return Public key bytes
+     * @throws EnclaveError.KeyGenerationFailed if key generation fails
      */
     internal open suspend fun generateKey(
         userId: UuidString,
@@ -42,7 +51,7 @@ open class Enclave(
             encryption.deleteKey()
             val pubkey = encryption.generateKey(userId, password)
             val now = getCurrentTimeMillis()
-            val meta = KeyMetadata(userId, HexString(pubkey), now + expiration)
+            val meta = KeyMetadata(userId, pubkey.toHexString(), now + expiration)
             storage.store(meta)
             pubkey
         }
@@ -50,7 +59,7 @@ open class Enclave(
     /**
      * Delete encryption key.
      *
-     * @return Result with Unit or error
+     * @throws EnclaveError.StorageFailed if key deletion fails
      */
     internal open suspend fun deleteKey(): Unit =
         runCatchingErrorAsync {
@@ -63,7 +72,10 @@ open class Enclave(
      *
      * @param message Encrypted message bytes
      * @param senderPublicKey Sender's public key
-     * @return Result with decrypted bytes or EnclaveError
+     * @return Decrypted bytes
+     * @throws EnclaveError.NoKey if no key is stored
+     * @throws EnclaveError.KeyExpired if the stored key has expired
+     * @throws EnclaveError.DecryptionFailed if decryption fails
      */
     @Throws(CancellationException::class, EnclaveError::class)
     open suspend fun decrypt(
@@ -81,7 +93,10 @@ open class Enclave(
      *
      * @param message Plain message bytes
      * @param receiverPublicKey Receiver's public key
-     * @return Result with (ciphertext, nonce) or EnclaveError
+     * @return Pair of (encrypted message with nonce, sender's public key)
+     * @throws EnclaveError.NoKey if no key is stored
+     * @throws EnclaveError.KeyExpired if the stored key has expired
+     * @throws EnclaveError.EncryptionFailed if encryption fails
      */
     @Throws(CancellationException::class, EnclaveError::class)
     open suspend fun encrypt(
@@ -97,7 +112,8 @@ open class Enclave(
     /**
      * Check if enclave has valid (non-expired) key.
      *
-     * @return Result with Unit if valid, or EnclaveError
+     * @throws EnclaveError.NoKey if no key is stored
+     * @throws EnclaveError.KeyExpired if the stored key has expired
      */
     internal open suspend fun hasValidKey() {
         expirationCheck()

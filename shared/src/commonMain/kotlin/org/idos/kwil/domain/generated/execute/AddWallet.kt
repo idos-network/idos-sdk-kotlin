@@ -34,7 +34,7 @@ object AddWallet : ExecuteAction<AddWalletParams> {
     override fun toPositionalParams(input: List<AddWalletParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
+                it.id,
                 it.address,
                 it.publicKey,
                 it.message,

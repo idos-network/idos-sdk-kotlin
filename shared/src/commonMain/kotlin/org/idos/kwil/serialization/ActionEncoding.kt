@@ -37,7 +37,7 @@ data class ActionPayload<T>(
 fun <I, O> ViewAction<I, O>.toMessage(
     input: I,
     signer: Signer? = null,
-    challenge: HexString = HexString(""),
+    challenge: HexString = "",
 ): Message {
     val positionalParams = toPositionalParams(input)
     val encodedPayload = encodeViewAction(namespace, name, positionalParams, positionalTypes)

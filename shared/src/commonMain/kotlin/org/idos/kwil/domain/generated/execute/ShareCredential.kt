@@ -46,8 +46,8 @@ object ShareCredential : ExecuteAction<ShareCredentialParams> {
     override fun toPositionalParams(input: List<ShareCredentialParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
-                it.originalCredentialId.value,
+                it.id,
+                it.originalCredentialId,
                 it.publicNotes,
                 it.publicNotesSignature,
                 it.broaderSignature,

@@ -81,9 +81,7 @@ class CredentialDetailViewModel(
     savedStateHandle: SavedStateHandle,
 ) : BaseViewModel<CredentialDetailState, CredentialDetailEvent>() {
     val credentialId: UuidString =
-        requireNotNull(
-            savedStateHandle.get<String>(NavRoute.CredentialDetail.CREDENTIAL_ID_ARG),
-        ).let { UuidString(it) }
+        requireNotNull(savedStateHandle.get<String>(NavRoute.CredentialDetail.CREDENTIAL_ID_ARG))
 
     // Track enclave UI state (dialog, errors)
     private val _enclaveUiState = MutableStateFlow<EnclaveUiState>(EnclaveUiState.Hidden)

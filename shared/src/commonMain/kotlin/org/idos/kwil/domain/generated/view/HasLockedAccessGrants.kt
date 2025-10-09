@@ -20,7 +20,8 @@ data class HasLockedAccessGrantsParams(
     val id: UuidString,
 )
 
-object HasLockedAccessGrants : ViewAction<HasLockedAccessGrantsParams, HasLockedAccessGrantsResponse> {
+object HasLockedAccessGrants :
+    ViewAction<HasLockedAccessGrantsParams, HasLockedAccessGrantsResponse> {
     override val name: String = "has_locked_access_grants"
     override val namespace: String = "main"
 
@@ -31,6 +32,6 @@ object HasLockedAccessGrants : ViewAction<HasLockedAccessGrantsParams, HasLocked
 
     override fun toPositionalParams(input: HasLockedAccessGrantsParams): PositionalParams =
         listOf(
-            input.id.value,
+            input.id,
         )
 }

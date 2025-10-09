@@ -55,7 +55,3 @@ fun ByteArray.prefixBytesWithLength(): ByteArray {
 fun Boolean.toByteArray() = byteArrayOf(if (this) 1 else 0)
 
 fun Base64String.toByteArray() = Base64.decode(this.value)
-
-fun Base64String.toHexString(): HexString = HexString(toByteArray().toHexString())
-
-fun HexString.toByteArray() = this.value.hexToByteArray()

@@ -26,7 +26,7 @@ object DeleteInserterAsOwner : ExecuteAction<DeleteInserterAsOwnerParams> {
     override fun toPositionalParams(input: List<DeleteInserterAsOwnerParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
+                it.id,
             )
         }
 }

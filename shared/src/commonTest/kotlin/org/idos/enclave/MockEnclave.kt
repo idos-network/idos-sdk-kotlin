@@ -1,7 +1,5 @@
 package org.idos.enclave
 
-import org.idos.getCurrentTimeMillis
-import org.idos.kwil.types.HexString
 import org.idos.kwil.types.UuidString
 
 /**

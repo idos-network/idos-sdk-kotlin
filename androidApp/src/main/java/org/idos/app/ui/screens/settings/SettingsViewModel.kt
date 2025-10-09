@@ -4,8 +4,11 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.idos.app.ui.screens.base.BaseViewModel
+import org.idos.app.ui.screens.credentials.EnclaveUiState
 import org.idos.enclave.EnclaveError
 import org.idos.enclave.EnclaveOrchestrator
+import org.idos.enclave.EnclaveState
+import timber.log.Timber
 
 sealed class SettingsEvent {
     object CheckKeyStatus : SettingsEvent()
@@ -29,9 +32,14 @@ data class SettingsState(
 class SettingsViewModel(
     val enclaveOrchestrator: EnclaveOrchestrator,
 ) : BaseViewModel<SettingsState, SettingsEvent>() {
+    init {
+        observeEnclaveState()
+    }
+
     override fun initialState(): SettingsState = SettingsState()
 
     override fun onEvent(event: SettingsEvent) {
+        Timber.d("Event: $event")
         when (event) {
             SettingsEvent.CheckKeyStatus -> checkKeyStatus()
             SettingsEvent.DeleteEncryptionKey -> showDeleteConfirmation()
@@ -41,20 +49,28 @@ class SettingsViewModel(
         }
     }
 
-    private fun checkKeyStatus() {
+    private fun observeEnclaveState() {
         viewModelScope.launch {
-            try {
-                enclaveOrchestrator.checkStatus()
-                updateState { copy(hasEncryptionKey = true) }
-            } catch (e: Exception) {
-                when (e) {
-                    is EnclaveError.NoKey, is EnclaveError.KeyExpired -> {
+            enclaveOrchestrator.state.collect { state ->
+                when (state) {
+                    is EnclaveState.Unlocked -> {
                         updateState { copy(hasEncryptionKey = true) }
                     }
 
-                    else -> updateState { copy(error = "Failed to check key status: ${e.message}") }
+                    is EnclaveState.Unlocking -> {
+                    }
+
+                    is EnclaveState.Locked -> {
+                        updateState { copy(hasEncryptionKey = false) }
+                    }
                 }
             }
+        }
+    }
+
+    private fun checkKeyStatus() {
+        viewModelScope.launch {
+            enclaveOrchestrator.checkStatus()
         }
     }
 

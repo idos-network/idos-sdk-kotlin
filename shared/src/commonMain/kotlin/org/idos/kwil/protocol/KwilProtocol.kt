@@ -1,8 +1,6 @@
 package org.idos.kwil.protocol
 
 import io.ktor.client.statement.HttpResponse
-import org.idos.kwil.protocol.Message
-import org.idos.kwil.protocol.TransactionBase64
 import org.idos.kwil.security.auth.Auth
 import org.idos.kwil.security.signer.SignatureType
 import org.idos.kwil.transport.JsonRpcClient

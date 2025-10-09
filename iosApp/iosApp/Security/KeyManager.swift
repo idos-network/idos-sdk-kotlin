@@ -31,6 +31,7 @@ class KeyManager {
         let address = try EthSigner.privateKeyToAddress(key)
 
         // Store the key securely
+        try deleteKey()
         try storeKey(key)
 
         return address

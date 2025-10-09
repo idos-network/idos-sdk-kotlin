@@ -38,7 +38,7 @@ object CreateAgByDagForCopy : ExecuteAction<CreateAgByDagForCopyParams> {
             listOf(
                 it.dagOwnerWalletIdentifier,
                 it.dagGranteeWalletIdentifier,
-                it.dagDataId.value,
+                it.dagDataId,
                 it.dagLockedUntil,
                 it.dagContentHash,
                 it.dagSignature,

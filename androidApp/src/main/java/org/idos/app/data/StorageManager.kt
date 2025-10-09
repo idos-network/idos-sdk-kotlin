@@ -11,6 +11,7 @@ import kotlinx.serialization.json.Json
 import org.idos.app.data.model.UserModel
 import org.idos.app.security.KeyManager
 import org.idos.kwil.types.HexString
+import org.kethereum.model.Address
 import timber.log.Timber
 
 sealed class UserState
@@ -20,7 +21,7 @@ object LoadingUser : UserState()
 object NoUser : UserState()
 
 data class ConnectedWallet(
-    val address: org.idos.kwil.types.HexString,
+    val address: Address,
 ) : UserState()
 
 data class ConnectedUser(
@@ -89,7 +90,7 @@ class StorageManager(
         }
     }
 
-    fun saveWalletAddress(address: org.idos.kwil.types.HexString) {
+    fun saveWalletAddress(address: Address) {
         _userState.value = ConnectedWallet(address)
     }
 
@@ -120,7 +121,7 @@ class StorageManager(
             else -> null
         }
 
-    fun getStoredWallet(): org.idos.kwil.types.HexString? =
+    fun getStoredWallet(): Address? =
         when (val state = _userState.value) {
             is ConnectedUser -> state.user.walletAddress
             is ConnectedWallet -> state.address

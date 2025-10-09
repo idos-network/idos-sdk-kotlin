@@ -54,7 +54,7 @@ object DwgMessage : ViewAction<DwgMessageParams, DwgMessageResponse> {
             input.ownerWalletIdentifier,
             input.granteeWalletIdentifier,
             input.issuerPublicKey,
-            input.id.value,
+            input.id,
             input.accessGrantTimelock,
             input.notUsableBefore,
             input.notUsableAfter,

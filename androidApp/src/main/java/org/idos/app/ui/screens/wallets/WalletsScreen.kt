@@ -106,7 +106,7 @@ private fun WalletCard(wallet: Wallet) {
             Spacer(modifier = Modifier.padding(8.dp))
             Text(
                 text = wallet.address,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
     }

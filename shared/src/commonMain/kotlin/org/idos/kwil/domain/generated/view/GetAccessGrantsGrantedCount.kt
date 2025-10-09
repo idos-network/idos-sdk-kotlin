@@ -20,7 +20,8 @@ data class GetAccessGrantsGrantedCountParams(
     val userId: UuidString?,
 )
 
-object GetAccessGrantsGrantedCount : ViewAction<GetAccessGrantsGrantedCountParams, GetAccessGrantsGrantedCountResponse> {
+object GetAccessGrantsGrantedCount :
+    ViewAction<GetAccessGrantsGrantedCountParams, GetAccessGrantsGrantedCountResponse> {
     override val name: String = "get_access_grants_granted_count"
     override val namespace: String = "main"
 
@@ -31,6 +32,6 @@ object GetAccessGrantsGrantedCount : ViewAction<GetAccessGrantsGrantedCountParam
 
     override fun toPositionalParams(input: GetAccessGrantsGrantedCountParams): PositionalParams =
         listOf(
-            input.userId?.value,
+            input.userId,
         )
 }

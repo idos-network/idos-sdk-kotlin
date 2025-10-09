@@ -27,7 +27,8 @@ data class GetCredentialsSharedByUserParams(
     val issuerAuthPublicKey: String?,
 )
 
-object GetCredentialsSharedByUser : ViewAction<GetCredentialsSharedByUserParams, GetCredentialsSharedByUserResponse> {
+object GetCredentialsSharedByUser :
+    ViewAction<GetCredentialsSharedByUserParams, GetCredentialsSharedByUserResponse> {
     override val name: String = "get_credentials_shared_by_user"
     override val namespace: String = "main"
 
@@ -39,7 +40,7 @@ object GetCredentialsSharedByUser : ViewAction<GetCredentialsSharedByUserParams,
 
     override fun toPositionalParams(input: GetCredentialsSharedByUserParams): PositionalParams =
         listOf(
-            input.userId.value,
+            input.userId,
             input.issuerAuthPublicKey,
         )
 }

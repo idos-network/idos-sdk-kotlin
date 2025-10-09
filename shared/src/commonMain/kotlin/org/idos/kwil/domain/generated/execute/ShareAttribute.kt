@@ -32,8 +32,8 @@ object ShareAttribute : ExecuteAction<ShareAttributeParams> {
     override fun toPositionalParams(input: List<ShareAttributeParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
-                it.originalAttributeId.value,
+                it.id,
+                it.originalAttributeId,
                 it.attributeKey,
                 it.value,
             )

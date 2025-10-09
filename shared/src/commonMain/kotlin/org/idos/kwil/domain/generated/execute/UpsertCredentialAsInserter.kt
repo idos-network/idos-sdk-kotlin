@@ -23,7 +23,8 @@ data class UpsertCredentialAsInserterParams(
 object UpsertCredentialAsInserter : ExecuteAction<UpsertCredentialAsInserterParams> {
     override val name: String = "upsert_credential_as_inserter"
     override val namespace: String = "main"
-    override val description: String = "Add or update a credential in idOS on behalf of a user by permissioned profile creator (inserter) "
+    override val description: String =
+        "Add or update a credential in idOS on behalf of a user by permissioned profile creator (inserter) "
 
     override val positionalTypes: PositionalTypes =
         listOf(
@@ -40,8 +41,8 @@ object UpsertCredentialAsInserter : ExecuteAction<UpsertCredentialAsInserterPara
     override fun toPositionalParams(input: List<UpsertCredentialAsInserterParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
-                it.userId.value,
+                it.id,
+                it.userId,
                 it.issuerAuthPublicKey,
                 it.encryptorPublicKey,
                 it.content,

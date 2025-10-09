@@ -40,8 +40,8 @@ object CreateCredentialCopy : ExecuteAction<CreateCredentialCopyParams> {
     override fun toPositionalParams(input: List<CreateCredentialCopyParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
-                it.originalCredentialId.value,
+                it.id,
+                it.originalCredentialId,
                 it.publicNotes,
                 it.publicNotesSignature,
                 it.broaderSignature,

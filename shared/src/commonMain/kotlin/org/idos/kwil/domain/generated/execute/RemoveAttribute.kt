@@ -26,7 +26,7 @@ object RemoveAttribute : ExecuteAction<RemoveAttributeParams> {
     override fun toPositionalParams(input: List<RemoveAttributeParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
+                it.id,
             )
         }
 }

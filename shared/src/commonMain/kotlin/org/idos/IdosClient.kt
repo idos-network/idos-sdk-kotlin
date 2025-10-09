@@ -13,20 +13,32 @@ import org.idos.kwil.security.signer.Signer
  * All operations are defined as extensions in IdosClientExtensions.kt for easy
  * discoverability in IDEs.
  *
- * Example usage:
- * ```kotlin
- * val client = IdosClient.create(
- *     baseUrl = "https://nodes.staging.idos.network",
- *     chainId = "idos-testnet",
- *     signer = EthSigner(privateKey)
- * ).getOrThrow()
+ * ## Error Handling
+ * - All operations are suspend functions that throw [DomainError] on failure
+ * - Wrap calls in try-catch to handle errors gracefully
+ * - [DomainError] contains detailed information about what went wrong
  *
- * // IDE autocomplete shows available object groups
- * client.wallets.add(...)
- * client.credentials.getOwned()
- * client.accessGrants.create(...)
- * client.users.get()
+ * ## Example usage:
+ * ```kotlin
+ * try {
+ *     val client = IdosClient.create(
+ *         baseUrl = "https://nodes.staging.idos.network",
+ *         chainId = "idos-testnet",
+ *         signer = EthSigner(privateKey)
+ *     )
+ *
+ *     // IDE autocomplete shows available object groups
+ *     val txHash = client.wallets.add(...)
+ *     val credentials = client.credentials.getOwned(id)
+ *     client.accessGrants.create(...)
+ *     val user = client.users.get()
+ * } catch (e: DomainError) {
+ *     // Handle domain-specific errors
+ *     println("Operation failed: ${e.message}")
+ * }
  * ```
+ *
+ * @see DomainError for error types and handling
  */
 class IdosClient internal constructor(
     @PublishedApi internal val executor: ActionExecutor,

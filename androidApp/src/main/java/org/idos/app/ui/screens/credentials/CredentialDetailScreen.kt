@@ -131,7 +131,7 @@ private fun CredentialDetailContent(
                 .verticalScroll(scrollState),
     ) {
         // Credential metadata
-        CredentialInfoItem("ID", credential.id.value)
+        CredentialInfoItem("ID", credential.id)
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
         // JSON content section

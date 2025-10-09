@@ -6,15 +6,6 @@ extension String {
         return String(dropFirst(prefix.count))
     }
 
-    func addressNoPrefix() -> String {
-        return removingPrefix("0x")
-    }
-
-    func addressWithPrefix() -> String {
-        guard !hasPrefix("0x") else { return self }
-        return "0x" + self
-    }
-
     func prettyPrintedJSON() -> String {
         guard let data = self.data(using: .utf8),
               let jsonObject = try? JSONSerialization.jsonObject(with: data),

@@ -38,8 +38,8 @@ object UpsertWalletAsInserter : ExecuteAction<UpsertWalletAsInserterParams> {
     override fun toPositionalParams(input: List<UpsertWalletAsInserterParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
-                it.userId.value,
+                it.id,
+                it.userId,
                 it.address,
                 it.publicKey,
                 it.walletType,

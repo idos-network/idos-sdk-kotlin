@@ -27,7 +27,7 @@ sealed class NavRoute(
     data object CredentialDetail : NavRoute("credential_detail/{credentialId}", "Credential Detail") {
         const val CREDENTIAL_ID_ARG = "credentialId"
 
-        fun createRoute(credentialId: UuidString): String = "credential_detail/${credentialId.value}"
+        fun createRoute(credentialId: UuidString): String = "credential_detail/$credentialId"
 
         fun fromNavArgs(navBackStackEntry: NavBackStackEntry): String = navBackStackEntry.arguments?.getString(CREDENTIAL_ID_ARG) ?: ""
     }

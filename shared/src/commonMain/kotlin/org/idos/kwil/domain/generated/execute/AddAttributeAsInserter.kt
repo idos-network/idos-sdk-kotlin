@@ -32,8 +32,8 @@ object AddAttributeAsInserter : ExecuteAction<AddAttributeAsInserterParams> {
     override fun toPositionalParams(input: List<AddAttributeAsInserterParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
-                it.userId.value,
+                it.id,
+                it.userId,
                 it.attributeKey,
                 it.value,
             )

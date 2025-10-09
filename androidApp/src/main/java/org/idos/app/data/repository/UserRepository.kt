@@ -7,8 +7,6 @@ import org.idos.app.data.UserState
 import org.idos.app.data.model.UserModel
 import org.idos.app.security.EthSigner.Companion.privateToAddress
 import org.idos.app.security.KeyManager
-import org.idos.kwil.types.HexString
-import org.kethereum.model.Address
 import timber.log.Timber
 
 class NoProfileException(
@@ -45,12 +43,12 @@ class UserRepositoryImpl(
     override suspend fun fetchAndStoreUser() {
         // Step 1: Save address to StorageManager
         val address =
-            keyManager.getStoredKey()?.privateToAddress()?.let { HexString.withoutPrefix(it) }
+            keyManager.getStoredKey()?.privateToAddress()
                 ?: throw IllegalStateException("No key found, import wallet first")
         storageManager.saveWalletAddress(address)
 
         // Step 2: Check if user has profile first
-        val hasProfile = dataProvider.hasUserProfile(address)
+        val hasProfile = dataProvider.hasUserProfile(address.hex)
         if (!hasProfile) {
             throw NoProfileException("User profile does not exist - please create profile first")
         }

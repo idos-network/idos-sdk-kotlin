@@ -7,19 +7,95 @@ import org.idos.kwil.types.UuidString
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
- * Orchestrates operations and state management of an `Enclave`.
- * Provides a reactive state model and encapsulates enclave operations such as locking, unlocking,
- * and executing actions securely using an encryption key.
+ * Orchestrates Enclave operations with reactive state management.
  *
- * Manages transitions between the following states:
- * - `Locked`: No valid encryption key.
- * - `Unlocking`: Key generation or unlocking in progress.
- * - `Unlocked`: Key is ready for secure operations.
+ * This is the **primary entry point** for all Enclave operations. It provides:
+ * - Reactive state management via [StateFlow]
+ * - Lifecycle handling (lock/unlock)
+ * - State-aware operation execution
+ * - Automatic expiration checks
  *
- * Uses the `Enclave` object for encryption/decryption operations and key management.
+ * ## States:
+ * - [EnclaveState.Locked] - No valid encryption key
+ * - [EnclaveState.Unlocking] - Key generation in progress
+ * - [EnclaveState.Unlocked] - Ready for encrypt/decrypt operations
  *
- * @property enclave The `Enclave` instance used for cryptographic operations.
- * @property state Reactive state flow representing the current state of the enclave.
+ * ## Kotlin Usage:
+ * ```kotlin
+ * // Create orchestrator
+ * val encryption = JvmEncryption(JvmSecureStorage())
+ * val storage = JvmMetadataStorage()
+ * val orchestrator = EnclaveOrchestrator.create(encryption, storage)
+ *
+ * // Observe state changes
+ * orchestrator.state.collect { state ->
+ *     when (state) {
+ *         is EnclaveState.Locked -> showPasswordPrompt()
+ *         is EnclaveState.Unlocking -> showLoadingIndicator()
+ *         is EnclaveState.Unlocked -> enableEncryptedFeatures()
+ *     }
+ * }
+ *
+ * // Unlock with password
+ * orchestrator.unlock(
+ *     userId = UuidString(userId),
+ *     password = userPassword,
+ *     expirationMillis = 3600000 // 1 hour
+ * )
+ *
+ * // Decrypt data when unlocked
+ * orchestrator.withEnclave { enclave ->
+ *     enclave.decrypt(ciphertext, senderPublicKey)
+ * }
+ *
+ * // Lock when done
+ * orchestrator.lock()
+ * ```
+ *
+ * ## Swift/iOS Usage:
+ * ```swift
+ * import idos_sdk
+ *
+ * // Create orchestrator with Keychain storage
+ * let storage = KeychainSecureStorage()
+ * let orchestrator = EnclaveOrchestrator.create(
+ *     encryption: IosEncryption(storage: storage),
+ *     metadataStorage: IosMetadataStorage()
+ * )
+ *
+ * // Observe state with Combine
+ * createPublisher(orchestrator.state)
+ *     .receive(on: DispatchQueue.main)
+ *     .sink { state in
+ *         switch onEnum(of: state) {
+ *         case .locked:
+ *             showPasswordPrompt()
+ *         case .unlocking:
+ *             showLoadingIndicator()
+ *         case .unlocked(let state):
+ *             enableEncryptedFeatures()
+ *         }
+ *     }
+ *
+ * // Unlock
+ * await orchestrator.unlock(
+ *     userId: UuidString(value: userId),
+ *     password: password,
+ *     expirationMillis: 3600000
+ * )
+ *
+ * // Decrypt when unlocked
+ * let plaintext = try await orchestrator.withEnclave { enclave in
+ *     try await enclave.decrypt(
+ *         message: ciphertext,
+ *         senderPublicKey: pubkey
+ *     )
+ * }
+ * ```
+ *
+ * @property state Reactive state flow - observe for UI updates
+ * @see EnclaveState for state definitions
+ * @see EnclaveError for error types
  */
 class EnclaveOrchestrator internal constructor(
     private val enclave: Enclave,
@@ -35,20 +111,9 @@ class EnclaveOrchestrator internal constructor(
     val state: StateFlow<EnclaveState> = _state.asStateFlow()
 
     /**
-     * Returns the current state of the `EnclaveOrchestrator`.
-     *
-     * The state represents the current operational status of the enclave,
-     * which can be updated or transitioned depending on operations performed.
-     *
-     * @return The current state value held by the orchestrator.
-     */
-    fun currentState() = state.value
-
-    /**
      * Check if enclave has valid encryption key.
      * Updates state to Unlocked or Locked.
      */
-    @Throws(CancellationException::class, EnclaveError::class)
     suspend fun checkStatus() {
         try {
             enclave.hasValidKey()

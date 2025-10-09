@@ -6,13 +6,13 @@ Kotlin Multiplatform SDK for idOS - Android, iOS, and JVM support with KWIL data
 
 ```
 ┌─────────────────────────────────────────────┐
-│  Public API (IdosClient + Extensions)       │  Result<T>
+│  Public API (IdosClient + Extensions)       │  suspend + @Throws(DomainError)
 ├─────────────────────────────────────────────┤
-│  Domain (ActionExecutor, Generated Actions) │  Result<T>
+│  Domain (ActionExecutor, Generated Actions) │  suspend + throws DomainError
 ├─────────────────────────────────────────────┤
-│  Protocol (KWIL RPC, Transaction Signing)   │  throws
+│  Protocol (KWIL RPC, Transaction Signing)   │  throws ProtocolError
 ├─────────────────────────────────────────────┤
-│  Transport (JSON-RPC over HTTP)             │  throws
+│  Transport (JSON-RPC over HTTP)             │  throws TransportError
 └─────────────────────────────────────────────┘
 ```
 
@@ -95,8 +95,8 @@ User Code
   ↓ client.users.get()
 IdosClientExtensions
   ↓ executor.callSingle(GetUser)
-ActionExecutor (Result wrapper)
-  ↓ runCatchingError { client.callAction(GetUser, signer) }
+ActionExecutor (error wrapper)
+  ↓ runCatchingDomainError { client.callAction(GetUser, signer) }
 KwilProtocol.callAction()
   ↓ action.toMessage(input, signer)
 ActionSerialization
@@ -108,9 +108,9 @@ KWIL Network
 JsonRpcClient (deserialize)
   ← parseQueryResponse<GetUserResponse>()
 ActionExecutor
-  ← Result.success(GetUserResponse)
+  ← return GetUserResponse (or throw DomainError)
 User Code
-  ← Result<GetUserResponse>
+  ← GetUserResponse (wrap in try-catch)
 ```
 
 ### Write Operation (Execute Action)
@@ -120,7 +120,7 @@ User Code
 IdosClientExtensions
   ↓ executor.execute(AddWallet, params)
 ActionExecutor
-  ↓ runCatchingError { client.executeAction(AddWallet, params, signer) }
+  ↓ runCatchingDomainError { client.executeAction(AddWallet, params, signer) }
 KwilProtocol.executeAction()
   ↓ 1. getAccount() → fetch nonce
   ↓ 2. encodeExecuteAction() → Base64 payload
@@ -132,9 +132,9 @@ JsonRpcClient
 KWIL Network
   ← BroadcastResponse { txHash, result }
 ActionExecutor
-  ← Result.success(HexString(txHash))
+  ← return HexString(txHash) (or throw DomainError)
 User Code
-  ← Result<HexString>
+  ← HexString (wrap in try-catch)
 ```
 
 ---
@@ -154,7 +154,7 @@ User Code
 - Cookie-based session management for KGW authentication
 - Throws `TransportError` on network/serialization failures
 
-**Error Handling**: Throws exceptions (converted to Result at domain boundary)
+**Error Handling**: Throws exceptions (converted to DomainError at domain boundary)
 
 ---
 
@@ -240,20 +240,25 @@ User Code
 
 ### 🏛️ Domain Layer (`kwil/domain/`)
 
-**Purpose**: Type-safe schema actions and Result-based error handling
+**Purpose**: Type-safe schema actions with suspend/throws error handling
 
 **Key Components**:
 
 1. **ActionExecutor.kt** - Public API executor
    ```kotlin
    class ActionExecutor {
-       suspend fun <I, O> call(action: ViewAction<I, O>, input: I): Result<List<O>>
-       suspend fun <O> callSingle(action: NoParamsAction<O>): Result<O>
-       suspend fun <I> execute(action: ExecuteAction<I>, input: I): Result<HexString>
+       @Throws(DomainError::class)
+       suspend fun <I, O> call(action: ViewAction<I, O>, input: I): List<O>
+
+       @Throws(DomainError::class)
+       suspend fun <O> callSingle(action: NoParamsAction<O>): O
+
+       @Throws(DomainError::class)
+       suspend fun <I> execute(action: ExecuteAction<I>, input: I): HexString
    }
    ```
-   - Wraps all protocol calls in `runCatchingError { ... }`
-   - Converts exceptions to `DomainError`
+   - Wraps all protocol calls in `runCatchingDomainError { ... }`
+   - Converts exceptions to `DomainError` and re-throws
    - Auto-retries authentication once on `MissingAuthenticationException`
 
 2. **Generated Actions** (`domain/generated/`)
@@ -287,9 +292,9 @@ User Code
    ```
 
 **Engineering Notes**:
-- Domain is the boundary between internal (throws) and public (Result) APIs
-- All exceptions converted to `DomainError` types
-- `callSingle()` uses `.mapCatching { it.single() }` - "not found" becomes error
+- Domain is the boundary where exceptions are converted to `DomainError`
+- All lower-layer exceptions converted to `DomainError` and re-thrown
+- `callSingle()` throws `DomainError.NotFound` if result is empty
 - Generated actions are the single source of truth for schema
 
 ---
@@ -310,10 +315,12 @@ class IdosClient {
 }
 
 // IdosClientExtensions.kt - All operations
-suspend fun IdosClient.Wallets.add(input: AddWalletParams): Result<HexString> =
+@Throws(DomainError::class)
+suspend fun IdosClient.Wallets.add(input: AddWalletParams): HexString =
     executor.execute(AddWallet, input)
 
-suspend fun IdosClient.Wallets.getAll(): Result<List<GetWalletsResponse>> =
+@Throws(DomainError::class)
+suspend fun IdosClient.Wallets.getAll(): List<GetWalletsResponse> =
     executor.call(GetWallets)
 ```
 
@@ -325,12 +332,15 @@ suspend fun IdosClient.Wallets.getAll(): Result<List<GetWalletsResponse>> =
 
 **Usage**:
 ```kotlin
-val client = IdosClient.create(baseUrl, chainId, signer).getOrThrow()
+try {
+    val client = IdosClient.create(baseUrl, chainId, signer)
 
-// IDE shows: wallets, credentials, accessGrants, users, attributes
-client.wallets.add(walletParams)
-    .onSuccess { txHash -> println("Added: $txHash") }
-    .onFailure { error -> println("Error: ${error.message}") }
+    // IDE shows: wallets, credentials, accessGrants, users, attributes
+    val txHash = client.wallets.add(walletParams)
+    println("Added: $txHash")
+} catch (e: DomainError) {
+    println("Error: ${e.message}")
+}
 ```
 
 ---
@@ -343,15 +353,15 @@ client.wallets.add(walletParams)
 
 ```
 ┌──────────────────────────────────────────────────┐
-│  EnclaveOrchestrator (StateFlow)                 │  Public API (Result<T>)
+│  EnclaveOrchestrator (StateFlow)                 │  Public API (@Throws EnclaveError)
 │  - State machine with 8 states                   │
 │  - Pending action queue                          │
 │  - Wrong password detection                      │
 ├──────────────────────────────────────────────────┤
-│  Enclave (Result-based API)                      │  iOS-compatible
+│  Enclave (suspend + @Throws)                     │  iOS-compatible via SKIE
 │  - Key expiration checks                         │
 │  - encrypt() / decrypt()                         │
-│  - Converts exceptions → Result                  │
+│  - Throws EnclaveError                           │
 ├──────────────────────────────────────────────────┤
 │  Encryption (Platform-specific, throws)          │  Internal
 │  - JVM: TweetNaCl                                │
@@ -359,8 +369,9 @@ client.wallets.add(walletParams)
 │  - iOS: libsodium XCFramework                    │
 ├──────────────────────────────────────────────────┤
 │  SecureStorage + MetadataStorage                 │  Platform-specific
-│  - Android: EncryptedFile + SharedPreferences    │
-│  - iOS: Keychain + UserDefaults                  │
+│  - Android: EncryptedFile (StrongBox)            │
+│  - iOS: Keychain                                 │
+│  - Metadata: SharedPreferences/UserDefaults      │
 │  - JVM: In-memory (testing)                      │
 └──────────────────────────────────────────────────┘
 ```
@@ -408,26 +419,35 @@ sealed class EnclaveFlow {
 - ✅ StateFlow for reactive UI updates (Android Compose, iOS SwiftUI)
 
 #### 2. Enclave (`Enclave.kt`)
-**Purpose**: Public API for encryption operations (Result-based, iOS-compatible)
+**Purpose**: Public API for encryption operations (suspend + @Throws, iOS-compatible via SKIE)
 
 ```kotlin
 open class Enclave(
     private val encryption: Encryption,
     private val storage: MetadataStorage
 ) {
-    open suspend fun generateKey(userId, password, expiration): Result<ByteArray>
-    open suspend fun deleteKey(): Result<Unit>
-    open suspend fun encrypt(message, receiverPublicKey): Result<Pair<ByteArray, ByteArray>>
-    open suspend fun decrypt(message, senderPublicKey): Result<ByteArray>
-    open suspend fun hasValidKey(): Result<Unit>
+    @Throws(EnclaveError::class)
+    open suspend fun generateKey(userId, password, expiration): ByteArray
+
+    @Throws(EnclaveError::class)
+    open suspend fun deleteKey()
+
+    @Throws(EnclaveError::class)
+    open suspend fun encrypt(message, receiverPublicKey): Pair<ByteArray, ByteArray>
+
+    @Throws(EnclaveError::class)
+    open suspend fun decrypt(message, senderPublicKey): ByteArray
+
+    @Throws(EnclaveError::class)
+    open suspend fun hasValidKey()
 }
 ```
 
 **Responsibilities**:
 - Key expiration checking
 - Metadata storage updates (lastUsedAt)
-- Exception → Result conversion (iOS compatibility)
-- Error type mapping (EnclaveError hierarchy)
+- Exception wrapping to EnclaveError hierarchy
+- iOS compatibility via SKIE (auto-converts to Swift async/throws)
 
 #### 3. Encryption (`Encryption.kt`)
 **Purpose**: Platform-specific NaCl Box encryption (throws exceptions internally)
@@ -449,10 +469,10 @@ abstract class Encryption(protected val storage: SecureStorage) {
 - **Android**: `AndroidEncryption` - Lazysodium (libsodium JNI)
 - **iOS**: `IosEncryption` - libsodium XCFramework (C interop)
 
-**Why exceptions internally?**
+**Why exceptions throughout?**
 - Natural for platform code (Swift, Java throw natively)
-- No Kotlin Result in Swift (type erasure issues)
-- Enclave layer (public boundary) converts to Result
+- SKIE converts suspend + @Throws to Swift async/throws seamlessly
+- Cleaner API than Result<T> for both Kotlin and Swift users
 
 #### 4. Storage Abstractions
 
@@ -557,10 +577,10 @@ orchestrator.decrypt(ciphertext, senderPubKey)
 
 ### Engineering Notes
 
-**Boundary Pattern**:
-- Internal (Encryption): Throws exceptions (natural for platform code)
-- Public (Enclave): Returns Result (iOS-compatible)
-- Single conversion point: `Enclave` catches and wraps errors
+**Error Handling Pattern**:
+- All layers throw exceptions (natural for platform code)
+- SKIE automatically converts to Swift async/throws
+- Consistent error handling across all platforms
 
 **State Management**:
 - StateFlow for reactive UI updates
@@ -639,14 +659,21 @@ fun testWalletOperations() = runBlocking {
 
 ## ❌ Error Handling Strategy
 
-### Public API (Result-based)
+### Public API (Suspend + @Throws)
 ```kotlin
-// ✅ All public APIs return Result<T>
-suspend fun getUser(): Result<GetUserResponse>
-suspend fun addWallet(input: AddWalletParams): Result<HexString>
+// ✅ All public APIs use suspend + @Throws
+@Throws(DomainError::class)
+suspend fun getUser(): GetUserResponse
 
-// ❌ Never return nullable for suspend functions (hides exceptions)
-suspend fun getUser(): GetUserResponse? // WRONG!
+@Throws(DomainError::class)
+suspend fun addWallet(input: AddWalletParams): HexString
+
+// User code wraps in try-catch
+try {
+    val user = client.users.get()
+} catch (e: DomainError) {
+    // Handle error
+}
 ```
 
 ### Error Hierarchy
@@ -672,7 +699,7 @@ Exception
 ```
 
 ### iOS Compatibility
-All errors extend `Exception` to work with Kotlin/Native's exception model. iOS wrapper can be added in `iosMain/` if needed.
+All errors extend `Exception` and are automatically converted to Swift errors by SKIE. The `@Throws` annotation ensures proper Swift error handling with do-try-catch.
 
 ---
 
@@ -697,24 +724,26 @@ All errors extend `Exception` to work with Kotlin/Native's exception model. iOS 
 ## 🚀 Quick Start
 
 ```kotlin
-// 1. Create Ethereum signer
-val signer = JvmEthSigner(ecKeyPair)
+try {
+    // 1. Create Ethereum signer
+    val signer = JvmEthSigner(ecKeyPair)
 
-// 2. Create client
-val client = IdosClient.create(
-    baseUrl = "https://nodes.staging.idos.network",
-    chainId = "idos-testnet",
-    signer = signer
-).getOrThrow()
+    // 2. Create client
+    val client = IdosClient.create(
+        baseUrl = "https://nodes.staging.idos.network",
+        chainId = "idos-testnet",
+        signer = signer
+    )
 
-// 3. Use grouped APIs
-client.users.get()
-    .onSuccess { user -> println("User: ${user.id}") }
-    .onFailure { error -> println("Error: ${error.message}") }
+    // 3. Use grouped APIs
+    val user = client.users.get()
+    println("User: ${user.id}")
 
-client.wallets.add(AddWalletParams(id, address, publicKey, signature))
-    .onSuccess { txHash -> println("Wallet added: $txHash") }
-    .onFailure { error -> println("Failed: ${error.message}") }
+    val txHash = client.wallets.add(AddWalletParams(id, address, publicKey, signature))
+    println("Wallet added: $txHash")
+} catch (e: DomainError) {
+    println("Error: ${e.message}")
+}
 ```
 
 ---
@@ -730,7 +759,8 @@ Run code generator to update `domain/generated/`
 ### 3. Add Extension
 Add to `IdosClientExtensions.kt`:
 ```kotlin
-suspend fun IdosClient.MyGroup.myOperation(input: MyParams): Result<MyResponse> =
+@Throws(DomainError::class)
+suspend fun IdosClient.MyGroup.myOperation(input: MyParams): MyResponse =
     executor.execute(MyAction, input)
 ```
 
@@ -742,13 +772,14 @@ Update KDoc in operation group class
 ## 📚 Key Takeaways
 
 1. **4-Layer Architecture**: Transport → Protocol → Domain → Public API
-2. **Result-based Public API**: All suspend functions return `Result<T>`
+2. **Suspend + @Throws Public API**: All operations use suspend with domain error throwing
 3. **Generated Schema**: `domain/generated/` is the source of truth
 4. **Clean Separation**: Structure (IdosClient) + Behavior (Extensions)
 5. **KWIL Signature Scheme**: Payload digest + metadata, not raw JSON
 6. **Auto-retry Auth**: `ActionExecutor` handles authentication transparently
-7. **Type Safety**: `KwilType` sealed class, value class wrappers
-8. **Platform Support**: JVM, Android, iOS via Kotlin Multiplatform
+7. **Type Safety**: `KwilType` sealed class, type alias wrappers (HexString, UuidString, Base64String)
+8. **Platform Support**: JVM, Android, iOS via Kotlin Multiplatform + SKIE
+9. **iOS Compatibility**: SKIE auto-converts suspend/throws to Swift async/throws
 
 ---
 

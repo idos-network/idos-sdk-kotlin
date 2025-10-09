@@ -30,7 +30,7 @@ object AddUserAsInserter : ExecuteAction<AddUserAsInserterParams> {
     override fun toPositionalParams(input: List<AddUserAsInserterParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
+                it.id,
                 it.recipientEncryptionPublicKey,
                 it.encryptionPasswordStore,
             )

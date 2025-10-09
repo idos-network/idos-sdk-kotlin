@@ -20,7 +20,8 @@ data class CredentialExistAsInserterParams(
     val id: UuidString,
 )
 
-object CredentialExistAsInserter : ViewAction<CredentialExistAsInserterParams, CredentialExistAsInserterResponse> {
+object CredentialExistAsInserter :
+    ViewAction<CredentialExistAsInserterParams, CredentialExistAsInserterResponse> {
     override val name: String = "credential_exist_as_inserter"
     override val namespace: String = "main"
 
@@ -31,6 +32,6 @@ object CredentialExistAsInserter : ViewAction<CredentialExistAsInserterParams, C
 
     override fun toPositionalParams(input: CredentialExistAsInserterParams): PositionalParams =
         listOf(
-            input.id.value,
+            input.id,
         )
 }

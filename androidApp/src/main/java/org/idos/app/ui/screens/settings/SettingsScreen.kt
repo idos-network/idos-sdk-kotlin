@@ -41,7 +41,6 @@ import org.koin.androidx.compose.koinViewModel
 fun SettingsScreen(viewModel: SettingsViewModel = koinViewModel()) {
     val state = viewModel.state.collectAsState().value
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     // Check key status when screen is first shown
     LaunchedEffect(Unit) {
@@ -68,12 +67,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = koinViewModel()) {
                     .padding(MaterialTheme.spacing.medium)
                     .fillMaxWidth(),
         ) {
-            Text(
-                text = "Settings",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 16.dp),
-            )
-
+            Spacer(modifier = Modifier.width(16.dp))
             // Encryption Key Section
             Text("Security", style = MaterialTheme.typography.titleMedium)
 

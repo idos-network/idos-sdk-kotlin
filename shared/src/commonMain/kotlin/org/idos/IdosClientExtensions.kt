@@ -55,34 +55,39 @@ import org.idos.kwil.types.HexString
 import org.idos.kwil.types.UuidString
 import kotlin.coroutines.cancellation.CancellationException
 
-/**
- * Extension functions for IdosClient operation groups.
- *
- * This file contains all public API operations as extensions for easy copy-paste
- * modification and code generation. Each operation group is separated for clarity.
- *
- * Pattern:
- * - View actions (queries) return List<T>> or T?>
- * - Execute actions (transactions) return HexString>
- * - All operations are suspend functions
- */
+// Extension functions for IdosClient operation groups.
+//
+// This file contains all public API operations as extensions for easy copy-paste
+// modification and code generation. Each operation group is separated for clarity.
+//
+// Pattern:
+// - View actions (queries) return List<T> or T?
+// - Execute actions (transactions) return HexString
+// - All operations are suspend functions
 
 /**
  * Executes an execute action (write) with generic input types.
  *
+ * This is a low-level function for executing custom actions.
+ * For standard operations, use the operation groups (wallets, credentials, etc.)
+ *
  * @param action The execute action descriptor
  * @param input List of action input parameters
- * @return Hex string of transaction
+ * @param synchronous Whether to wait for transaction confirmation
+ * @return Hex string of transaction hash
  */
 @Throws(CancellationException::class, DomainError::class)
 suspend fun <I> IdosClient.execute(
     action: ExecuteAction<I>,
     input: List<I>,
     synchronous: Boolean = true,
-): HexString = executor.execute(action, input, synchronous)
+): HexString = this.executor.execute(action, input, synchronous)
 
 /**
  * Executes a view action (read-only query) with generic input and output types.
+ *
+ * This is a low-level function for calling custom view actions.
+ * For standard operations, use the operation groups (wallets, credentials, etc.)
  *
  * @param action The view action descriptor
  * @param input Action input parameters
@@ -92,7 +97,7 @@ suspend fun <I> IdosClient.execute(
 suspend inline fun <I, reified O> IdosClient.call(
     action: ViewAction<I, O>,
     input: I,
-): List<O> = executor.call(action, input)
+): List<O> = this.executor.call(action, input)
 
 // ============================================================================
 // WALLETS
@@ -288,7 +293,7 @@ suspend fun IdosClient.Users.get(): GetUserResponse = executor.callSingle(GetUse
  */
 @Throws(CancellationException::class, DomainError::class)
 suspend fun IdosClient.Users.hasProfile(address: HexString): Boolean =
-    executor.call(HasProfile, HasProfileParams(address.prefixedValue)).firstOrNull()?.hasProfile ?: false
+    executor.call(HasProfile, HasProfileParams(address)).firstOrNull()?.hasProfile ?: false
 
 // ============================================================================
 // ATTRIBUTES

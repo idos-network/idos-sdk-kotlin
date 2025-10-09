@@ -10,11 +10,9 @@ import org.kotlincrypto.hash.sha2.SHA256
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
-/**
- * Extension functions for KwilProtocol to execute mutative actions (transactions).
- *
- * Execute actions modify database state and are mined on the blockchain.
- */
+// Extension functions for KwilProtocol to execute mutative actions (transactions).
+//
+// Execute actions modify database state and are mined on the blockchain.
 
 /**
  * Executes a mutative action (transaction).
@@ -50,12 +48,12 @@ suspend fun <I> KwilProtocol.executeAction(
         if (response.result.code != 0) {
             throw ProtocolError.TransactionFailed(
                 response.result.log ?: "Transaction failed",
-                response.txHash.value,
+                response.txHash,
             )
         }
     }
 
-    return HexString(response.txHash.value)
+    return response.txHash
 }
 
 /**
@@ -94,7 +92,7 @@ private suspend fun signTransaction(
         buildString {
             append("${tx.body.desc}\n\n")
             append("PayloadType: ${tx.body.type.value}\n")
-            append("PayloadDigest: ${HexString(digest).value}\n")
+            append("PayloadDigest: ${digest.toHexString()}\n")
             append("Fee: ${tx.body.fee}\n")
             append("Nonce: ${tx.body.nonce}\n\n")
             append("Kwil Chain ID: ${tx.body.chainId}\n")

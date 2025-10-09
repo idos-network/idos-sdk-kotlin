@@ -10,7 +10,6 @@ import kotlinx.serialization.encoding.Encoder
 import kotlin.io.encoding.Base64
 import kotlin.jvm.JvmInline
 import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 /**
  * Base interface for string-based value types.
@@ -36,55 +35,73 @@ value class Base64String(
     constructor(bytes: ByteArray) : this(Base64.encode(bytes))
 }
 
-/**
- * Hexadecimal string value class.
- * Validates hex format on construction.
- */
-@JvmInline
-@Serializable(with = HexStringSerializer::class)
-value class HexString(
-    override val value: String,
-) : StringValue {
-    val prefixedValue get() = if (value.startsWith("0x")) value else "0x$value"
+typealias HexString = String
+typealias UuidString = String
 
-    init {
-        require(value.isEmpty() || value.matches(Regex("^[0-9a-fA-F]+$"))) { "Invalid hex string" }
-    }
+object Uuid {
+    private val UUID_REGEX =
+        Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\$")
 
-    constructor(bytes: ByteArray) : this(bytes.toHexString())
+    @OptIn(ExperimentalUuidApi::class)
+    fun generate(): UuidString =
+        kotlin.uuid.Uuid
+            .random()
+            .toString()
 
-    companion object {
-        fun withoutPrefix(hexString: String): HexString = HexString(hexString.removePrefix("0x"))
-
-        fun String.toHexString(): HexString = withoutPrefix(this)
-    }
+    fun isValidUuid(value: String): Boolean = UUID_REGEX.matches(value)
 }
 
-/**
- * UUID string value class.
- * Validates UUID format on construction.
- */
-@JvmInline
-@Serializable(with = UuidStringSerializer::class)
-value class UuidString(
-    override val value: String,
-) : StringValue {
-    init {
-        require(
-            isValidUuid(value),
-        ) { "Invalid UUID string" }
-    }
+fun UuidString.isValidUuid(): Boolean = Uuid.isValidUuid(this)
 
-    companion object {
-        private val UUID_REGEX =
-            Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\$")
+// /**
+// * Hexadecimal string value class.
+// * Validates hex format on construction.
+// */
+// @JvmInline
+// @Serializable(with = HexStringSerializer::class)
+// value class HexString(
+//    override val value: String,
+// ) : StringValue {
+//    val prefixedValue get() = if (value.startsWith("0x")) value else "0x$value"
+//
+//    init {
+//        require(value.isEmpty() || value.matches(Regex("^[0-9a-fA-F]+$"))) { "Invalid hex string" }
+//    }
+//
+//    constructor(bytes: ByteArray) : this(bytes.toHexString())
+//
+//    companion object {
+//        fun withoutPrefix(hexString: String): HexString = HexString(hexString.removePrefix("0x"))
+//
+//        fun String.toHexString(): HexString = withoutPrefix(this)
+//    }
+// }
 
-        fun isValidUuid(value: String): Boolean = UUID_REGEX.matches(value)
-
-        @OptIn(ExperimentalUuidApi::class)
-        fun generate(): UuidString = UuidString(Uuid.random().toString())
-    }
-}
+// /**
+// * UUID string value class.
+// * Validates UUID format on construction.
+// */
+// @JvmInline
+// @Serializable(with = UuidStringSerializer::class)
+// value class UuidString(
+//    override val value: String,
+// ) : StringValue {
+//    init {
+//        require(
+//            isValidUuid(value),
+//        ) { "Invalid UUID string" }
+//    }
+//
+//    companion object {
+//        private val UUID_REGEX =
+//            Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\$")
+//
+//        fun isValidUuid(value: String): Boolean = UUID_REGEX.matches(value)
+//
+//        @OptIn(ExperimentalUuidApi::class)
+//        fun generate(): UuidString = UuidString(Uuid.random().toString())
+//    }
+// }
 
 /**
  * Generic serializer for string value types.
@@ -106,7 +123,3 @@ open class GenericStringSerializer<T : StringValue>(
 }
 
 object Base64StringSerializer : GenericStringSerializer<Base64String>(::Base64String, "Base64String")
-
-object HexStringSerializer : GenericStringSerializer<HexString>(::HexString, "HexString")
-
-object UuidStringSerializer : GenericStringSerializer<UuidString>(::UuidString, "UuidString")

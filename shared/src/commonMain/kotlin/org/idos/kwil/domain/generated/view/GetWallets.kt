@@ -17,7 +17,7 @@ data class GetWalletsResponse(
     @SerialName("wallet_type") val walletType: String,
     @SerialName("message") val message: String,
     @SerialName("signature") val signature: String,
-    @SerialName("inserter") val inserter: String?,
+    @SerialName("inserter") val inserter: String,
 )
 
 object GetWallets : NoParamsAction<GetWalletsResponse>() {

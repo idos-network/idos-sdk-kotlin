@@ -1,8 +1,6 @@
 package org.idos.kwil.serialization
 
 import io.ktor.utils.io.core.toByteArray
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 
 /**
  * Type-safe representation of KWIL data types.

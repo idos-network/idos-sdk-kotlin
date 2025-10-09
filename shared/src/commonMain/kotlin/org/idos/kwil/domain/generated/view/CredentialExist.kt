@@ -31,6 +31,6 @@ object CredentialExist : ViewAction<CredentialExistParams, CredentialExistRespon
 
     override fun toPositionalParams(input: CredentialExistParams): PositionalParams =
         listOf(
-            input.id.value,
+            input.id,
         )
 }

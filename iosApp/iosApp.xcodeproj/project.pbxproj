@@ -42,9 +42,7 @@
 		C2974ABB2E8D2A5A00AADFBE /* Wallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974ABA2E8D2A5A00AADFBE /* Wallet.swift */; };
 		C2974ABC2E8D2A5A00AADFBE /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AB92E8D2A5A00AADFBE /* User.swift */; };
 		C2974AC22E8D2DBE00AADFBE /* DataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974ABF2E8D2DBE00AADFBE /* DataProvider.swift */; };
-		C2974AC42E8D30FE00AADFBE /* ByteArrays.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AC32E8D30FA00AADFBE /* ByteArrays.swift */; };
 		C2974AC62E8DBE5B00AADFBE /* Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AC52E8DBE5700AADFBE /* Strings.swift */; };
-		C2974AD32E95751400AADFBE /* Interop.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AD22E95751000AADFBE /* Interop.swift */; };
 		D67AE0A494A8203A06DA4BA0 /* Pods_iosApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DB7BD996663771C2257CCFAE /* Pods_iosApp.framework */; };
 /* End PBXBuildFile section */
 
@@ -87,9 +85,7 @@
 		C2974AB92E8D2A5A00AADFBE /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
 		C2974ABA2E8D2A5A00AADFBE /* Wallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Wallet.swift; sourceTree = "<group>"; };
 		C2974ABF2E8D2DBE00AADFBE /* DataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataProvider.swift; sourceTree = "<group>"; };
-		C2974AC32E8D30FA00AADFBE /* ByteArrays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteArrays.swift; sourceTree = "<group>"; };
 		C2974AC52E8DBE5700AADFBE /* Strings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Strings.swift; sourceTree = "<group>"; };
-		C2974AD22E95751000AADFBE /* Interop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Interop.swift; sourceTree = "<group>"; };
 		DB7BD996663771C2257CCFAE /* Pods_iosApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_iosApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		FB21B815C23CCBDB0C1EC03A /* Pods-iosApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosApp.debug.xcconfig"; path = "Target Support Files/Pods-iosApp/Pods-iosApp.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -331,9 +327,7 @@
 		C2974ACA2E93C17B00AADFBE /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				C2974AD22E95751000AADFBE /* Interop.swift */,
 				C2974AC52E8DBE5700AADFBE /* Strings.swift */,
-				C2974AC32E8D30FA00AADFBE /* ByteArrays.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -516,7 +510,6 @@
 			files = (
 				7555FFB0242A642300829871 /* iosApp.swift in Sources */,
 				7555FF83242A565900829871 /* ContentView.swift in Sources */,
-				C2974AC42E8D30FE00AADFBE /* ByteArrays.swift in Sources */,
 				C27D81882E8C27A400F6CADF /* DIContainer.swift in Sources */,
 				C27D81892E8C27A400F6CADF /* BaseViewModel.swift in Sources */,
 				C27D818A2E8C27A400F6CADF /* CredentialDetailView.swift in Sources */,
@@ -543,7 +536,6 @@
 				C27D81982E8C27A400F6CADF /* SettingsView.swift in Sources */,
 				C27D81992E8C27A400F6CADF /* EnclaveState.swift in Sources */,
 				C2974AB22E8D277400AADFBE /* Credential.swift in Sources */,
-				C2974AD32E95751400AADFBE /* Interop.swift in Sources */,
 				C27D819A2E8C27A400F6CADF /* WalletsViewModel.swift in Sources */,
 				C27D819B2E8C27A400F6CADF /* CredentialDetailViewModel.swift in Sources */,
 				C27D819D2E8C27A400F6CADF /* CredentialsViewModel.swift in Sources */,

@@ -54,7 +54,8 @@ class KeyManager(
         withContext(Dispatchers.IO) {
             try {
                 val key = words.mnemonicToKeypair()
-                // Store the key securely
+                // Store the key securely, delete first just in case
+                clearStoredKeys()
                 storeKey(key)
                 key.fill(0)
 

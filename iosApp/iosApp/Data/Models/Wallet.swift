@@ -9,7 +9,7 @@ struct Wallet: Codable, Identifiable {
     // Static factory method for creating from response
     static func from(response: GetWalletsResponse) -> Wallet {
         return Wallet(
-            id: response.id as! String,
+            id: response.id,
             address: response.address,
             network: response.walletType
         )

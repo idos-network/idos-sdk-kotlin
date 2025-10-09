@@ -29,7 +29,7 @@ object AddDelegateAsOwner : ExecuteAction<AddDelegateAsOwnerParams> {
         input.map {
             listOf(
                 it.address,
-                it.inserterId.value,
+                it.inserterId,
             )
         }
 }

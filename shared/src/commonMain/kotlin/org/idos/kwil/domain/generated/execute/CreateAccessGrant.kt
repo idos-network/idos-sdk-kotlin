@@ -37,7 +37,7 @@ object CreateAccessGrant : ExecuteAction<CreateAccessGrantParams> {
         input.map {
             listOf(
                 it.granteeWalletIdentifier,
-                it.dataId.value,
+                it.dataId,
                 it.lockedUntil,
                 it.contentHash,
                 it.inserterType,

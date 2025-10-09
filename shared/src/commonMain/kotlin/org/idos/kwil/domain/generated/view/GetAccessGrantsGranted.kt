@@ -34,7 +34,8 @@ data class GetAccessGrantsGrantedParams(
  *  Page number starts from 1, as UI usually shows to user in pagination element
  *  Ordering is consistent because we use height as first ordering parameter
  */
-object GetAccessGrantsGranted : ViewAction<GetAccessGrantsGrantedParams, GetAccessGrantsGrantedResponse> {
+object GetAccessGrantsGranted :
+    ViewAction<GetAccessGrantsGrantedParams, GetAccessGrantsGrantedResponse> {
     override val name: String = "get_access_grants_granted"
     override val namespace: String = "main"
 
@@ -47,7 +48,7 @@ object GetAccessGrantsGranted : ViewAction<GetAccessGrantsGrantedParams, GetAcce
 
     override fun toPositionalParams(input: GetAccessGrantsGrantedParams): PositionalParams =
         listOf(
-            input.userId?.value,
+            input.userId,
             input.page,
             input.size,
         )

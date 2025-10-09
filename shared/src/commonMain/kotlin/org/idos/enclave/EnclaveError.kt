@@ -1,8 +1,5 @@
 package org.idos.enclave
 
-import org.idos.kwil.domain.DomainError
-import org.idos.kwil.protocol.MissingAuthenticationException
-
 /**
  * Type-safe error hierarchy for enclave operations.
  * Provides exhaustive when expressions and iOS-compatible error handling.

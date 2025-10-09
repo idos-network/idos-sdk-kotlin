@@ -41,7 +41,7 @@ object DagMessage : ViewAction<DagMessageParams, DagMessageResponse> {
         listOf(
             input.dagOwnerWalletIdentifier,
             input.dagGranteeWalletIdentifier,
-            input.dagDataId.value,
+            input.dagDataId,
             input.dagLockedUntil,
             input.dagContentHash,
         )

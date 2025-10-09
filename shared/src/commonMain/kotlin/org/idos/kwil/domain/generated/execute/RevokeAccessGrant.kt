@@ -26,7 +26,7 @@ object RevokeAccessGrant : ExecuteAction<RevokeAccessGrantParams> {
     override fun toPositionalParams(input: List<RevokeAccessGrantParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
+                it.id,
             )
         }
 }

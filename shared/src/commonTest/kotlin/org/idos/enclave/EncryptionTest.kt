@@ -13,8 +13,8 @@ class EncryptionTest :
             val encryption = getTestEncryption()
 
             // Generate keys for both parties
-            val aliceId = UuidString("550e8400-e29b-41d4-a716-446655440001")
-            val bobId = UuidString("550e8400-e29b-41d4-a716-446655440002")
+            val aliceId = "550e8400-e29b-41d4-a716-446655440001"
+            val bobId = "550e8400-e29b-41d4-a716-446655440002"
             val password = "test-password-123"
 
             withContext(Dispatchers.Default) {
@@ -47,7 +47,7 @@ class EncryptionTest :
 
         "should generate different ciphertexts for same message" {
             val encryption = getTestEncryption()
-            val userId = UuidString("550e8400-e29b-41d4-a716-446655440003")
+            val userId = "550e8400-e29b-41d4-a716-446655440003"
             val password = "test-password-456"
             val dummyPubKey = "40305d02602310f54c88dd57f2e15abc4c392b2cd8cded52867e3bfc5709a819".hexToByteArray()
 
@@ -68,7 +68,7 @@ class EncryptionTest :
 
         "should derive consistent public key from secret" {
             val encryption = getTestEncryption()
-            val userId = UuidString("550e8400-e29b-41d4-a716-446655440004")
+            val userId = "550e8400-e29b-41d4-a716-446655440004"
             val password = "test-password-789"
             val dummyPubKey = "40305d02602310f54c88dd57f2e15abc4c392b2cd8cded52867e3bfc5709a819".hexToByteArray()
 

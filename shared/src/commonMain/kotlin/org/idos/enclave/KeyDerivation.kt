@@ -2,6 +2,7 @@ package org.idos.enclave
 
 import io.ktor.utils.io.core.toByteArray
 import org.idos.kwil.types.UuidString
+import org.idos.kwil.types.isValidUuid
 
 // https://github.com/idos-network/idos-sdk-js/blob/main/packages/utils/src/encryption/idOSKeyDerivation.ts
 abstract class KeyDerivation {
@@ -37,7 +38,7 @@ abstract class KeyDerivation {
             0.0 ->
                 KDFConfig(
                     normalizePassword = { normalizeString(it) },
-                    validateSalt = { UuidString.isValidUuid(it) },
+                    validateSalt = { it.isValidUuid() },
                     n = 128,
                     r = 8,
                     p = 1,
@@ -47,7 +48,7 @@ abstract class KeyDerivation {
             0.1 ->
                 KDFConfig(
                     normalizePassword = { normalizeString(it) },
-                    validateSalt = { UuidString.isValidUuid(it) },
+                    validateSalt = { it.isValidUuid() },
                     n = 16384,
                     r = 8,
                     p = 1,

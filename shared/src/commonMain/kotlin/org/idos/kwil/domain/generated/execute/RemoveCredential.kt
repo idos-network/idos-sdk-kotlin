@@ -26,7 +26,7 @@ object RemoveCredential : ExecuteAction<RemoveCredentialParams> {
     override fun toPositionalParams(input: List<RemoveCredentialParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
+                it.id,
             )
         }
 }

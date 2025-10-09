@@ -28,8 +28,8 @@ object AddPeerToClubAsOwner : ExecuteAction<AddPeerToClubAsOwnerParams> {
     override fun toPositionalParams(input: List<AddPeerToClubAsOwnerParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.passportingClubId.value,
-                it.passportingPeerId.value,
+                it.passportingClubId,
+                it.passportingPeerId,
             )
         }
 }

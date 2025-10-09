@@ -52,8 +52,8 @@ object ShareCredentialThroughDag : ExecuteAction<ShareCredentialThroughDagParams
     override fun toPositionalParams(input: List<ShareCredentialThroughDagParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
-                it.userId.value,
+                it.id,
+                it.userId,
                 it.issuerAuthPublicKey,
                 it.encryptorPublicKey,
                 it.content,
@@ -61,7 +61,7 @@ object ShareCredentialThroughDag : ExecuteAction<ShareCredentialThroughDagParams
                 it.publicNotes,
                 it.publicNotesSignature,
                 it.broaderSignature,
-                it.originalCredentialId.value,
+                it.originalCredentialId,
                 it.dagOwnerWalletIdentifier,
                 it.dagGranteeWalletIdentifier,
                 it.dagLockedUntil,

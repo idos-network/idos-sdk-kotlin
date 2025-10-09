@@ -27,7 +27,6 @@ protocol UserRepositoryProtocol: AnyObject {
     func getStoredUser() -> User?
     func clearUserProfile()
     func hasStoredProfile() -> Bool
-    func saveWalletAddress(_ address: String)
 }
 
 class UserRepository: UserRepositoryProtocol {
@@ -88,10 +87,9 @@ class UserRepository: UserRepositoryProtocol {
             guard hasProfile else { throw UserError.noUserProfile }
             
             let user = try await dataProvider.getUser()
-            guard let userId = user.id as? String else { throw UserError.noUserProfile }
             
             let userModel = User(
-                id: userId,
+                id: user.id,
                 walletAddress: address,
                 lastUpdated: 0)
             
@@ -120,12 +118,6 @@ class UserRepository: UserRepositoryProtocol {
     func hasStoredProfile() -> Bool {
         storageManager.hasUserProfile()
     }
-
-    /// Saves the wallet address to storage
-    func saveWalletAddress(_ address: String) {
-        storageManager.saveWalletAddress(address)
-    }
-
 }
 
 // MARK: - Mock Implementation
@@ -177,8 +169,5 @@ class MockUserRepository: UserRepositoryProtocol {
         return false
     }
 
-    func saveWalletAddress(_ address: String) {
-        stateSubject.send(.connectedWallet(address: address))
-    }
 }
 #endif

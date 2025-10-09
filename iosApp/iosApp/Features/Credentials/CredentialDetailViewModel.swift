@@ -134,7 +134,7 @@ class CredentialDetailViewModel: BaseViewModel<CredentialDetailState, Credential
             do {
                 let detail = try await credentialsRepository.getCredential(id: credentialId)
 
-                let currentState = orchestrator.currentState()
+                let currentState = orchestrator.state.value
                 if currentState is EnclaveState.Unlocked {
                     let unlocked = currentState as! EnclaveState.Unlocked
                     await decryptLoadedCredential(enclave: unlocked.enclave, credential: detail)
@@ -156,8 +156,8 @@ class CredentialDetailViewModel: BaseViewModel<CredentialDetailState, Credential
         guard let credential = state.credential else { return }
         // Check if enclave is unlocked
         self.state.isDecrypting = true
-        if orchestrator.currentState() is EnclaveState.Unlocked {
-            let unlocked = orchestrator.currentState() as! EnclaveState.Unlocked
+        if orchestrator.state.value is EnclaveState.Unlocked {
+            let unlocked = orchestrator.state.value as! EnclaveState.Unlocked
             Task {
                 await decryptLoadedCredential(enclave: unlocked.enclave, credential: credential)
             }
@@ -181,7 +181,7 @@ class CredentialDetailViewModel: BaseViewModel<CredentialDetailState, Credential
                 senderPublicKey: senderPublicKey.toKotlinByteArray()
             )
             
-            if let decryptedContent = String(data: decryptedData.toData(), encoding: .utf8) {
+            if let decryptedContent = String(data: decryptedData.toNSData(), encoding: .utf8) {
                 await MainActor.run {
                     self.state.decryptedContent = decryptedContent
                     self.state.isDecrypting = false

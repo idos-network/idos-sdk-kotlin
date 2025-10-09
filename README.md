@@ -23,76 +23,86 @@ val signer = JvmEthSigner(key.keyPair)
 ```kotlin
 import org.idos.IdosClient
 
-val client = IdosClient.create(
-    baseUrl = "https://nodes.staging.idos.network",
-    chainId = "idos-testnet",
-    signer = signer
-).getOrThrow()
+try {
+    val client = IdosClient.create(
+        baseUrl = "https://nodes.staging.idos.network",
+        chainId = "idos-testnet",
+        signer = signer
+    )
+} catch (e: DomainError) {
+    println("Failed to create client: ${e.message}")
+}
 ```
 
 ### 3. Use Organized APIs
 
 ```kotlin
-// User operations
-client.users.get()
-    .onSuccess { user -> println("User: ${user.id}") }
-    .onFailure { error -> println("Error: ${error.message}") }
+try {
+    // User operations
+    val user = client.users.get()
+    println("User: ${user.id}")
 
-// Wallet operations
-client.wallets.getAll()
-    .onSuccess { wallets -> println("Found ${wallets.size} wallets") }
+    // Wallet operations
+    val wallets = client.wallets.getAll()
+    println("Found ${wallets.size} wallets")
 
-client.wallets.add(AddWalletParams(id, address, publicKey, signature))
-    .onSuccess { txHash -> println("Wallet added: $txHash") }
+    val txHash = client.wallets.add(AddWalletParams(id, address, publicKey, signature))
+    println("Wallet added: $txHash")
 
-// Credential operations
-client.credentials.getOwned()
-    .onSuccess { credentials ->
-        credentials.forEach { println(it.publicNotes) }
+    // Credential operations
+    val credentials = client.credentials.getAll()
+    credentials.forEach { println(it.publicNotes) }
+
+    // Access grant operations
+    val grants = client.accessGrants.getOwned()
+    println("${grants.size} grants")
+} catch (e: DomainError) {
+    when (e) {
+        is DomainError.ValidationError -> println("Invalid input: ${e.message}")
+        is DomainError.AuthenticationRequired -> println("Auth required: ${e.message}")
+        is DomainError.NotFound -> println("Not found: ${e.message}")
+        else -> println("Error: ${e.message}")
     }
-
-// Access grant operations
-client.accessGrants.getOwned()
-    .onSuccess { grants -> println("${grants.size} grants") }
+}
 ```
 
 ## 📚 API Reference
 
 ### IdosClient Groups
 
-All operations return `Result<T>` for safe error handling.
+All operations are suspend functions that throw `DomainError` on failure.
 
 #### Wallets (`client.wallets`)
-- `add(input: AddWalletParams): Result<HexString>` - Add a new wallet
-- `getAll(): Result<List<GetWalletsResponse>>` - Get all wallets
-- `remove(id: UuidString): Result<HexString>` - Remove a wallet
+- `suspend fun add(input: AddWalletParams): HexString` - Add a new wallet
+- `suspend fun getAll(): List<GetWalletsResponse>` - Get all wallets
+- `suspend fun remove(id: UuidString): HexString` - Remove a wallet
 
 #### Credentials (`client.credentials`)
-- `add(input: AddCredentialParams): Result<HexString>` - Add a credential
-- `getAll(): Result<List<GetCredentialsResponse>>` - Get all owned credentials
-- `getOwned(id: UuidString): Result<GetCredentialOwnedResponse>` - Get specific owned credential
-- `getShared(id: UuidString): Result<List<GetCredentialSharedResponse>>` - Get shared credentials
-- `edit(input: EditCredentialParams): Result<HexString>` - Edit a credential
-- `remove(id: UuidString): Result<HexString>` - Remove a credential
-- `share(input: ShareCredentialParams): Result<HexString>` - Share a credential
+- `suspend fun add(input: AddCredentialParams): HexString` - Add a credential
+- `suspend fun getAll(): List<GetCredentialsResponse>` - Get all owned credentials
+- `suspend fun getOwned(id: UuidString): GetCredentialOwnedResponse` - Get specific owned credential
+- `suspend fun getShared(id: UuidString): List<GetCredentialSharedResponse>` - Get shared credentials
+- `suspend fun edit(input: EditCredentialParams): HexString` - Edit a credential
+- `suspend fun remove(id: UuidString): HexString` - Remove a credential
+- `suspend fun share(input: ShareCredentialParams): HexString` - Share a credential
 
 #### Access Grants (`client.accessGrants`)
-- `create(input: CreateAccessGrantParams): Result<HexString>` - Create an access grant
-- `getOwned(): Result<List<GetAccessGrantsOwnedResponse>>` - Get owned grants
-- `getGranted(userId, page, size): Result<List<GetAccessGrantsGrantedResponse>>` - Get granted grants
-- `getForCredential(credentialId): Result<List<GetAccessGrantsForCredentialResponse>>` - Get grants for credential
-- `revoke(id: UuidString): Result<HexString>` - Revoke an access grant
+- `suspend fun create(input: CreateAccessGrantParams): HexString` - Create an access grant
+- `suspend fun getOwned(): List<GetAccessGrantsOwnedResponse>` - Get owned grants
+- `suspend fun getGranted(userId, page, size): List<GetAccessGrantsGrantedResponse>` - Get granted grants
+- `suspend fun getForCredential(credentialId): List<GetAccessGrantsForCredentialResponse>` - Get grants for credential
+- `suspend fun revoke(id: UuidString): HexString` - Revoke an access grant
 
 #### Users (`client.users`)
-- `get(): Result<GetUserResponse>` - Get current user profile
-- `hasProfile(address: HexString): Result<Boolean>` - Check if address has profile
+- `suspend fun get(): GetUserResponse` - Get current user profile
+- `suspend fun hasProfile(address: HexString): Boolean` - Check if address has profile
 
 #### Attributes (`client.attributes`)
-- `add(input: AddAttributeParams): Result<HexString>` - Add an attribute
-- `getAll(): Result<List<GetAttributesResponse>>` - Get all attributes
-- `edit(input: EditAttributeParams): Result<HexString>` - Edit an attribute
-- `remove(id: UuidString): Result<HexString>` - Remove an attribute
-- `share(input: ShareAttributeParams): Result<HexString>` - Share an attribute
+- `suspend fun add(input: AddAttributeParams): HexString` - Add an attribute
+- `suspend fun getAll(): List<GetAttributesResponse>` - Get all attributes
+- `suspend fun edit(input: EditAttributeParams): HexString` - Edit an attribute
+- `suspend fun remove(id: UuidString): HexString` - Remove an attribute
+- `suspend fun share(input: ShareAttributeParams): HexString` - Share an attribute
 
 ## 🔐 Enclave (Encryption)
 
@@ -127,20 +137,23 @@ orchestrator.generateKey(
 )
 
 // Decrypt credential data
-val credential = client.credentials.getOwned(credentialId).getOrThrow()
-orchestrator.decrypt(
-    message = credential.content.toByteArray(),
-    senderPublicKey = credential.encryptorPublicKey.toByteArray()
-).onSuccess { decryptedData ->
+try {
+    val credential = client.credentials.getOwned(credentialId)
+    val decryptedData = orchestrator.decrypt(
+        message = credential.content.toByteArray(),
+        senderPublicKey = credential.encryptorPublicKey.toByteArray()
+    )
     println(String(decryptedData))
-}.onFailure { error ->
-    when (error) {
+} catch (e: EnclaveError) {
+    when (e) {
         is EnclaveError.NoKey -> println("Generate key first")
         is EnclaveError.KeyExpired -> println("Key expired, regenerate")
         is EnclaveError.DecryptionFailed ->
-            println("Decryption failed: ${error.reason}")
-        else -> println("Error: ${error.message}")
+            println("Decryption failed: ${e.reason}")
+        else -> println("Error: ${e.message}")
     }
+} catch (e: DomainError) {
+    println("Failed to get credential: ${e.message}")
 }
 ```
 
@@ -212,35 +225,38 @@ val credentialId = UuidString("550e8400-e29b-41d4-a716-446655440000")
 
 ## ⚠️ Error Handling
 
-All public APIs return `Result<T>` for safe, explicit error handling:
+All public APIs use suspend functions that throw `DomainError` on failure. Wrap calls in try-catch for error handling:
 
 ```kotlin
-// Handle success and failure
-client.wallets.add(walletParams)
-    .onSuccess { txHash ->
-        println("Success: $txHash")
+try {
+    val txHash = client.wallets.add(walletParams)
+    println("Success: $txHash")
+} catch (e: DomainError) {
+    when (e) {
+        is DomainError.ValidationError -> println("Invalid input: ${e.message}")
+        is DomainError.AuthenticationRequired -> println("Auth failed: ${e.message}")
+        is DomainError.NotFound -> println("Not found: ${e.message}")
+        is DomainError.ActionFailed -> println("Action failed: ${e.message}")
+        else -> println("Error: ${e.message}")
     }
-    .onFailure { error ->
-        when (error) {
-            is DomainError.ValidationError -> println("Invalid input: ${error.message}")
-            is DomainError.AuthenticationRequired -> println("Auth failed: ${error.message}")
-            is DomainError.NotFound -> println("Not found: ${error.message}")
-            else -> println("Error: ${error.message}")
-        }
-    }
+}
 
-// Or use getOrNull() / getOrThrow()
-val user = client.users.get().getOrNull()
-if (user != null) {
+// Clean, direct API - no Result wrapping needed
+try {
+    val user = client.users.get()
     println("User ID: ${user.id}")
+} catch (e: DomainError) {
+    println("Failed to get user: ${e.message}")
 }
 ```
 
 ## 🔧 Platform Support
 
 - **JVM**: Full support with KEthereum for Ethereum signing
-- **Android**: Same as JVM, plus libsodium via Lazysodium for encryption
-- **iOS**: Darwin HTTP engine, libsodium XCFramework for encryption
+- **Android**: Same as JVM, plus libsodium via Lazysodium for encryption, EncryptedFile with StrongBox for secure storage
+- **iOS**: Darwin HTTP engine, libsodium XCFramework for encryption, iOS Keychain for secure storage
+  - SKIE library auto-converts Kotlin suspend/throws to Swift async/throws
+  - Seamless Swift interop with native error handling
 
 ## 📖 Further Reading
 

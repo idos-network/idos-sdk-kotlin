@@ -37,6 +37,6 @@ object GetCredentialOwned : ViewAction<GetCredentialOwnedParams, GetCredentialOw
 
     override fun toPositionalParams(input: GetCredentialOwnedParams): PositionalParams =
         listOf(
-            input.id.value,
+            input.id,
         )
 }

@@ -38,7 +38,7 @@ object AddCredential : ExecuteAction<AddCredentialParams> {
     override fun toPositionalParams(input: List<AddCredentialParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
+                it.id,
                 it.issuerAuthPublicKey,
                 it.encryptorPublicKey,
                 it.content,

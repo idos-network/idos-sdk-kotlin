@@ -10,13 +10,11 @@ struct Credential: Codable, Identifiable {
     
     // Static factory method for creating from response
     static func from(response: GetCredentialsResponse) -> Credential {
-        let id = response.id as! String
-        
         // Parse publicNotes JSON string to extract fields
         if let data = response.publicNotes.data(using: .utf8),
            let notes = try? JSONDecoder().decode(PublicNotes.self, from: data) {
             return Credential(
-                id: id,
+                id: response.id,
                 type: notes.type,
                 level: notes.level,
                 status: notes.status,
@@ -25,7 +23,7 @@ struct Credential: Codable, Identifiable {
         } else {
             // Return with default values if parsing fails
             return Credential(
-                id: id,
+                id: response.id,
                 type: "",
                 level: "",
                 status: "",
@@ -43,7 +41,7 @@ struct CredentialDetail: Codable {
     // Static factory method for creating from response
     static func from(response: GetCredentialOwnedResponse) -> CredentialDetail {
         return CredentialDetail(
-            id: response.id as! String,
+            id: response.id,
             content: response.content,
             encryptorPublicKey: response.encryptorPublicKey
         )

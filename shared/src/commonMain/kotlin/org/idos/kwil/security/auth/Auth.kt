@@ -7,7 +7,6 @@ import io.ktor.utils.io.core.toByteArray
 import org.idos.kwil.protocol.KwilProtocol
 import org.idos.kwil.security.signer.Signer
 import org.idos.kwil.types.Base64String
-import org.idos.kwil.types.HexString
 
 /**
  * KWIL Gateway authentication handler.

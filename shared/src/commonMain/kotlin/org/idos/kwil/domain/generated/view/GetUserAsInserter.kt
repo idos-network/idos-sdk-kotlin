@@ -34,6 +34,6 @@ object GetUserAsInserter : ViewAction<GetUserAsInserterParams, GetUserAsInserter
 
     override fun toPositionalParams(input: GetUserAsInserterParams): PositionalParams =
         listOf(
-            input.id.value,
+            input.id,
         )
 }

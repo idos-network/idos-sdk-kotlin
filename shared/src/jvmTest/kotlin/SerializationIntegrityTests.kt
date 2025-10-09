@@ -51,13 +51,13 @@ class SerializationIntegrityTests :
             "getCredentialOwned should serialize correctly" {
                 val secrets = getSecrets()
                 val signer = JvmEthSigner(secrets.keyPair)
-                val id = UuidString("550e8400-e29b-41d4-a716-446655440000")
+                val id = "550e8400-e29b-41d4-a716-446655440000"
                 val params = GetCredentialOwnedParams(id)
 
                 val message = GetCredentialOwned.toMessage(params, signer)
 
                 println("getCredentialOwned payload: ${message.body.payload}")
-                println("  - id: ${id.value}")
+                println("  - id: $id")
 
                 message.body.payload shouldNotBe null
                 message.body.payload shouldNotBe ""
@@ -68,13 +68,13 @@ class SerializationIntegrityTests :
             "revokeAccessGrant should serialize correctly" {
                 val secrets = getSecrets()
                 val signer = JvmEthSigner(secrets.keyPair)
-                val id = UuidString("550e8400-e29b-41d4-a716-446655440001")
+                val id = "550e8400-e29b-41d4-a716-446655440001"
                 val params = RevokeAccessGrantParams(id)
 
                 val message = RevokeAccessGrant.toTransaction(params, signer)
 
                 println("revokeAccessGrant payload: ${message.body.payload}")
-                println("  - id: ${id.value}")
+                println("  - id: $id")
 
                 message.body.payload shouldNotBe null
                 message.body.payload shouldNotBe ""
@@ -87,7 +87,7 @@ class SerializationIntegrityTests :
                 val signer = JvmEthSigner(secrets.keyPair)
                 val params =
                     AddWalletParams(
-                        id = UuidString("550e8400-e29b-41d4-a716-446655440002"),
+                        id = "550e8400-e29b-41d4-a716-446655440002",
                         address = "0x1234567890abcdef1234567890abcdef12345678",
                         publicKey = "0x04abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
                         message = "Sign this message to add wallet",
@@ -97,7 +97,7 @@ class SerializationIntegrityTests :
                 val message = AddWallet.toTransaction(params, signer)
 
                 println("addWallet payload: ${message.body.payload}")
-                println("  - id: ${params.id.value}")
+                println("  - id: ${params.id}")
                 println("  - address: ${params.address}")
                 println("  - publicKey: ${params.publicKey}")
                 println("  - message: ${params.message}")
@@ -115,7 +115,7 @@ class SerializationIntegrityTests :
                 val params =
                     CreateAccessGrantParams(
                         granteeWalletIdentifier = "0x1234567890abcdef1234567890abcdef12345678",
-                        dataId = UuidString("550e8400-e29b-41d4-a716-446655440003"),
+                        dataId = "550e8400-e29b-41d4-a716-446655440003",
                         lockedUntil = 1735689600,
                         contentHash = "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
                         inserterType = "wallet",
@@ -126,7 +126,7 @@ class SerializationIntegrityTests :
 
                 println("createAccessGrant payload: ${message.body.payload}")
                 println("  - granteeWalletIdentifier: ${params.granteeWalletIdentifier}")
-                println("  - dataId: ${params.dataId.value}")
+                println("  - dataId: ${params.dataId}")
                 println("  - lockedUntil: ${params.lockedUntil}")
                 println("  - contentHash: ${params.contentHash}")
                 println("  - inserterType: ${params.inserterType}")
@@ -143,7 +143,7 @@ class SerializationIntegrityTests :
                 val signer = JvmEthSigner(secrets.keyPair)
                 val params =
                     AddCredentialParams(
-                        id = UuidString("550e8400-e29b-41d4-a716-446655440004"),
+                        id = "550e8400-e29b-41d4-a716-446655440004",
                         issuerAuthPublicKey = "0x04abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
                         encryptorPublicKey = "0x04fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321",
                         content = "encrypted_credential_content_base64_encoded",
@@ -155,7 +155,7 @@ class SerializationIntegrityTests :
                 val message = AddCredential.toTransaction(params, signer)
 
                 println("addCredential payload: ${message.body.payload}")
-                println("  - id: ${params.id.value}")
+                println("  - id: ${params.id}")
                 println("  - issuerAuthPublicKey: ${params.issuerAuthPublicKey}")
                 println("  - encryptorPublicKey: ${params.encryptorPublicKey}")
                 println("  - content: ${params.content}")
@@ -174,7 +174,7 @@ class SerializationIntegrityTests :
                 // When schema changes, this will fail and needs to be updated
                 val secrets = getSecrets()
                 val signer = JvmEthSigner(secrets.keyPair)
-                val testId = UuidString("550e8400-e29b-41d4-a716-446655440000")
+                val testId = "550e8400-e29b-41d4-a716-446655440000"
                 val params = GetCredentialOwnedParams(testId)
 
                 val message = GetCredentialOwned.toMessage(params, signer)
@@ -190,7 +190,7 @@ class SerializationIntegrityTests :
                 println("  action: get_credential_owned")
                 println("  payload: ${message.body.payload}")
                 println("  input types: ${GetCredentialOwned.positionalTypes}")
-                println("  input values: [${testId.value}]")
+                println("  input values: [$testId]")
                 println("")
                 println("If this test fails after schema changes, update the baseline and document the breaking change.")
             }

@@ -40,6 +40,6 @@ object GetCredentialShared : ViewAction<GetCredentialSharedParams, GetCredential
 
     override fun toPositionalParams(input: GetCredentialSharedParams): PositionalParams =
         listOf(
-            input.id.value,
+            input.id,
         )
 }

@@ -1,6 +1,5 @@
 package org.idos.kwil.protocol
 
-import org.idos.kwil.security.signer.SignatureType
 import org.idos.kwil.security.signer.Signer
 import org.idos.kwil.types.Base64String
 import org.idos.kwil.types.HexString
@@ -16,7 +15,7 @@ import org.idos.kwil.types.HexString
  */
 fun createMessage(
     payload: Base64String,
-    challenge: HexString = HexString(""),
+    challenge: HexString = "",
     signer: Signer? = null,
     signature: Base64String? = null,
 ): Message =

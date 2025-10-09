@@ -17,7 +17,7 @@ import org.idos.kwil.protocol.KwilProtocol
 import org.idos.kwil.security.signer.JvmEthSigner
 import org.idos.kwil.serialization.toByteArray
 import org.idos.kwil.types.Base64String
-import org.idos.kwil.types.HexString.Companion.toHexString
+import org.idos.kwil.types.Uuid
 import org.idos.kwil.types.UuidString
 import org.idos.remove
 import org.idos.revoke
@@ -25,6 +25,7 @@ import org.kethereum.bip32.toKey
 import org.kethereum.bip39.model.MnemonicWords
 import org.kethereum.bip39.toSeed
 import org.kethereum.crypto.toAddress
+import kotlin.math.sign
 import kotlin.uuid.ExperimentalUuidApi
 
 @OptIn(ExperimentalUuidApi::class)
@@ -44,7 +45,7 @@ class ApiIntegrationTests :
                 val secrets = getSecrets()
                 val signer = JvmEthSigner(secrets.keyPair)
                 val client = IdosClient.create("https://nodes.staging.idos.network", chainId, signer)
-                client.users.hasProfile(signer.getIdentifier()) shouldBe true
+                client.users.hasProfile(signer.address.hex) shouldBe true
                 val wallets =
                     client.wallets
                         .getAll()
@@ -56,7 +57,7 @@ class ApiIntegrationTests :
                 val profile = client.users.get()
                 val accessGrants = client.accessGrants.getOwned()
 
-                wallets.asClue { it.address.lowercase().toHexString() shouldBe signer.getIdentifier() }
+                wallets.asClue { it.address.lowercase() shouldBe signer.address.hex }
 
                 accessGrants.firstOrNull()?.run {
                     client.accessGrants.revoke(this.id).asClue { it shouldNotBe null }
@@ -83,7 +84,7 @@ class ApiIntegrationTests :
                         .toSeed()
                         .toKey("m/44'/60'/0'/0/47")
                 val signer = JvmEthSigner(newKey.keyPair)
-                val uuid = UuidString.generate()
+                val uuid = Uuid.generate()
                 val msg = "Sign this message to prove you own this wallet"
                 val sign = signer.sign(msg.toByteArray())
                 val add =

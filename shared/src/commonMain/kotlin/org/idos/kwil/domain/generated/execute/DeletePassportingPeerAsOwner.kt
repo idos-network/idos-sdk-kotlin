@@ -26,7 +26,7 @@ object DeletePassportingPeerAsOwner : ExecuteAction<DeletePassportingPeerAsOwner
     override fun toPositionalParams(input: List<DeletePassportingPeerAsOwnerParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
+                it.id,
             )
         }
 }

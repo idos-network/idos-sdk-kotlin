@@ -9,6 +9,7 @@ import org.kethereum.crypto.toAddress
 import org.kethereum.crypto.toECKeyPair
 import org.kethereum.crypto.toHex
 import org.kethereum.eip191.signWithEIP191PersonalSign
+import org.kethereum.model.Address
 import org.kethereum.model.PrivateKey
 
 class EthSigner(
@@ -16,7 +17,7 @@ class EthSigner(
     private val storageManager: StorageManager,
 ) : org.idos.kwil.security.signer.EthSigner() {
     override fun getIdentifier(): HexString {
-        val address = storageManager.getStoredWallet()
+        val address = storageManager.getStoredWallet()?.cleanHex
         requireNotNull(address)
         return address
     }
@@ -48,6 +49,5 @@ class EthSigner(
                 .toECKeyPair()
                 .publicKey
                 .toAddress()
-                .hex
     }
 }

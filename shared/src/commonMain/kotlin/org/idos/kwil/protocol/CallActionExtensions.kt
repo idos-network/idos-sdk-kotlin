@@ -9,11 +9,9 @@ import org.idos.kwil.domain.ViewAction
 import org.idos.kwil.security.signer.Signer
 import org.idos.kwil.serialization.toMessage
 
-/**
- * Extension functions for KwilProtocol to execute view actions (read-only queries).
- *
- * View actions don't modify database state and return query results.
- */
+// Extension functions for KwilProtocol to execute view actions (read-only queries).
+//
+// View actions don't modify database state and return query results.
 
 /**
  * Executes a view action (read-only query).

@@ -20,7 +20,8 @@ data class GetSiblingCredentialIdParams(
     val contentHash: String,
 )
 
-object GetSiblingCredentialId : ViewAction<GetSiblingCredentialIdParams, GetSiblingCredentialIdResponse> {
+object GetSiblingCredentialId :
+    ViewAction<GetSiblingCredentialIdParams, GetSiblingCredentialIdResponse> {
     override val name: String = "get_sibling_credential_id"
     override val namespace: String = "main"
 

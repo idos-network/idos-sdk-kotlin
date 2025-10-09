@@ -20,11 +20,11 @@ class WalletRepository: WalletRepositoryProtocol {
 
 #if DEBUG
 class MockWalletRepository: WalletRepositoryProtocol {
-    func getWallets() async -> [Wallet] {
+    func getWallets() async throws -> [Wallet] {
         return [
             Wallet(
                 id: "123",
-                address: "0x123...",
+                address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
                 network: "Ethereum"
             )
         ]

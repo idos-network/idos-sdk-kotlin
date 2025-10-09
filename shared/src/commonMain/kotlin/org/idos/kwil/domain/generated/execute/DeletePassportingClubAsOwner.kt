@@ -26,7 +26,7 @@ object DeletePassportingClubAsOwner : ExecuteAction<DeletePassportingClubAsOwner
     override fun toPositionalParams(input: List<DeletePassportingClubAsOwnerParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
+                it.id,
             )
         }
 }

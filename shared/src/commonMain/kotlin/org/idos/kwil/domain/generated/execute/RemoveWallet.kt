@@ -26,7 +26,7 @@ object RemoveWallet : ExecuteAction<RemoveWalletParams> {
     override fun toPositionalParams(input: List<RemoveWalletParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
+                it.id,
             )
         }
 }

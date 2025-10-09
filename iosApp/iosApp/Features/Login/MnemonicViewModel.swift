@@ -95,14 +95,13 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
                 let address = try keyManager.generateAndStoreKey(words: state.mnemonic)
 
                 print("✅ MnemonicViewModel: Key generated, address: \(address)")
-                print("💾 MnemonicViewModel: Storing wallet address to storage")
-
-                // Store the wallet address
-                storageManager.saveWalletAddress(address)
-
-                print("✅ MnemonicViewModel: Wallet import complete, showing success dialog")
 
                 await MainActor.run {
+                    print("💾 MnemonicViewModel: Storing wallet address to storage")
+                    // Store the wallet address
+                    storageManager.saveWalletAddress(address)
+                    print("✅ MnemonicViewModel: Wallet import complete, showing success dialog")
+                    
                     updateState {
                         $0.isLoading = true
                         $0.isSuccess = true

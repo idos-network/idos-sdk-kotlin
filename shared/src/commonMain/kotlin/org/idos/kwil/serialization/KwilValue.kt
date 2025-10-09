@@ -1,6 +1,7 @@
 package org.idos.kwil.serialization
 
 import org.idos.kwil.types.UuidString
+import org.idos.kwil.types.isValidUuid
 
 /**
  * Type-safe representation of values supported by KWIL database.
@@ -18,7 +19,7 @@ sealed class KwilValue {
         val value: String,
     ) : KwilValue() {
         init {
-            require(UuidString.isValidUuid(value)) { "Invalid UUID format: $value" }
+            require(value.isValidUuid()) { "Invalid UUID format: $value" }
         }
     }
 
@@ -77,7 +78,7 @@ fun Any?.toKwilValue(): KwilValue =
         null -> KwilValue.Null
         is KwilValue -> this
         is String ->
-            if (UuidString.isValidUuid(this)) {
+            if (this.isValidUuid()) {
                 KwilValue.Uuid(this)
             } else {
                 KwilValue.Text(this)

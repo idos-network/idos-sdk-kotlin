@@ -32,7 +32,7 @@ object AddPassportingPeerAsOwner : ExecuteAction<AddPassportingPeerAsOwnerParams
     override fun toPositionalParams(input: List<AddPassportingPeerAsOwnerParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
+                it.id,
                 it.name,
                 it.issuerPublicKey,
                 it.passportingServerUrlBase,

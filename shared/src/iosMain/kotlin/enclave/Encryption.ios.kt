@@ -5,8 +5,6 @@ import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import libsodium.crypto_box_MACBYTES
 import libsodium.crypto_box_NONCEBYTES
@@ -20,6 +18,7 @@ import libsodium.randombytes_buf
 class IosEncryption(
     storage: SecureStorage,
 ) : Encryption(storage) {
+
     override suspend fun publicKey(secret: ByteArray): ByteArray =
         runCatchingErrorAsync {
             withContext(Dispatchers.Default) {
@@ -157,25 +156,4 @@ class IosEncryption(
         private val MAC_BYTES = crypto_box_MACBYTES.toInt()
         private val PUBLIC_KEY_BYTES = crypto_box_PUBLICKEYBYTES.toInt()
     }
-}
-
-class IosSecureStorage : SecureStorage {
-    private val mutex = Mutex()
-    private var key: ByteArray? = null
-
-    override suspend fun storeKey(key: ByteArray) =
-        mutex.withLock {
-            this.key = key.copyOf()
-        }
-
-    override suspend fun retrieveKey(): ByteArray? =
-        mutex.withLock {
-            key?.copyOf()
-        }
-
-    override suspend fun deleteKey() =
-        mutex.withLock {
-            key?.fill(0)
-            key = null
-        }
 }

@@ -28,7 +28,7 @@ object AddInserterAsOwner : ExecuteAction<AddInserterAsOwnerParams> {
     override fun toPositionalParams(input: List<AddInserterAsOwnerParams>): List<PositionalParams> =
         input.map {
             listOf(
-                it.id.value,
+                it.id,
                 it.name,
             )
         }
