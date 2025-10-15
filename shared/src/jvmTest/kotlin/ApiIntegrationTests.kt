@@ -5,27 +5,25 @@ import io.kotest.matchers.shouldNotBe
 import io.ktor.utils.io.core.toByteArray
 import org.idos.IdosClient
 import org.idos.add
-import org.idos.enclave.Enclave
-import org.idos.enclave.JvmEncryption
 import org.idos.enclave.JvmMetadataStorage
+import org.idos.enclave.crypto.JvmEncryption
+import org.idos.enclave.local.LocalEnclave
 import org.idos.get
 import org.idos.getAll
 import org.idos.getOwned
 import org.idos.hasProfile
 import org.idos.kwil.domain.generated.execute.AddWalletParams
 import org.idos.kwil.protocol.KwilProtocol
-import org.idos.kwil.security.signer.JvmEthSigner
 import org.idos.kwil.serialization.toByteArray
 import org.idos.kwil.types.Base64String
 import org.idos.kwil.types.Uuid
-import org.idos.kwil.types.UuidString
 import org.idos.remove
 import org.idos.revoke
+import org.idos.signer.JvmEthSigner
 import org.kethereum.bip32.toKey
 import org.kethereum.bip39.model.MnemonicWords
 import org.kethereum.bip39.toSeed
 import org.kethereum.crypto.toAddress
-import kotlin.math.sign
 import kotlin.uuid.ExperimentalUuidApi
 
 @OptIn(ExperimentalUuidApi::class)
@@ -64,8 +62,8 @@ class ApiIntegrationTests :
                 }
                 val id = credentials.last().id
 
-                val data = client.credentials.getOwned(id)!!
-                val enclave = Enclave(JvmEncryption(), JvmMetadataStorage())
+                val data = client.credentials.getOwned(id)
+                val enclave = LocalEnclave(JvmEncryption(), JvmMetadataStorage())
                 enclave.generateKey(profile.id, secrets.password, 1000)
                 val content = Base64String(data.content).toByteArray()
                 val pubkey = Base64String(data.encryptorPublicKey).toByteArray()

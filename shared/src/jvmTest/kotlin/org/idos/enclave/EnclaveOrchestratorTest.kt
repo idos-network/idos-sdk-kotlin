@@ -3,7 +3,7 @@ package org.idos.enclave
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import org.idos.kwil.types.UuidString
+import org.idos.enclave.local.LocalEnclave
 
 /**
  * Tests for simplified EnclaveOrchestrator.
@@ -132,7 +132,7 @@ class EnclaveOrchestratorTest :
 
                 val exception =
                     runCatching {
-                        orchestrator.withEnclave { it.hasValidKey() }
+                        orchestrator.withEnclave { (it as LocalEnclave).hasValidKey() }
                     }.exceptionOrNull()
                 exception.shouldBeInstanceOf<EnclaveError.NoKey>()
             }
@@ -144,7 +144,7 @@ class EnclaveOrchestratorTest :
                 orchestrator.unlock(userId, password, expiration)
 
                 runCatching {
-                    orchestrator.withEnclave { it.hasValidKey() }
+                    orchestrator.withEnclave { (it as LocalEnclave).hasValidKey() }
                 }.isSuccess shouldBe true
             }
 
@@ -226,7 +226,7 @@ class EnclaveOrchestratorTest :
                     }.exceptionOrNull()
 
                 exception.shouldBeInstanceOf<EnclaveError.DecryptionFailed>()
-                (exception as EnclaveError.DecryptionFailed).reason shouldBe DecryptFailure.WrongPassword
+                exception.reason shouldBe DecryptFailure.WrongPassword
             }
         }
 

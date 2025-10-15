@@ -4,7 +4,7 @@ import org.idos.kwil.domain.ActionExecutor
 import org.idos.kwil.domain.DomainError
 import org.idos.kwil.domain.generated.view.GetUserResponse
 import org.idos.kwil.domain.runCatchingDomainError
-import org.idos.kwil.security.signer.Signer
+import org.idos.signer.Signer
 
 /**
  * Main entry point for the idOS SDK.

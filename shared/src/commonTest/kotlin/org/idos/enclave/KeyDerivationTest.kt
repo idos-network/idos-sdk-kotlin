@@ -6,6 +6,7 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.idos.enclave.crypto.KeyDerivation
 
 open class KeyDerivationTest :
     StringSpec({

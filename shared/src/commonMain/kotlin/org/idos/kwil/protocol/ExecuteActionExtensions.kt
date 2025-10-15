@@ -2,7 +2,7 @@ package org.idos.kwil.protocol
 
 import io.ktor.utils.io.core.toByteArray
 import org.idos.kwil.domain.ExecuteAction
-import org.idos.kwil.security.signer.Signer
+import org.idos.signer.Signer
 import org.idos.kwil.serialization.toTransaction
 import org.idos.kwil.types.Base64String
 import org.idos.kwil.types.HexString

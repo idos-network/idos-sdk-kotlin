@@ -1,5 +1,7 @@
 package org.idos.enclave
 
+import org.idos.enclave.crypto.Encryption
+import org.idos.enclave.local.LocalEnclave
 import org.idos.kwil.types.UuidString
 
 /**
@@ -8,7 +10,7 @@ import org.idos.kwil.types.UuidString
  */
 class MockEnclave(
     private val behavior: MockBehavior = MockBehavior.Success,
-) : Enclave(
+) : LocalEnclave(
         encryption = MockEncryption(MockSecureStorage()),
         storage = MockMetadataStorage(),
     ) {
@@ -126,8 +128,9 @@ internal class MockEncryption(
     override suspend fun encrypt(
         message: ByteArray,
         receiverPublicKey: ByteArray,
+        enclaveKeyType: EnclaveKeyType,
     ): Pair<ByteArray, ByteArray> {
-        val secret = getSecretKey()
+        val secret = getSecretKey(EnclaveKeyType.LOCAL)
         val nonce = ByteArray(24) { it.toByte() } // Deterministic nonce
         val encrypted =
             message
@@ -141,8 +144,18 @@ internal class MockEncryption(
     override suspend fun decrypt(
         fullMessage: ByteArray,
         senderPublicKey: ByteArray,
+        enclaveKeyType: EnclaveKeyType,
     ): ByteArray {
-        val secret = getSecretKey()
+        val secret = getSecretKey(EnclaveKeyType.LOCAL)
+        // XOR is symmetric, so decrypt = encrypt
+        return decrypt(fullMessage, secret, senderPublicKey)
+    }
+
+    override suspend fun decrypt(
+        fullMessage: ByteArray,
+        secret: ByteArray,
+        senderPublicKey: ByteArray,
+    ): ByteArray {
         // XOR is symmetric, so decrypt = encrypt
         return fullMessage
             .mapIndexed { i, byte ->
@@ -151,21 +164,38 @@ internal class MockEncryption(
     }
 
     override suspend fun publicKey(secret: ByteArray): ByteArray = ByteArray(32) { i -> (secret[i % secret.size].toInt() * 2).toByte() }
+
+    override fun generateEphemeralKeyPair(): org.idos.enclave.crypto.KeyPair {
+        val pubKey = ByteArray(32) { it.toByte() }
+        val secretKey = ByteArray(32) { (it * 2).toByte() }
+        return org.idos.enclave.crypto
+            .KeyPair(pubKey, secretKey)
+    }
 }
 
 /**
  * Mock MetadataStorage for testing.
  */
 internal class MockMetadataStorage : MetadataStorage {
-    private var metadata: KeyMetadata? = null
+    private val metadataMap = mutableMapOf<EnclaveKeyType, KeyMetadata>()
+    private var sessionConfig: MpcSessionConfig? = null
 
-    override suspend fun store(meta: KeyMetadata) {
-        this.metadata = meta
+    override suspend fun store(
+        meta: KeyMetadata,
+        enclaveKeyType: EnclaveKeyType,
+    ) {
+        metadataMap[enclaveKeyType] = meta
     }
 
-    override suspend fun get(): KeyMetadata? = metadata
+    override suspend fun get(enclaveKeyType: EnclaveKeyType): KeyMetadata? = metadataMap[enclaveKeyType]
 
-    override suspend fun delete() {
-        metadata = null
+    override suspend fun delete(enclaveKeyType: EnclaveKeyType) {
+        metadataMap.remove(enclaveKeyType)
+    }
+
+    override suspend fun getSessionConfig(): MpcSessionConfig? = sessionConfig
+
+    override suspend fun storeSessionConfig(config: MpcSessionConfig) {
+        sessionConfig = config
     }
 }

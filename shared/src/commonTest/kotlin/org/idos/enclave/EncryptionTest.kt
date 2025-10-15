@@ -5,7 +5,6 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.idos.kwil.types.UuidString
 
 class EncryptionTest :
     StringSpec({
@@ -27,21 +26,27 @@ class EncryptionTest :
 
                 // Alice encrypts a message for Bob
                 val message = "Hello, Bob!".encodeToByteArray()
-                val (encryptedMessage, alice) = encryption.encrypt(message, bobPublicKey)
+                println("**********************1")
+
+                val (encryptedMessage, alice) = encryption.encrypt(message, bobPublicKey, EnclaveKeyType.LOCAL)
+                println("**********************2")
 
                 alice shouldBe alicePublicKey
                 // Verify encryption changed the message
                 encryptedMessage shouldNotBe message
 
                 // Bob decrypts the message from Alice
-                val decryptedMessage = bobEncryption.decrypt(encryptedMessage, alicePublicKey)
+                println("**********************3")
+                val decryptedMessage = bobEncryption.decrypt(encryptedMessage, alicePublicKey, EnclaveKeyType.LOCAL)
+                println("**********************3")
 
                 // Verify decryption worked
                 decryptedMessage.decodeToString() shouldBe "Hello, Bob!"
 
                 // Clean up
-                encryption.deleteKey()
-                bobEncryption.deleteKey()
+                encryption.deleteKey(EnclaveKeyType.LOCAL)
+                bobEncryption.deleteKey(EnclaveKeyType.LOCAL)
+                println("**********************4")
             }
         }
 
@@ -56,13 +61,13 @@ class EncryptionTest :
 
                 val message = "Test message".encodeToByteArray()
 
-                val (encrypted1, _) = encryption.encrypt(message, dummyPubKey)
-                val (encrypted2, _) = encryption.encrypt(message, dummyPubKey)
+                val (encrypted1, _) = encryption.encrypt(message, dummyPubKey, EnclaveKeyType.LOCAL)
+                val (encrypted2, _) = encryption.encrypt(message, dummyPubKey, EnclaveKeyType.LOCAL)
 
                 // Due to random nonces, same message should produce different ciphertexts
                 encrypted1 shouldNotBe encrypted2
 
-                encryption.deleteKey()
+                encryption.deleteKey(EnclaveKeyType.LOCAL)
             }
         }
 
@@ -76,14 +81,14 @@ class EncryptionTest :
                 encryption.generateKey(userId, password)
 
                 // Get public key twice by encrypting dummy messages
-                val (_, pubKey1) = encryption.encrypt("test".encodeToByteArray(), dummyPubKey)
-                val (_, pubKey2) = encryption.encrypt("test".encodeToByteArray(), dummyPubKey)
+                val (_, pubKey1) = encryption.encrypt("test".encodeToByteArray(), dummyPubKey, EnclaveKeyType.LOCAL)
+                val (_, pubKey2) = encryption.encrypt("test".encodeToByteArray(), dummyPubKey, EnclaveKeyType.LOCAL)
 
                 // Public key should be consistent, not empty bytes
                 pubKey1 shouldNotBe ByteArray(32)
                 pubKey1 shouldBe pubKey2
 
-                encryption.deleteKey()
+                encryption.deleteKey(EnclaveKeyType.LOCAL)
             }
         }
     })

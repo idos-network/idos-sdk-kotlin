@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.security.crypto.EncryptedFile
 import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -15,9 +17,12 @@ import java.io.File
 class AndroidSecureStorage(
     private val context: Context,
 ) : SecureStorage {
+    private val mutex = Mutex()
     private companion object {
         private const val MASTER_KEY_ALIAS = "idos_enclave_master"
         private const val KEY_FILENAME = "encrypted_key"
+
+        fun EnclaveKeyType.filename() = "${KEY_FILENAME}_${this.name}"
     }
 
     private val masterKey: MasterKey by lazy {
@@ -28,10 +33,13 @@ class AndroidSecureStorage(
             .build()
     }
 
-    override suspend fun storeKey(key: ByteArray) =
-        withContext(Dispatchers.IO) {
+    override suspend fun storeKey(
+        key: ByteArray,
+        enclaveKeyType: EnclaveKeyType,
+    ) = withContext(Dispatchers.IO) {
+        mutex.withLock {
             try {
-                val file = File(context.filesDir, KEY_FILENAME)
+                val file = File(context.filesDir, enclaveKeyType.filename())
 
                 val encryptedFile =
                     EncryptedFile
@@ -51,43 +59,48 @@ class AndroidSecureStorage(
                 throw IllegalStateException("Failed to store secret key", e)
             }
         }
+    }
 
-    override suspend fun retrieveKey(): ByteArray? =
+    override suspend fun retrieveKey(enclaveKeyType: EnclaveKeyType): ByteArray? =
         withContext(Dispatchers.IO) {
-            try {
-                val file = File(context.filesDir, KEY_FILENAME)
-                if (!file.exists()) return@withContext null
+            mutex.withLock {
+                try {
+                    val file = File(context.filesDir, enclaveKeyType.filename())
+                    if (!file.exists()) return@withContext null
 
-                val encryptedFile =
-                    EncryptedFile
-                        .Builder(
-                            context,
-                            file,
-                            masterKey,
-                            EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB,
-                        ).setKeysetAlias(MASTER_KEY_ALIAS)
-                        .build()
+                    val encryptedFile =
+                        EncryptedFile
+                            .Builder(
+                                context,
+                                file,
+                                masterKey,
+                                EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB,
+                            ).setKeysetAlias(MASTER_KEY_ALIAS)
+                            .build()
 
-                ByteArrayOutputStream().use { outputStream ->
-                    encryptedFile.openFileInput().use { inputStream ->
-                        inputStream.copyTo(outputStream)
+                    ByteArrayOutputStream().use { outputStream ->
+                        encryptedFile.openFileInput().use { inputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                        outputStream.toByteArray()
                     }
-                    outputStream.toByteArray()
+                } catch (e: Exception) {
+                    throw IllegalStateException("Failed to retrieve secret key", e)
                 }
-            } catch (e: Exception) {
-                throw IllegalStateException("Failed to retrieve secret key", e)
             }
         }
 
-    override suspend fun deleteKey() =
+    override suspend fun deleteKey(enclaveKeyType: EnclaveKeyType) =
         withContext(Dispatchers.IO) {
-            try {
-                val file = File(context.filesDir, KEY_FILENAME)
-                if (file.exists()) {
-                    file.delete()
+            mutex.withLock {
+                try {
+                    val file = File(context.filesDir, enclaveKeyType.filename())
+                    if (file.exists()) {
+                        file.delete()
+                    }
+                } catch (e: Exception) {
+                    // Ignore deletion errors
                 }
-            } catch (e: Exception) {
-                // Ignore deletion errors
             }
         }
 }

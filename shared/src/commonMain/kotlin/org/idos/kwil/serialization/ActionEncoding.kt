@@ -8,7 +8,7 @@ import org.idos.kwil.protocol.Message
 import org.idos.kwil.protocol.TransactionBase64
 import org.idos.kwil.protocol.buildTransaction
 import org.idos.kwil.protocol.createMessage
-import org.idos.kwil.security.signer.Signer
+import org.idos.signer.Signer
 import org.idos.kwil.types.Base64String
 import org.idos.kwil.types.HexString
 

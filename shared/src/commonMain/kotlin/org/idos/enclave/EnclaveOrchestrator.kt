@@ -3,14 +3,15 @@ package org.idos.enclave
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.idos.enclave.crypto.Encryption
+import org.idos.enclave.local.LocalEnclave
 import org.idos.kwil.types.UuidString
-import kotlin.coroutines.cancellation.CancellationException
 
 /**
- * Orchestrates Enclave operations with reactive state management.
+ * Orchestrates LocalEnclave operations with reactive state management.
  *
- * This is the **primary entry point** for all Enclave operations. It provides:
- * - Reactive state management via [StateFlow]
+ * This is the **primary entry point** for all Local Enclave operations. It provides:
+ * - Reactive state management via [kotlinx.coroutines.flow.StateFlow]
  * - Lifecycle handling (lock/unlock)
  * - State-aware operation execution
  * - Automatic expiration checks
@@ -23,7 +24,7 @@ import kotlin.coroutines.cancellation.CancellationException
  * ## Kotlin Usage:
  * ```kotlin
  * // Create orchestrator
- * val encryption = JvmEncryption(JvmSecureStorage())
+ * val encryption = JvmEncryption(JvmSecureStorage(), KeyType.LOCAL)
  * val storage = JvmMetadataStorage()
  * val orchestrator = EnclaveOrchestrator.create(encryption, storage)
  *
@@ -59,7 +60,7 @@ import kotlin.coroutines.cancellation.CancellationException
  * // Create orchestrator with Keychain storage
  * let storage = KeychainSecureStorage()
  * let orchestrator = EnclaveOrchestrator.create(
- *     encryption: IosEncryption(storage: storage),
+ *     encryption: IosEncryption(storage: storage, keyType: KeyType.local),
  *     metadataStorage: IosMetadataStorage()
  * )
  *
@@ -98,13 +99,13 @@ import kotlin.coroutines.cancellation.CancellationException
  * @see EnclaveError for error types
  */
 class EnclaveOrchestrator internal constructor(
-    private val enclave: Enclave,
+    private val enclave: LocalEnclave,
 ) {
-    companion object {
+    companion object Companion {
         fun create(
             encryption: Encryption,
             storage: MetadataStorage,
-        ): EnclaveOrchestrator = EnclaveOrchestrator(Enclave(encryption, storage))
+        ): EnclaveOrchestrator = EnclaveOrchestrator(LocalEnclave(encryption, storage))
     }
 
     private val _state = MutableStateFlow<EnclaveState>(EnclaveState.Locked)

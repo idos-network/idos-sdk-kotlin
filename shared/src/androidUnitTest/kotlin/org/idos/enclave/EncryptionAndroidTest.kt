@@ -2,6 +2,8 @@ package org.idos.enclave
 
 import com.goterl.lazysodium.LazySodiumJava
 import com.goterl.lazysodium.SodiumJava
+import org.idos.enclave.crypto.AndroidEncryption
+import org.idos.enclave.crypto.Encryption
 
 // Android unit tests run on host JVM, so we use desktop lazysodium-java with MockSecureStorage
 // This tests the actual AndroidEncryption implementation with real libsodium crypto

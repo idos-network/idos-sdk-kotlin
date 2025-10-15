@@ -5,7 +5,6 @@ import kotlinx.io.readByteArray
 import kotlinx.io.writeIntLe
 import kotlinx.io.writeShortLe
 import org.idos.kwil.types.Base64String
-import org.idos.kwil.types.HexString
 import kotlin.io.encoding.Base64
 
 // https://github.com/trufnetwork/kwil-js/blob/main/src/utils/bytes.ts

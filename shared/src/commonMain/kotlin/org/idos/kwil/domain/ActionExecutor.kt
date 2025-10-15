@@ -3,7 +3,7 @@ package org.idos.kwil.domain
 import org.idos.kwil.protocol.KwilProtocol
 import org.idos.kwil.protocol.callAction
 import org.idos.kwil.protocol.executeAction
-import org.idos.kwil.security.signer.Signer
+import org.idos.signer.Signer
 import org.idos.kwil.types.HexString
 
 /**

@@ -1,9 +1,44 @@
 package org.idos.enclave
 
+/**
+ * Platform-specific metadata storage for enclave keys.
+ *
+ * Supports multiple keys via KeyType (LOCAL, MPC).
+ * Also stores MPC session configuration.
+ */
 interface MetadataStorage {
-    suspend fun store(meta: KeyMetadata)
+    /**
+     * Store key metadata.
+     * @param meta Key metadata to store
+     * @param enclaveKeyType Type of key
+     */
+    suspend fun store(
+        meta: KeyMetadata,
+        enclaveKeyType: EnclaveKeyType,
+    )
 
-    suspend fun get(): KeyMetadata?
+    /**
+     * Retrieve key metadata.
+     * @param enclaveKeyType Type of key
+     * @return Key metadata, or null if not found
+     */
+    suspend fun get(enclaveKeyType: EnclaveKeyType): KeyMetadata?
 
-    suspend fun delete()
+    /**
+     * Delete key metadata.
+     * @param enclaveKeyType Type of key
+     */
+    suspend fun delete(enclaveKeyType: EnclaveKeyType)
+
+    /**
+     * Get MPC session configuration.
+     * @return Saved session config, or null if not set
+     */
+    suspend fun getSessionConfig(): MpcSessionConfig?
+
+    /**
+     * Store MPC session configuration.
+     * @param config Session configuration to save
+     */
+    suspend fun storeSessionConfig(config: MpcSessionConfig)
 }

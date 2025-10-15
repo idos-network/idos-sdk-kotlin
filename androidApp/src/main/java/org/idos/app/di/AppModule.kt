@@ -21,13 +21,13 @@ import org.idos.app.ui.screens.login.LoginViewModel
 import org.idos.app.ui.screens.mnemonic.MnemonicViewModel
 import org.idos.app.ui.screens.settings.SettingsViewModel
 import org.idos.app.ui.screens.wallets.WalletsViewModel
-import org.idos.enclave.AndroidEncryption
 import org.idos.enclave.AndroidMetadataStorage
-import org.idos.enclave.Enclave
 import org.idos.enclave.EnclaveOrchestrator
-import org.idos.enclave.Encryption
 import org.idos.enclave.MetadataStorage
-import org.idos.kwil.security.signer.Signer
+import org.idos.enclave.crypto.AndroidEncryption
+import org.idos.enclave.crypto.Encryption
+import org.idos.signer.KeyType
+import org.idos.signer.Signer
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module

@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-import org.idos.app.data.DataProvider
 import org.idos.app.data.StorageManager
 import org.idos.app.data.model.CredentialDetail
 import org.idos.app.data.repository.CredentialsRepository
@@ -234,7 +233,6 @@ class CredentialDetailViewModel(
     override fun initialState(): CredentialDetailState = CredentialDetailState.Loading
 
     override fun onEvent(event: CredentialDetailEvent) {
-        Timber.d("***Event: $event")
         when (event) {
             is CredentialDetailEvent.LoadCredential -> loadCredential()
             is CredentialDetailEvent.DecryptCredential -> {

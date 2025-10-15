@@ -11,8 +11,8 @@ import kotlinx.serialization.encoding.Encoder
 import org.idos.kwil.domain.AccessModifier
 import org.idos.kwil.domain.PositionalParams
 import org.idos.kwil.domain.PositionalTypes
-import org.idos.kwil.security.signer.KeyType
-import org.idos.kwil.security.signer.SignatureType
+import org.idos.signer.KeyType
+import org.idos.signer.SignatureType
 import org.idos.kwil.types.Base64String
 import org.idos.kwil.types.HexString
 

@@ -5,7 +5,7 @@ import org.idos.get
 import org.idos.getAll
 import org.idos.getOwned
 import org.idos.hasProfile
-import org.idos.kwil.security.signer.Signer
+import org.idos.signer.Signer
 import org.idos.kwil.types.HexString
 import org.idos.kwil.types.UuidString
 

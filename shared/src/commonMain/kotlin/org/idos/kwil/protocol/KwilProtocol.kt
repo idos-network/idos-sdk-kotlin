@@ -2,7 +2,7 @@ package org.idos.kwil.protocol
 
 import io.ktor.client.statement.HttpResponse
 import org.idos.kwil.security.auth.Auth
-import org.idos.kwil.security.signer.SignatureType
+import org.idos.signer.SignatureType
 import org.idos.kwil.transport.JsonRpcClient
 import org.idos.kwil.transport.TransportError
 import org.idos.kwil.types.Base64String
@@ -130,7 +130,7 @@ class KwilProtocol(
      *
      * @param signer The cryptographic signer to use for authentication
      */
-    suspend fun authenticate(signer: org.idos.kwil.security.signer.Signer) {
+    suspend fun authenticate(signer: org.idos.signer.Signer) {
         auth.authenticateKGW(signer)
     }
 

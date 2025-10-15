@@ -4,16 +4,19 @@ package org.idos.enclave
  * Mock secure storage for testing encryption without platform dependencies.
  */
 class MockSecureStorage : SecureStorage {
-    private var key: ByteArray? = null
+    private val keys = mutableMapOf<EnclaveKeyType, ByteArray>()
 
-    override suspend fun storeKey(key: ByteArray) {
-        this.key = key.copyOf()
+    override suspend fun storeKey(
+        key: ByteArray,
+        enclaveKeyType: EnclaveKeyType,
+    ) {
+        keys[enclaveKeyType] = key.copyOf()
     }
 
-    override suspend fun retrieveKey(): ByteArray? = key?.copyOf()
+    override suspend fun retrieveKey(enclaveKeyType: EnclaveKeyType): ByteArray? = keys[enclaveKeyType]?.copyOf()
 
-    override suspend fun deleteKey() {
-        key?.fill(0)
-        key = null
+    override suspend fun deleteKey(enclaveKeyType: EnclaveKeyType) {
+        keys[enclaveKeyType]?.fill(0)
+        keys.remove(enclaveKeyType)
     }
 }

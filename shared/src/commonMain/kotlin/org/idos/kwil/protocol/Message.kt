@@ -2,7 +2,7 @@ package org.idos.kwil.protocol
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.idos.kwil.security.signer.SignatureType
+import org.idos.signer.SignatureType
 import org.idos.kwil.types.Base64String
 import org.idos.kwil.types.HexString
 

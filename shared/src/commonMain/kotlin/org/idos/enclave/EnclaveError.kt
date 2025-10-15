@@ -57,6 +57,50 @@ sealed class EnclaveError(
     ) : EnclaveError("Invalid public key: $details")
 
     /**
+     * MPC client not initialized - call initializeMpc() first.
+     */
+    class MpcNotInitialized : EnclaveError("MPC client not initialized - call initializeMpc() first")
+
+    class MpcNotEnoughNodes(
+        val details: String,
+    ) : EnclaveError("MPC client initialized with not enough nodes: $details")
+
+    /**
+     * MPC password operation failed.
+     */
+    data class MpcPasswordFailed(
+        val details: String,
+    ) : EnclaveError("MPC password operation failed: $details")
+
+    /**
+     * MPC download operation failed.
+     */
+    data class MpcDownloadFailed(
+        val details: String,
+    ) : EnclaveError("MPC download failed: $details")
+
+    /**
+     * MPC upload operation failed.
+     */
+    data class MpcUploadFailed(
+        val details: String,
+    ) : EnclaveError("MPC upload failed: $details")
+
+    /**
+     * Operation not implemented yet.
+     */
+    data class NotImplemented(
+        val details: String,
+    ) : EnclaveError("Not implemented: $details")
+
+    /**
+     * Signature operation failed.
+     */
+    data class SignatureFailed(
+        val details: String,
+    ) : EnclaveError("Signature failed: $details")
+
+    /**
      * Generic enclave operation error.
      */
     data class Unknown(
