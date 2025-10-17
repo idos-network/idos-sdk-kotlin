@@ -29,16 +29,4 @@ interface MetadataStorage {
      * @param enclaveKeyType Type of key
      */
     suspend fun delete(enclaveKeyType: EnclaveKeyType)
-
-    /**
-     * Get MPC session configuration.
-     * @return Saved session config, or null if not set
-     */
-    suspend fun getSessionConfig(): MpcSessionConfig?
-
-    /**
-     * Store MPC session configuration.
-     * @param config Session configuration to save
-     */
-    suspend fun storeSessionConfig(config: MpcSessionConfig)
 }

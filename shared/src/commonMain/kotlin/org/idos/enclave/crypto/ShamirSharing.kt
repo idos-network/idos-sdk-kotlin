@@ -18,7 +18,6 @@ import org.idos.getSecureRandom
  * Reference: idos-sdk-js/packages/utils/src/mpc/secretsharing/
  */
 object ShamirSharing {
-
     /**
      * Split a secret into n shares using Shamir Secret Sharing over GF(2^8).
      *
@@ -129,9 +128,10 @@ object ShamirSharing {
         // Reconstruct each byte
         for (byteIndex in 0 until secretLength) {
             // Extract the y-values (share bytes) for this position
-            val yValues = shares.map { share ->
-                GF256.fromByte(share[byteIndex])
-            }
+            val yValues =
+                shares.map { share ->
+                    GF256.fromByte(share[byteIndex])
+                }
 
             // Create points (alpha, yValue) for Lagrange interpolation
             val points = alphas.zip(yValues)

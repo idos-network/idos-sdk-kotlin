@@ -3,8 +3,8 @@ package org.idos.enclave.mpc
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import org.idos.crypto.Keccak256Hasher
 import org.idos.enclave.EnclaveError
+import org.idos.enclave.MpcNodeFailure
 import org.idos.enclave.crypto.Encryption
 import org.idos.enclave.crypto.ShamirSharing
 import org.idos.enclave.crypto.ShareBlinding
@@ -13,11 +13,15 @@ import org.idos.kwil.types.HexString
 /**
  * Configuration for MPC operations.
  *
+ * @param partisiaRpcUrl URL of the Partisia blockchain RPC endpoint
+ * @param contractAddress Address of the MPC contract (hex string)
  * @param totalNodes Total number of MPC nodes (n)
  * @param threshold Minimum number of shares needed to reconstruct secret (k)
  * @param maliciousNodes Number of potentially malicious nodes to tolerate
  */
 data class MpcConfig(
+    val partisiaRpcUrl: String,
+    val contractAddress: HexString,
     val totalNodes: Int,
     val threshold: Int,
     val maliciousNodes: Int = 0,
@@ -32,17 +36,19 @@ data class MpcConfig(
 }
 
 /**
- * Result of an upload operation.
- *
- * @param successCount Number of successful uploads
- * @param totalNodes Total number of nodes attempted
- * @param successful Whether the operation met the minimum success threshold
+ * Internal sealed class to track node operation results.
  */
-data class UploadResult(
-    val successCount: Int,
-    val totalNodes: Int,
-    val successful: Boolean,
-)
+private sealed class NodeResult {
+    data class Success(
+        val nodeIndex: Int,
+        val share: ByteArray,
+    ) : NodeResult()
+
+    data class Failure(
+        val nodeIndex: Int,
+        val error: Throwable,
+    ) : NodeResult()
+}
 
 /**
  * Internal MPC client that coordinates secret sharing across multiple nodes.
@@ -54,44 +60,34 @@ data class UploadResult(
  * - Managing recovery addresses across nodes
  *
  * Authentication is handled externally - this client accepts pre-signed signatures.
+ * Node discovery is on-demand - fetches fresh node list for each operation.
  *
- * @param partisiaRpcUrl URL of the Partisia blockchain RPC endpoint
- * @param contractAddress Address of the MPC contract
  * @param encryption Encryption instance for decrypting downloaded shares
- * @param hasher Keccak256 hasher for computing share commitments
- * @param config MPC configuration (nodes, threshold, etc.)
+ * @param config MPC configuration (URL, contract, nodes, threshold, etc.)
  */
 internal class MpcClient(
-    private val partisiaRpcUrl: String,
-    private val contractAddress: HexString,
     private val encryption: Encryption,
-    private val hasher: Keccak256Hasher,
     val config: MpcConfig,
 ) {
-    private val rpcClient = PartisiaRpcClient(partisiaRpcUrl, contractAddress)
-    internal var nodeClients: List<NodeClient> = emptyList()
+    private val rpcClient = PartisiaRpcClient(config.partisiaRpcUrl, config.contractAddress)
 
     /**
-     * Initialize the client by discovering MPC nodes from the blockchain.
+     * Fetch current node clients from blockchain on-demand.
+     * Creates fresh clients for each operation - no caching.
      */
-    suspend fun initialize() {
+    private suspend fun getNodeClients(): List<NodeClient> {
         val nodeConfigs = rpcClient.getState()
 
         if (nodeConfigs.size != config.totalNodes) {
             throw EnclaveError.MpcNotEnoughNodes("Expected ${config.totalNodes} nodes but found ${nodeConfigs.size}")
         }
 
-        nodeClients =
-            nodeConfigs.map { node ->
-                NodeClient(
-                    baseUrl = node.url,
-                    contractAddress = contractAddress,
-                )
-            }
-    }
-
-    private fun requireInitialized() {
-        if (nodeClients.isEmpty()) throw EnclaveError.MpcNotInitialized()
+        return nodeConfigs.map { node ->
+            NodeClient(
+                baseUrl = node.url,
+                contractAddress = config.contractAddress,
+            )
+        }
     }
 
     /**
@@ -101,19 +97,21 @@ internal class MpcClient(
      * @param request Upload request with commitments and recovery addresses
      * @param signature Pre-signed authorization signature
      * @param blindedShares The blinded shares to upload (one per node)
-     * @return UploadResult indicating success and node statistics
+     * @throws EnclaveError.MpcUploadFailed if insufficient nodes succeeded
      */
     suspend fun uploadSecret(
         id: String,
         request: UploadRequest,
         signature: String,
         blindedShares: List<ByteArray>,
-    ): UploadResult =
+    ): Unit =
         coroutineScope {
-            requireInitialized()
             require(blindedShares.size == config.totalNodes) {
                 "Must provide ${config.totalNodes} blinded shares, got ${blindedShares.size}"
             }
+
+            // Fetch fresh node clients on-demand
+            val clients = getNodeClients()
 
             // Create upload sharing data for each node
             val sharingRequests =
@@ -125,27 +123,30 @@ internal class MpcClient(
                     )
                 }
 
-            // Upload to all nodes in parallel
+            // Upload to all nodes in parallel, tracking both successes and failures
             val results =
-                nodeClients
+                clients
                     .mapIndexed { index, client ->
                         async {
                             try {
                                 client.sendUpload(id, sharingRequests[index], signature)
-                                true
+                                NodeResult.Success(index, ByteArray(0))
                             } catch (e: Exception) {
-                                println("Upload to node $index failed: ${e.message}")
-                                false
+                                NodeResult.Failure(index, e)
                             }
                         }
                     }.awaitAll()
 
-            val successCount = results.count { it }
-            UploadResult(
-                successCount = successCount,
-                totalNodes = config.totalNodes,
-                successful = successCount >= config.minSuccessfulNodes,
-            )
+            val successes = results.filterIsInstance<NodeResult.Success>()
+            val failures = results.filterIsInstance<NodeResult.Failure>()
+
+            if (successes.size < config.minSuccessfulNodes) {
+                throw EnclaveError.MpcUploadFailed(
+                    successCount = successes.size,
+                    required = config.minSuccessfulNodes,
+                    failures = failures.map { MpcNodeFailure(it.nodeIndex, it.error) },
+                )
+            }
         }
 
     /**
@@ -155,25 +156,26 @@ internal class MpcClient(
      * @param request Download request with recovery address and ephemeral public key
      * @param signature Pre-signed authorization signature
      * @param ephemeralSecretKey Secret key for decrypting shares (32 bytes)
-     * @return The reconstructed secret, or null if insufficient shares
+     * @return The reconstructed secret
+     * @throws EnclaveError.MpcNotEnoughShares if insufficient shares were obtained
      */
     suspend fun downloadSecret(
         id: String,
         request: DownloadRequest,
         signature: String,
         ephemeralSecretKey: ByteArray,
-    ): ByteArray? =
+    ): ByteArray =
         coroutineScope {
-            requireInitialized()
+            // Fetch fresh node clients on-demand
+            val clients = getNodeClients()
 
-            // Download from all nodes in parallel
-            val shares =
-                nodeClients
+            // Download from all nodes in parallel, tracking both successes and failures
+            val results =
+                clients
                     .mapIndexed { index, client ->
                         async {
                             try {
                                 val encryptedShare = client.sendDownload(id, request, signature)
-                                println(encryptedShare)
 
                                 // Decrypt share using NaCl box
                                 val nonce = encryptedShare.nonce.removePrefix("0x").hexToByteArray()
@@ -185,22 +187,31 @@ internal class MpcClient(
                                 val decryptedBlindedShare = encryption.decrypt(fullMessage, ephemeralSecretKey, nodePubkey)
 
                                 // Remove blinding
-                                ShareBlinding.unblind(decryptedBlindedShare)
+                                val share = ShareBlinding.unblind(decryptedBlindedShare)
+
+                                NodeResult.Success(index, share)
                             } catch (e: Exception) {
-                                println("Download from node $index failed: ${e.message}")
-                                null
+                                NodeResult.Failure(index, e)
                             }
                         }
                     }.awaitAll()
-                    .filterNotNull()
 
-            if (shares.size < config.threshold) {
-                println("Insufficient shares: got ${shares.size}, need ${config.threshold}")
-                return@coroutineScope null
+            val successes = results.filterIsInstance<NodeResult.Success>()
+            val failures = results.filterIsInstance<NodeResult.Failure>()
+
+            if (successes.size < config.threshold) {
+                throw EnclaveError.MpcNotEnoughShares(
+                    obtained = successes.size,
+                    required = config.threshold,
+                    failures = failures.map { MpcNodeFailure(it.nodeIndex, it.error) },
+                )
             }
 
             // Reconstruct secret from shares using Shamir's Secret Sharing
-            ShamirSharing.combineByteWiseShamir(shares, config.threshold)
+            ShamirSharing.combineByteWiseShamir(
+                successes.map { it.share },
+                config.threshold,
+            )
         }
 
     /**
@@ -209,32 +220,42 @@ internal class MpcClient(
      * @param id Unique identifier of the secret
      * @param request Add address request
      * @param signature Pre-signed authorization signature
-     * @return Number of successful operations
+     * @throws EnclaveError.MpcManagementFailed if insufficient nodes succeeded
      */
     suspend fun addAddress(
         id: String,
         request: AddAddressRequest,
         signature: String,
-    ): Int =
+    ): Unit =
         coroutineScope {
-            requireInitialized()
+            // Fetch fresh node clients on-demand
+            val clients = getNodeClients()
 
-            // Send to all nodes in parallel
+            // Send to all nodes in parallel, tracking both successes and failures
             val results =
-                nodeClients
+                clients
                     .mapIndexed { index, client ->
                         async {
                             try {
                                 client.sendAddAddress(id, request, signature)
-                                true
+                                NodeResult.Success(index, ByteArray(0))
                             } catch (e: Exception) {
-                                println("Add address to node $index failed: ${e.message}")
-                                false
+                                NodeResult.Failure(index, e)
                             }
                         }
                     }.awaitAll()
 
-            results.count { it }
+            val successes = results.filterIsInstance<NodeResult.Success>()
+            val failures = results.filterIsInstance<NodeResult.Failure>()
+
+            if (successes.size < config.minSuccessfulNodes) {
+                throw EnclaveError.MpcManagementFailed(
+                    operation = "add address",
+                    successCount = successes.size,
+                    required = config.minSuccessfulNodes,
+                    failures = failures.map { MpcNodeFailure(it.nodeIndex, it.error) },
+                )
+            }
         }
 
     /**
@@ -243,32 +264,42 @@ internal class MpcClient(
      * @param id Unique identifier of the secret
      * @param request Remove address request
      * @param signature Pre-signed authorization signature
-     * @return Number of successful operations
+     * @throws EnclaveError.MpcManagementFailed if insufficient nodes succeeded
      */
     suspend fun removeAddress(
         id: String,
         request: RemoveAddressRequest,
         signature: String,
-    ): Int =
+    ): Unit =
         coroutineScope {
-            requireInitialized()
+            // Fetch fresh node clients on-demand
+            val clients = getNodeClients()
 
-            // Send to all nodes in parallel
+            // Send to all nodes in parallel, tracking both successes and failures
             val results =
-                nodeClients
+                clients
                     .mapIndexed { index, client ->
                         async {
                             try {
                                 client.sendRemoveAddress(id, request, signature)
-                                true
+                                NodeResult.Success(index, ByteArray(0))
                             } catch (e: Exception) {
-                                println("Remove address from node $index failed: ${e.message}")
-                                false
+                                NodeResult.Failure(index, e)
                             }
                         }
                     }.awaitAll()
 
-            results.count { it }
+            val successes = results.filterIsInstance<NodeResult.Success>()
+            val failures = results.filterIsInstance<NodeResult.Failure>()
+
+            if (successes.size < config.minSuccessfulNodes) {
+                throw EnclaveError.MpcManagementFailed(
+                    operation = "remove address",
+                    successCount = successes.size,
+                    required = config.minSuccessfulNodes,
+                    failures = failures.map { MpcNodeFailure(it.nodeIndex, it.error) },
+                )
+            }
         }
 
     /**
@@ -277,38 +308,41 @@ internal class MpcClient(
      * @param id Unique identifier of the secret
      * @param request Update wallets request
      * @param signature Pre-signed authorization signature
-     * @return Number of successful operations
+     * @throws EnclaveError.MpcManagementFailed if insufficient nodes succeeded
      */
     suspend fun updateWallets(
         id: String,
         request: UpdateWalletsRequest,
         signature: String,
-    ): Int =
+    ): Unit =
         coroutineScope {
-            requireInitialized()
+            // Fetch fresh node clients on-demand
+            val clients = getNodeClients()
 
-            // Send to all nodes in parallel
+            // Send to all nodes in parallel, tracking both successes and failures
             val results =
-                nodeClients
+                clients
                     .mapIndexed { index, client ->
                         async {
                             try {
                                 client.sendUpdate(id, request, signature)
-                                true
+                                NodeResult.Success(index, ByteArray(0))
                             } catch (e: Exception) {
-                                println("Update wallets on node $index failed: ${e.message}")
-                                false
+                                NodeResult.Failure(index, e)
                             }
                         }
                     }.awaitAll()
 
-            results.count { it }
-        }
+            val successes = results.filterIsInstance<NodeResult.Success>()
+            val failures = results.filterIsInstance<NodeResult.Failure>()
 
-    /**
-     * Close all node clients and clean up resources.
-     */
-    fun close() {
-        nodeClients.forEach { it.close() }
-    }
+            if (successes.size < config.minSuccessfulNodes) {
+                throw EnclaveError.MpcManagementFailed(
+                    operation = "update wallets",
+                    successCount = successes.size,
+                    required = config.minSuccessfulNodes,
+                    failures = failures.map { MpcNodeFailure(it.nodeIndex, it.error) },
+                )
+            }
+        }
 }

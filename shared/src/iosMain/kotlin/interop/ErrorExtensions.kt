@@ -50,6 +50,7 @@ import platform.Foundation.NSError
  * ```
  */
 
+@Suppress("ktlint:standard:no-consecutive-comments", "ktlint:standard:function-signature")
 /**
  * Extracts the original Kotlin exception from an NSError.
  *

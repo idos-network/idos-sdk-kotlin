@@ -1,5 +1,6 @@
 package org.idos.app.ui.screens.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -32,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import org.idos.app.ui.screens.base.BaseScreen
 import org.idos.app.ui.screens.base.spacing
 import org.koin.androidx.compose.koinViewModel
@@ -47,7 +51,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = koinViewModel()) {
         viewModel.onEvent(SettingsEvent.CheckKeyStatus)
     }
 
-    // Show success/error messages
+    // Show error messages
     LaunchedEffect(state.error) {
         state.error?.let { error ->
             snackbarHostState.showSnackbar(
@@ -55,6 +59,17 @@ fun SettingsScreen(viewModel: SettingsViewModel = koinViewModel()) {
                 duration = SnackbarDuration.Long,
             )
             viewModel.onEvent(SettingsEvent.ClearError)
+        }
+    }
+
+    // Show snackbar messages
+    LaunchedEffect(state.snackbarMessage) {
+        state.snackbarMessage?.let { message ->
+            snackbarHostState.showSnackbar(
+                message = message,
+                duration = SnackbarDuration.Long,
+            )
+            viewModel.onEvent(SettingsEvent.DismissSnackbar)
         }
     }
 
@@ -76,7 +91,8 @@ fun SettingsScreen(viewModel: SettingsViewModel = koinViewModel()) {
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = 8.dp)
+                        .clickable { viewModel.onEvent(SettingsEvent.OnEncryptionStatusClick) },
             ) {
                 Row(
                     modifier =
@@ -85,26 +101,66 @@ fun SettingsScreen(viewModel: SettingsViewModel = koinViewModel()) {
                             .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Key,
-                        contentDescription = "Encryption Key",
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Text("Encryption Key")
-                    Spacer(modifier = Modifier.weight(1f))
-                    if (state.hasEncryptionKey) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = "Key exists",
-                            tint = Color.Green,
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Error,
-                            contentDescription = "No key",
-                            tint = Color.Red,
-                        )
+                    when (val status = state.enclaveStatus) {
+                        is EnclaveUiStatus.Unlocked -> {
+                            Icon(
+                                imageVector = Icons.Default.LockOpen,
+                                contentDescription = "Unlocked",
+                                tint = Color.Green,
+                                modifier = Modifier.size(32.dp),
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Enclave Unlocked", style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    status.formattedExpiration,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+
+                        is EnclaveUiStatus.Locked -> {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = "Locked",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(32.dp),
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Enclave Locked", style = MaterialTheme.typography.titleMedium)
+                                status.formattedExpiration?.let { expiration ->
+                                    Text(
+                                        expiration,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+
+                        EnclaveUiStatus.NotAvailable -> {
+                            Icon(
+                                imageVector = Icons.Default.Error,
+                                contentDescription = "Not Available",
+                                tint = Color.Red,
+                                modifier = Modifier.size(32.dp),
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Enclave Not Available", style = MaterialTheme.typography.titleMedium)
+                            }
+                        }
+
+                        EnclaveUiStatus.Unlocking -> {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(32.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text("Enclave Unlocking...", style = MaterialTheme.typography.titleMedium)
+                        }
                     }
                 }
             }

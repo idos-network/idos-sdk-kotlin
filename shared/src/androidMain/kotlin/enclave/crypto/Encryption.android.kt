@@ -4,7 +4,6 @@ import android.content.Context
 import com.goterl.lazysodium.LazySodiumAndroid
 import com.goterl.lazysodium.SodiumAndroid
 import com.goterl.lazysodium.interfaces.Box
-import com.goterl.lazysodium.interfaces.SecretBox
 import com.goterl.lazysodium.utils.Key
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

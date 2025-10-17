@@ -159,23 +159,6 @@ private fun CredentialCard(
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Button(
-                    onClick = { /* Handle copy action */ },
-                    modifier = Modifier.padding(end = 8.dp),
-                ) {
-                    Text("Copy")
-                }
-                Button(
-                    onClick = { /* Handle details action */ },
-                ) {
-                    Text("Details")
-                }
-            }
         }
     }
 }

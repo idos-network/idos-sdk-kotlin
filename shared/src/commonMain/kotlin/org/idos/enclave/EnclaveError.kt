@@ -65,6 +65,15 @@ sealed class EnclaveError(
         val details: String,
     ) : EnclaveError("MPC client initialized with not enough nodes: $details")
 
+    data class MpcNotEnoughShares(
+        val obtained: Int,
+        val required: Int,
+        val failures: List<MpcNodeFailure>,
+    ) : EnclaveError(
+            "Insufficient shares: got $obtained, need $required. " +
+                "Failures: ${failures.joinToString(", ") { "Node ${it.nodeIndex}: ${it.error.message ?: "Unknown error"}" }}",
+        )
+
     /**
      * MPC password operation failed.
      */
@@ -80,18 +89,29 @@ sealed class EnclaveError(
     ) : EnclaveError("MPC download failed: $details")
 
     /**
+     * MPC management operation failed (add/remove address, update wallets).
+     */
+    data class MpcManagementFailed(
+        val operation: String,
+        val successCount: Int,
+        val required: Int,
+        val failures: List<MpcNodeFailure>,
+    ) : EnclaveError(
+            "MPC $operation failed: got $successCount successes, need $required. " +
+                "Failures: ${failures.joinToString(", ") { "Node ${it.nodeIndex}: ${it.error.message ?: "Unknown error"}" }}",
+        )
+
+    /**
      * MPC upload operation failed.
      */
     data class MpcUploadFailed(
-        val details: String,
-    ) : EnclaveError("MPC upload failed: $details")
-
-    /**
-     * Operation not implemented yet.
-     */
-    data class NotImplemented(
-        val details: String,
-    ) : EnclaveError("Not implemented: $details")
+        val successCount: Int,
+        val required: Int,
+        val failures: List<MpcNodeFailure>,
+    ) : EnclaveError(
+            "MPC upload failed: got $successCount successes, need $required. " +
+                "Failures: ${failures.joinToString(", ") { "Node ${it.nodeIndex}: ${it.error.message ?: "Unknown error"}" }}",
+        )
 
     /**
      * Signature operation failed.
@@ -139,6 +159,17 @@ sealed class DecryptFailure(
         val message: String,
     ) : DecryptFailure(message)
 }
+
+/**
+ * Represents a failure from a specific MPC node.
+ *
+ * @param nodeIndex Index of the node that failed
+ * @param error The underlying error that occurred
+ */
+data class MpcNodeFailure(
+    val nodeIndex: Int,
+    val error: Throwable,
+)
 
 @PublishedApi
 internal suspend inline fun <T> runCatchingErrorAsync(crossinline block: suspend () -> T): T =

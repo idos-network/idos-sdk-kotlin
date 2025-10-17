@@ -7,6 +7,8 @@ import org.idos.app.data.UserState
 import org.idos.app.data.model.UserModel
 import org.idos.app.security.EthSigner.Companion.privateToAddress
 import org.idos.app.security.KeyManager
+import org.idos.enclave.EnclaveKeyType
+import org.idos.enclave.EnclaveOrchestrator
 import timber.log.Timber
 
 class NoProfileException(
@@ -16,11 +18,13 @@ class NoProfileException(
 interface UserRepository {
     val userState: StateFlow<UserState>
 
+    suspend fun initialize()
+
     suspend fun fetchAndStoreUser()
 
     fun getStoredUser(): UserModel?
 
-    fun clearUserProfile()
+    suspend fun clearUserProfile()
 
     fun hasStoredProfile(): Boolean
 }
@@ -29,8 +33,19 @@ class UserRepositoryImpl(
     private val dataProvider: DataProvider,
     private val storageManager: StorageManager,
     private val keyManager: KeyManager,
+    private val enclaveOrchestrator: EnclaveOrchestrator,
 ) : UserRepository {
     override val userState: StateFlow<UserState> = storageManager.userState
+
+    /**
+     * Initialize the user repository by loading stored user data
+     */
+    override suspend fun initialize() {
+        storageManager.initialize()
+        getStoredUser()?.enclaveKeyType?.let {
+            enclaveOrchestrator.initializeType(it)
+        }
+    }
 
     /**
      * Orchestrates the proper flow:
@@ -62,11 +77,15 @@ class UserRepositoryImpl(
                 UserModel(
                     id = user.id,
                     walletAddress = address,
+                    enclaveKeyType = EnclaveKeyType.getByValue(user.encryptionPasswordStore),
                     lastUpdated = System.currentTimeMillis(),
                 )
 
             // Step 5: Save to StorageManager (triggers StateFlow update)
             storageManager.saveUserProfile(userModel)
+            userModel.enclaveKeyType?.let { enclaveOrchestrator.initializeType(it) } ?: {
+                Timber.w("No enclave key type found in user profile, skipping Enclave initialization.")
+            }
             Timber.d("Successfully fetched and stored user profile")
         } catch (e: Exception) {
             Timber.e(e, "Failed to fetch user profile")
@@ -77,7 +96,7 @@ class UserRepositoryImpl(
 
     override fun getStoredUser(): UserModel? = storageManager.getStoredUser()
 
-    override fun clearUserProfile() {
+    override suspend fun clearUserProfile() {
         storageManager.clearUserProfile()
         keyManager.clearStoredKeys() // Also clear the keys when logging out
         Timber.d("Cleared user profile and keys")

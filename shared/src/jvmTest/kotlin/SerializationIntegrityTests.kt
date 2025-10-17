@@ -15,7 +15,6 @@ import org.idos.kwil.domain.generated.view.HasProfile
 import org.idos.kwil.domain.generated.view.HasProfileParams
 import org.idos.kwil.serialization.toMessage
 import org.idos.kwil.serialization.toTransaction
-import org.idos.kwil.types.UuidString
 import org.idos.signer.JvmEthSigner
 
 /**

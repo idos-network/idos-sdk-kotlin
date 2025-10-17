@@ -31,5 +31,8 @@ object Keccak256 {
      * @param data Input bytes to hash
      * @return 32-byte Keccak256 hash
      */
-    fun hash(hasher: Keccak256Hasher, data: ByteArray): ByteArray = hasher.digest(data)
+    fun hash(
+        hasher: Keccak256Hasher,
+        data: ByteArray,
+    ): ByteArray = hasher.digest(data)
 }

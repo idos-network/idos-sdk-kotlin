@@ -4,6 +4,7 @@ import Combine
 /// Mnemonic state matching Android's MnemonicState
 struct MnemonicState {
     var mnemonic: String = ""
+    var derivationPath: String = EthSigner.defaultDerivationPath
     var isLoading: Bool = false
     var isSuccess: Bool = false
     var error: String? = nil
@@ -12,6 +13,7 @@ struct MnemonicState {
 /// Mnemonic events matching Android's MnemonicEvent
 enum MnemonicEvent {
     case updateMnemonic(String)
+    case updateDerivationPath(String)
     case importWallet
     case fetchUser
     case clearError
@@ -48,6 +50,8 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
         switch event {
         case .updateMnemonic(let mnemonic):
             updateMnemonic(mnemonic)
+        case .updateDerivationPath(let path):
+            updateDerivationPath(path)
         case .importWallet:
             importWallet()
         case .fetchUser:
@@ -59,6 +63,10 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
 
     private func updateMnemonic(_ mnemonic: String) {
         updateState { $0.mnemonic = mnemonic }
+    }
+
+    private func updateDerivationPath(_ path: String) {
+        updateState { $0.derivationPath = path }
     }
 
     private func importWallet() {
@@ -88,11 +96,11 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
                 }
 
                 print("✅ MnemonicViewModel: Mnemonic validated (\(words.count) words)")
-                print("🔑 MnemonicViewModel: Generating and storing private key")
+                print("🔑 MnemonicViewModel: Generating and storing private key with derivation path: \(state.derivationPath)")
 
                 // Generate and store key using KeyManager (matches Android implementation)
                 // This derives the private key using BIP39/BIP44 and stores it securely
-                let address = try keyManager.generateAndStoreKey(words: state.mnemonic)
+                let address = try keyManager.generateAndStoreKey(words: state.mnemonic, derivationPath: state.derivationPath)
 
                 print("✅ MnemonicViewModel: Key generated, address: \(address)")
 
@@ -101,9 +109,9 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
                     // Store the wallet address
                     storageManager.saveWalletAddress(address)
                     print("✅ MnemonicViewModel: Wallet import complete, showing success dialog")
-                    
+
                     updateState {
-                        $0.isLoading = true
+                        $0.isLoading = false
                         $0.isSuccess = true
                     }
                 }
@@ -130,17 +138,26 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
     private func fetchUser() {
         print("🔄 MnemonicViewModel: Starting user fetch")
 
+        // Set loading state while keeping success dialog visible
+        updateState {
+            $0.isLoading = true
+            $0.error = nil
+        }
+
         Task {
             do {
                 // Fetch user profile from API and store
                 try await userRepository.fetchAndStoreUser()
 
                 print("✅ MnemonicViewModel: User fetched and stored successfully")
+                // Success - dialog will auto-dismiss when UserRepository navigates
+                // No need to update state here, navigation will happen automatically
             } catch UserError.noUserProfile {
                 print("⚠️ MnemonicViewModel: No user profile found")
                 await MainActor.run {
                     updateState {
                         $0.isLoading = false
+                        $0.isSuccess = false
                         $0.error = "No user profile found for this wallet. Please create your profile first."
                     }
                 }
@@ -149,6 +166,7 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
                 await MainActor.run {
                     updateState {
                         $0.isLoading = false
+                        $0.isSuccess = false
                         $0.error = "Failed to fetch user: \(error.localizedDescription)"
                     }
                 }

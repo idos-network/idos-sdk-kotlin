@@ -2,10 +2,10 @@ package org.idos.kwil.protocol
 
 import io.ktor.utils.io.core.toByteArray
 import org.idos.kwil.domain.ExecuteAction
-import org.idos.signer.Signer
 import org.idos.kwil.serialization.toTransaction
 import org.idos.kwil.types.Base64String
 import org.idos.kwil.types.HexString
+import org.idos.signer.Signer
 import org.kotlincrypto.hash.sha2.SHA256
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi

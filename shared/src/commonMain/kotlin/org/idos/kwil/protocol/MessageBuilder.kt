@@ -1,8 +1,8 @@
 package org.idos.kwil.protocol
 
-import org.idos.signer.Signer
 import org.idos.kwil.types.Base64String
 import org.idos.kwil.types.HexString
+import org.idos.signer.Signer
 
 /**
  * Creates a message with action payload.

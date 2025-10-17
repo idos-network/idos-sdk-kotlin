@@ -13,19 +13,19 @@ class EnclaveOrchestratorTest :
     FunSpec({
         val userId = "550e8400-e29b-41d4-a716-446655440000"
         val password = "test-password"
-        val expiration = 3600000L // 1 hour
+        val expiration = EnclaveSessionConfig(ExpirationType.TIMED, 3600000L) // 1 hour
 
         context("State Management") {
             test("Initial state is Locked") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.NoKey)
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Locked>()
             }
 
             test("checkStatus with no key → Locked") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.NoKey)
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 orchestrator.checkStatus()
                 orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Locked>()
@@ -33,7 +33,7 @@ class EnclaveOrchestratorTest :
 
             test("checkStatus with valid key → Unlocked") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 // Generate key first
                 orchestrator.unlock(userId, password, expiration)
@@ -45,7 +45,7 @@ class EnclaveOrchestratorTest :
 
             test("checkStatus with expired key → Locked") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.KeyExpired)
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 orchestrator.checkStatus()
                 orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Locked>()
@@ -55,7 +55,7 @@ class EnclaveOrchestratorTest :
         context("unlock() - Key Generation") {
             test("unlock() transitions Locked → Unlocking → Unlocked") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Locked>()
 
@@ -68,7 +68,7 @@ class EnclaveOrchestratorTest :
             test("unlock() failure → Locked") {
                 val error = EnclaveError.KeyGenerationFailed("Test failure")
                 val enclave = MockEnclave(MockEnclave.MockBehavior.KeyGenerationFails(error))
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 orchestrator.unlock(userId, password, expiration)
                 orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Locked>()
@@ -76,7 +76,7 @@ class EnclaveOrchestratorTest :
 
             test("unlock() from Unlocked state re-generates key") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 orchestrator.unlock(userId, password, expiration)
                 orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Unlocked>()
@@ -92,7 +92,7 @@ class EnclaveOrchestratorTest :
         context("lock() - Key Deletion") {
             test("lock() transitions to Locked") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 orchestrator.unlock(userId, password, expiration)
                 orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Unlocked>()
@@ -103,7 +103,7 @@ class EnclaveOrchestratorTest :
 
             test("lock() when already Locked → still Locked") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.NoKey)
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Locked>()
 
@@ -113,7 +113,7 @@ class EnclaveOrchestratorTest :
 
             test("lock() failure still transitions to Locked") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.DeleteKeyFails)
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 orchestrator.unlock(userId, password, expiration)
                 orchestrator.state.value.shouldBeInstanceOf<EnclaveState.Unlocked>()
@@ -128,7 +128,7 @@ class EnclaveOrchestratorTest :
         context("withEnclave() - Access Control") {
             test("withEnclave() when Locked → NoKey error") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.NoKey)
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 val exception =
                     runCatching {
@@ -139,7 +139,7 @@ class EnclaveOrchestratorTest :
 
             test("withEnclave() when Unlocked → executes action") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 orchestrator.unlock(userId, password, expiration)
 
@@ -150,7 +150,7 @@ class EnclaveOrchestratorTest :
 
             test("withEnclave() action returns Result") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 orchestrator.unlock(userId, password, expiration)
 
@@ -164,7 +164,7 @@ class EnclaveOrchestratorTest :
             test("withEnclave() propagates action failure") {
                 val error = EnclaveError.EncryptionFailed("Test failure")
                 val enclave = MockEnclave(MockEnclave.MockBehavior.EncryptFails(error))
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 orchestrator.unlock(userId, password, expiration)
 
@@ -181,7 +181,7 @@ class EnclaveOrchestratorTest :
         context("Enclave Operations via withEnclave") {
             test("Encrypt via withEnclave succeeds") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 orchestrator.unlock(userId, password, expiration)
 
@@ -195,7 +195,7 @@ class EnclaveOrchestratorTest :
 
             test("Decrypt via withEnclave succeeds") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 orchestrator.unlock(userId, password, expiration)
 
@@ -213,7 +213,7 @@ class EnclaveOrchestratorTest :
             test("Decrypt with wrong password error") {
                 val error = EnclaveError.DecryptionFailed(DecryptFailure.WrongPassword)
                 val enclave = MockEnclave(MockEnclave.MockBehavior.DecryptFails(error))
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 orchestrator.unlock(userId, password, expiration)
 
@@ -233,7 +233,7 @@ class EnclaveOrchestratorTest :
         context("State Transitions") {
             test("Full lifecycle: unlock → use → lock → can't use") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 // Unlock
                 orchestrator.unlock(userId, password, expiration)
@@ -260,7 +260,7 @@ class EnclaveOrchestratorTest :
 
             test("unlock → lock → unlock again") {
                 val enclave = MockEnclave(MockEnclave.MockBehavior.Success)
-                val orchestrator = EnclaveOrchestrator(enclave)
+                val orchestrator = EnclaveOrchestrator(enclave, null, EnclaveKeyType.USER)
 
                 // First unlock
                 orchestrator.unlock(userId, password, expiration)

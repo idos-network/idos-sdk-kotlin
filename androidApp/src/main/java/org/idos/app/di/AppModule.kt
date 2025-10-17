@@ -21,19 +21,24 @@ import org.idos.app.ui.screens.login.LoginViewModel
 import org.idos.app.ui.screens.mnemonic.MnemonicViewModel
 import org.idos.app.ui.screens.settings.SettingsViewModel
 import org.idos.app.ui.screens.wallets.WalletsViewModel
+import org.idos.crypto.BouncyCastleKeccak256
+import org.idos.crypto.Keccak256Hasher
 import org.idos.enclave.AndroidMetadataStorage
 import org.idos.enclave.EnclaveOrchestrator
 import org.idos.enclave.MetadataStorage
 import org.idos.enclave.crypto.AndroidEncryption
 import org.idos.enclave.crypto.Encryption
-import org.idos.signer.KeyType
+import org.idos.enclave.mpc.MpcConfig
 import org.idos.signer.Signer
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
-const val STAGING_URL = "https://nodes.staging.idos.network"
-const val STAGING_CHAIN_ID = "idos-staging"
+private const val STAGING_URL = "https://nodes.playground.idos.network"
+private const val STAGING_CHAIN_ID = "kwil-testnet"
+private const val PG_PARTISIA_URL = "https://partisia-reader-node.playground.idos.network:8080"
+private const val PG_CONTRACT = "0223996d84146dbf310dd52a0e1d103e91bb8402b3"
+private val MPC_CONFIG = MpcConfig(PG_PARTISIA_URL, PG_CONTRACT, 6, 4, 2)
 
 val networkModule =
     module {
@@ -52,7 +57,7 @@ val repositoryModule =
     module {
         single<CredentialsRepository> { CredentialsRepositoryImpl(get()) }
         single<WalletRepository> { WalletRepositoryImpl(get()) }
-        single<UserRepository> { UserRepositoryImpl(get(), get(), get()) }
+        single<UserRepository> { UserRepositoryImpl(get(), get(), get(), get()) }
     }
 
 val viewModelModule =
@@ -61,7 +66,7 @@ val viewModelModule =
         viewModel { LoginViewModel(get(), get()) }
         viewModel { CredentialsViewModel(get(), get()) }
         viewModel { WalletsViewModel(get()) }
-        viewModel { SettingsViewModel(get()) }
+        viewModel { SettingsViewModel(get(), get()) }
         viewModel { MnemonicViewModel(get(), get()) }
         viewModel { (savedStateHandle: SavedStateHandle) ->
             CredentialDetailViewModel(
@@ -81,10 +86,19 @@ val navigationModule =
 
 val securityModule =
     module {
+        single<Keccak256Hasher> { BouncyCastleKeccak256() }
         single<Encryption> { AndroidEncryption(androidContext()) }
-        single { EnclaveOrchestrator.create(get(), get()) }
-        single { KeyManager(androidContext()) }
         single<Signer> { EthSigner(get(), get()) }
+        single { KeyManager(androidContext()) }
+        single {
+            EnclaveOrchestrator.create(
+                get(),
+                get(),
+                MPC_CONFIG,
+                get(),
+                get(),
+            )
+        }
     }
 
 val appModule =

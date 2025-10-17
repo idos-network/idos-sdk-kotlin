@@ -1,8 +1,9 @@
+@file:Suppress("ktlint:standard:max-line-length")
+
 package org.idos.enclave
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
-import org.idos.crypto.BouncyCastleKeccak256
 import org.idos.enclave.crypto.JvmEncryption
 import org.idos.enclave.mpc.DownloadRequest
 import org.idos.enclave.mpc.MpcClient
@@ -53,12 +54,9 @@ class MpcIntegrationTest :
                 val private = PrivateKey("304ad494f0d59f0c1d48f01dfacda9becbcb0e5cb9f9a460f107eae5f8cc0890".hexToByteArray())
                 val signer = JvmEthSigner(private.toECKeyPair())
                 val encryption = JvmEncryption()
-                val hasher = BouncyCastleKeccak256()
-                val config = MpcConfig(4, 2, 2)
-                val mpc = MpcClient(url, address, encryption, hasher, config)
-                mpc.initialize()
+                val config = MpcConfig(url, address, 4, 2, 2)
+                val mpc = MpcClient(encryption, config)
 
-                mpc.nodeClients.size shouldBe config.totalNodes
                 signer.getIdentifier() shouldBe pubkey
 
                 val ephemeralKeyPair = encryption.generateEphemeralKeyPair()

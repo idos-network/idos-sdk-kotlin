@@ -3,7 +3,8 @@ package org.idos.enclave.local
 import org.idos.enclave.Enclave
 import org.idos.enclave.EnclaveError
 import org.idos.enclave.EnclaveKeyType
-import org.idos.enclave.ExpirationType
+import org.idos.enclave.EnclaveSessionConfig
+import org.idos.enclave.ExpirationChecker
 import org.idos.enclave.KeyMetadata
 import org.idos.enclave.MetadataStorage
 import org.idos.enclave.crypto.Encryption
@@ -35,28 +36,27 @@ open class LocalEnclave internal constructor(
      *
      * @param userId User identifier for key derivation
      * @param password Password for key derivation
-     * @param expiration Key expiration time in milliseconds
+     * @param sessionConfig Session configuration (expiration type and duration) - required, no default
      * @return Public key bytes
      * @throws EnclaveError.KeyGenerationFailed if key generation fails
      */
     internal open suspend fun generateKey(
         userId: UuidString,
         password: String,
-        expiration: Long,
+        sessionConfig: EnclaveSessionConfig,
     ): ByteArray =
         runCatchingErrorAsync {
-            encryption.deleteKey(EnclaveKeyType.LOCAL)
-            val pubkey = encryption.generateKey(userId, password)
+            encryption.deleteKey(EnclaveKeyType.USER)
+            val pubkey = encryption.generateKey(userId, password, EnclaveKeyType.USER)
             val now = getCurrentTimeMillis()
             val meta =
                 KeyMetadata(
-                    userId = userId,
                     publicKey = pubkey.toHexString(),
-                    type = EnclaveKeyType.LOCAL,
-                    expirationType = ExpirationType.TIMED,
-                    expiresAt = now + expiration,
+                    type = EnclaveKeyType.USER,
+                    expirationType = sessionConfig.expirationType,
+                    expiresAt = sessionConfig.expirationMillis?.let { now + it },
                 )
-            storage.store(meta, EnclaveKeyType.LOCAL)
+            storage.store(meta, EnclaveKeyType.USER)
             pubkey
         }
 
@@ -67,8 +67,8 @@ open class LocalEnclave internal constructor(
      */
     internal open suspend fun deleteKey(): Unit =
         runCatchingErrorAsync {
-            encryption.deleteKey(EnclaveKeyType.LOCAL)
-            storage.delete(EnclaveKeyType.LOCAL)
+            encryption.deleteKey(EnclaveKeyType.USER)
+            storage.delete(EnclaveKeyType.USER)
         }
 
     /**
@@ -88,8 +88,8 @@ open class LocalEnclave internal constructor(
     ): ByteArray =
         runCatchingErrorAsync {
             val meta = expirationCheck()
-            storage.store(meta.copy(lastUsedAt = getCurrentTimeMillis()), EnclaveKeyType.LOCAL)
-            encryption.decrypt(message, senderPublicKey, EnclaveKeyType.LOCAL)
+            storage.store(meta.copy(lastUsedAt = getCurrentTimeMillis()), EnclaveKeyType.USER)
+            encryption.decrypt(message, senderPublicKey, EnclaveKeyType.USER)
         }
 
     /**
@@ -109,8 +109,8 @@ open class LocalEnclave internal constructor(
     ): Pair<ByteArray, ByteArray> =
         runCatchingErrorAsync {
             val meta = expirationCheck()
-            storage.store(meta.copy(lastUsedAt = getCurrentTimeMillis()), EnclaveKeyType.LOCAL)
-            encryption.encrypt(message, receiverPublicKey, EnclaveKeyType.LOCAL)
+            storage.store(meta.copy(lastUsedAt = getCurrentTimeMillis()), EnclaveKeyType.USER)
+            encryption.encrypt(message, receiverPublicKey, EnclaveKeyType.USER)
         }
 
     /**
@@ -120,35 +120,8 @@ open class LocalEnclave internal constructor(
      * @throws EnclaveError.KeyExpired if the stored key has expired
      */
     internal open suspend fun hasValidKey() {
-        expirationCheck()
+        ExpirationChecker.check(storage, encryption, EnclaveKeyType.USER)
     }
 
-    private suspend fun expirationCheck(): KeyMetadata =
-        runCatchingErrorAsync {
-            val meta = storage.get(EnclaveKeyType.LOCAL) ?: throw EnclaveError.NoKey()
-            val now = getCurrentTimeMillis()
-
-            when (meta.expirationType) {
-                ExpirationType.TIMED -> {
-                    if (meta.expiresAt != null && now > meta.expiresAt) {
-                        encryption.deleteKey(EnclaveKeyType.LOCAL)
-                        storage.delete(EnclaveKeyType.LOCAL)
-                        throw EnclaveError.KeyExpired()
-                    }
-                }
-                ExpirationType.ONE_SHOT -> {
-                    if (meta.lastUsedAt != meta.createdAt) {
-                        // Already used once, auto-lock
-                        encryption.deleteKey(EnclaveKeyType.LOCAL)
-                        storage.delete(EnclaveKeyType.LOCAL)
-                        throw EnclaveError.KeyExpired()
-                    }
-                }
-                ExpirationType.SESSION -> {
-                    // No auto-expiration, manual lock() required
-                }
-            }
-
-            meta
-        }
+    private suspend fun expirationCheck(): KeyMetadata = ExpirationChecker.check(storage, encryption, EnclaveKeyType.USER)
 }

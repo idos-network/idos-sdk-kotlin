@@ -2,13 +2,13 @@ package org.idos.app.ui.screens.mnemonic
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -18,12 +18,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import org.idos.app.ui.screens.base.BaseScreen
@@ -32,30 +30,83 @@ import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MnemonicScreen(
-    viewModel: MnemonicViewModel = koinViewModel()
-) {
+fun MnemonicScreen(viewModel: MnemonicViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsState()
 
-    // Show success dialog when wallet is created
-    if (state.isSuccess) {
-        Dialog(onDismissRequest = { viewModel.onEvent(MnemonicEvent.ResetSuccess) }) {
+    // Show dialog for loading, success, or error states
+    if (state.isLoading || state.isSuccess || state.error != null) {
+        Dialog(
+            onDismissRequest = {
+                // Only allow dismissal if showing error (not loading or success)
+                if (!state.isLoading && !state.isSuccess) {
+                    viewModel.onEvent(MnemonicEvent.ClearError)
+                }
+            },
+        ) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth(0.9f),
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    modifier =
+                        Modifier
+                            .padding(24.dp)
+                            .fillMaxWidth()
+                            .height(200.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                 ) {
-                    Text("Mnemonic Generated", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("Your mnemonic has been processed.")
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedButton(
-                        onClick = { viewModel.onEvent(MnemonicEvent.ResetSuccess) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("OK")
+                    when {
+                        state.isLoading && !state.isSuccess -> {
+                            // Initial wallet import loading
+                            Text("Processing Wallet", style = MaterialTheme.typography.titleMedium)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Please wait while we import your wallet...",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                        state.isSuccess -> {
+                            Text("Wallet Imported", style = MaterialTheme.typography.titleMedium)
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            if (state.isLoading) {
+                                // Loading after clicking OK (fetching profile)
+                                Text(
+                                    text = "Loading profile...",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            } else {
+                                Text(
+                                    text = "Your wallet has been successfully imported.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                OutlinedButton(
+                                    onClick = { viewModel.onEvent(MnemonicEvent.ResetSuccess) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Text("OK")
+                                }
+                            }
+                        }
+
+                        else -> {
+                            Text("Import Failed", style = MaterialTheme.typography.titleMedium)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = state.error ?: "",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            OutlinedButton(
+                                onClick = { viewModel.onEvent(MnemonicEvent.ClearError) },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text("Close")
+                            }
+                        }
                     }
                 }
             }
@@ -63,81 +114,51 @@ fun MnemonicScreen(
     }
 
     BaseScreen {
-        Column(Modifier.padding(MaterialTheme.spacing.medium)) {
+        Column(
+            Modifier
+                .verticalScroll(rememberScrollState())
+                .imePadding()
+                .padding(MaterialTheme.spacing.medium),
+        ) {
             Text(
                 text = "Import BIP39 Mnemonic",
                 style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 16.dp),
             )
 
-            Text("Word Count", style = MaterialTheme.typography.titleMedium)
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(vertical = 8.dp)
-            ) {
-                Button(
-                    onClick = { viewModel.onEvent(MnemonicEvent.UpdateWordCount(12)) },
-                    enabled = state.wordCount != 12
-                ) {
-                    Text("12 words")
-                }
-                Button(
-                    onClick = { viewModel.onEvent(MnemonicEvent.UpdateWordCount(24)) },
-                    enabled = state.wordCount != 24
-                ) {
-                    Text("24 words")
-                }
-            }
-
-            Text("Mnemonic Words", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(vertical = 8.dp)
-            ) {
-                items(state.wordCount) { index ->
-                    OutlinedTextField(
-                        value = state.words.getOrElse(index) { "" },
-                        onValueChange = { viewModel.onEvent(MnemonicEvent.UpdateWord(index, it)) },
-                        label = { Text("#${index + 1}") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
+            Text("Recovery Phrase", style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = "Enter your 12 or 24 word recovery phrase",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            OutlinedTextField(
+                value = state.mnemonic,
+                onValueChange = { viewModel.onEvent(MnemonicEvent.UpdateMnemonic(it)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
+                placeholder = { Text("word1 word2 word3 ...") },
+                maxLines = 5
+            )
 
             Spacer(Modifier.height(16.dp))
             OutlinedTextField(
-                value = state.passphrase,
-                onValueChange = { viewModel.onEvent(MnemonicEvent.UpdatePassphrase(it)) },
-                label = { Text("Passphrase (optional)") },
-                visualTransformation = PasswordVisualTransformation(),
+                value = state.derivationPath,
+                onValueChange = { viewModel.onEvent(MnemonicEvent.UpdateDerivationPath(it)) },
+                label = { Text("Derivation Path") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
 
             Spacer(Modifier.height(24.dp))
             Button(
                 onClick = { viewModel.onEvent(MnemonicEvent.GenerateWallet) },
                 enabled = state.isGenerateButtonEnabled && !state.isLoading,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                if (state.isLoading) {
-                    Text("Processing...")
-                } else {
-                    Text("Generate Wallet")
-                }
-            }
-
-            state.error?.let { error ->
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = error,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
+                Text("Generate Wallet")
             }
         }
     }

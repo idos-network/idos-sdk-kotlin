@@ -1,15 +1,40 @@
 import Foundation
 import UIKit
-import idos_sdk
 import Combine
+import idos_sdk
 
 // MARK: - Enclave UI State
 
 /// Enclave dialog/UI state (matches Android EnclaveUiState)
-enum EnclaveUiState {
+enum EnclaveUiState: Equatable {
     case hidden
-    case requiresUnlock
-    case unlocking
+    case requiresUnlock(type: EnclaveKeyType)
+    case unlocking(type: EnclaveKeyType)
+    case unlockError(type: EnclaveKeyType, message: String, canRetry: Bool)
+
+    var type: EnclaveKeyType? {
+        switch self {
+        case .hidden:
+            return nil
+        case .requiresUnlock(let type), .unlocking(let type), .unlockError(let type, _, _):
+            return type
+        }
+    }
+
+    // Manual Equatable conformance because EnclaveKeyType is from Kotlin
+    static func == (lhs: EnclaveUiState, rhs: EnclaveUiState) -> Bool {
+        switch (lhs, rhs) {
+        case (.hidden, .hidden):
+            return true
+        case (.requiresUnlock(let lType), .requiresUnlock(let rType)),
+             (.unlocking(let lType), .unlocking(let rType)):
+            return lType == rType
+        case (.unlockError(let lType, let lMsg, let lRetry), .unlockError(let rType, let rMsg, let rRetry)):
+            return lType == rType && lMsg == rMsg && lRetry == rRetry
+        default:
+            return false
+        }
+    }
 }
 
 // MARK: - Credential Detail State
@@ -32,7 +57,7 @@ enum CredentialDetailEvent {
     case clearError
 
     // Enclave events
-    case unlockEnclave(password: String, expiration: KeyExpiration)
+    case unlockEnclave(password: String?, config: EnclaveSessionConfig)
     case lockEnclave
     case dismissEnclave
 }
@@ -85,8 +110,8 @@ class CredentialDetailViewModel: BaseViewModel<CredentialDetailState, Credential
             triggerDecrypt()
         case .clearError:
             state.error = nil
-        case .unlockEnclave(let password, let expiration):
-            unlockEnclave(password: password, expiration: expiration)
+        case .unlockEnclave(let password, let config):
+            unlockEnclave(password: password, config: config)
         case .lockEnclave:
             lockEnclave()
         case .dismissEnclave:
@@ -102,17 +127,21 @@ class CredentialDetailViewModel: BaseViewModel<CredentialDetailState, Credential
                 print("📄 CredentialDetailViewModel: Starting observeEnclaveState: \(enclaveState)")
                 switch enclaveState {
                 case is EnclaveState.Locked:
-                    // Don't automatically show dialog
+                    // Don't automatically show dialog - wait for decrypt attempt
                     break
 
                 case is EnclaveState.Unlocking:
-                    self.enclaveUiState = .unlocking
+                    self.enclaveUiState = .unlocking(type: orchestrator.getEnclaveType())
 
                 case let unlocked as EnclaveState.Unlocked:
                     self.enclaveUiState = .hidden
                     // Auto-decrypt when unlocked
                     guard let credential = state.credential else { return }
                     await decryptLoadedCredential(enclave: unlocked.enclave, credential: credential)
+
+                case is EnclaveState.NotAvailable:
+                    // Enclave not available, don't show dialog
+                    break
 
                 default:
                     break
@@ -161,9 +190,13 @@ class CredentialDetailViewModel: BaseViewModel<CredentialDetailState, Credential
             Task {
                 await decryptLoadedCredential(enclave: unlocked.enclave, credential: credential)
             }
-        } else {
+        } else if orchestrator.state.value is EnclaveState.Locked {
             // Show unlock dialog
-            enclaveUiState = .requiresUnlock
+            enclaveUiState = .requiresUnlock(type: orchestrator.getEnclaveType())
+        } else {
+            // Enclave not available
+            self.state.error = "Encryption key not available"
+            self.state.isDecrypting = false
         }
     }
 
@@ -198,20 +231,28 @@ class CredentialDetailViewModel: BaseViewModel<CredentialDetailState, Credential
                     switch onEnum(of: enclaveError) {
                     case .noKey, .keyExpired:
                         print("🔑 CredentialDetailViewModel: No key found")
-                        self.enclaveUiState = .requiresUnlock
-                        
+                        self.enclaveUiState = .requiresUnlock(type: orchestrator.getEnclaveType())
+
                     case .decryptionFailed(let reason):
                         print("❌ CredentialDetailViewModel: Decryption failed - \(reason)")
-                        self.state.error = reason.description()
-                        
+                        let message = reason.description()
+                        self.enclaveUiState = .unlockError(
+                            type: orchestrator.getEnclaveType(),
+                            message: message,
+                            canRetry: true
+                        )
+                        self.state.isDecrypting = false
+
                     default:
                         print("❌ CredentialDetailViewModel: Decryption failed")
                         self.state.error = enclaveError.message
+                        self.state.isDecrypting = false
                     }
                 }
             } else {
                 await MainActor.run {
                     self.state.error = "Decryption error: \(error.localizedDescription)"
+                    self.state.isDecrypting = false
                 }
             }
         }
@@ -219,7 +260,7 @@ class CredentialDetailViewModel: BaseViewModel<CredentialDetailState, Credential
 
     // MARK: - Enclave Operations
 
-    private func unlockEnclave(password: String, expiration: KeyExpiration) {
+    private func unlockEnclave(password: String?, config: EnclaveSessionConfig) {
         guard let user = userRepository.getStoredUser() else {
             state.error = "No user ID found"
             return
@@ -227,19 +268,31 @@ class CredentialDetailViewModel: BaseViewModel<CredentialDetailState, Credential
 
         Task { @MainActor [weak self] in
             guard let self = self else { return }
-            
+
             do {
                 try await orchestrator.unlock(
                     userId: user.id,
-                    password: password,
-                    expirationMillis: expiration.rawValue
+                    sessionConfig: config,
+                    password: password
                 )
                 print("✅ CredentialDetailViewModel: Enclave unlocked successfully")
                 // State observer will trigger decrypt
             } catch {
                 print("❌ CredentialDetailViewModel: Unlock failed - \(error.localizedDescription)")
-                self.enclaveUiState = .hidden
-                self.state.error = error.localizedDescription
+                if let enclaveError = error.asEnclaveError() {
+                    self.enclaveUiState = .unlockError(
+                        type: orchestrator.getEnclaveType(),
+                        message: enclaveError.message ?? "Failed to unlock enclave",
+                        canRetry: false
+                    )
+                } else {
+                    self.enclaveUiState = .unlockError(
+                        type: orchestrator.getEnclaveType(),
+                        message: error.localizedDescription,
+                        canRetry: false
+                    )
+                }
+                self.state.isDecrypting = false
             }
         }
     }

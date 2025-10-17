@@ -1,6 +1,5 @@
 package org.idos.kwil.serialization
 
-import org.idos.kwil.types.UuidString
 import org.idos.kwil.types.isValidUuid
 
 /**
@@ -83,6 +82,7 @@ fun Any?.toKwilValue(): KwilValue =
             } else {
                 KwilValue.Text(this)
             }
+
         is Int -> KwilValue.Int(this.toLong())
         is Long -> KwilValue.Int(this)
         is Double -> analyzeNumeric(this.toString())

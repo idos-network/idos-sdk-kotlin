@@ -28,6 +28,7 @@
 		C27D81962E8C27A400F6CADF /* NavigationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D81622E8C27A400F6CADF /* NavigationCoordinator.swift */; };
 		C27D81972E8C27A400F6CADF /* CommonViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D81852E8C27A400F6CADF /* CommonViews.swift */; };
 		C27D81982E8C27A400F6CADF /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D81772E8C27A400F6CADF /* SettingsView.swift */; };
+		E59C1A8626654667B9F53641 /* ViewExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3385CFAB0E74F08B498EA46 /* ViewExtensions.swift */; };
 		C27D81992E8C27A400F6CADF /* EnclaveState.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D81822E8C27A400F6CADF /* EnclaveState.swift */; };
 		C27D819A2E8C27A400F6CADF /* WalletsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D817B2E8C27A400F6CADF /* WalletsViewModel.swift */; };
 		C27D819B2E8C27A400F6CADF /* CredentialDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D816D2E8C27A400F6CADF /* CredentialDetailViewModel.swift */; };
@@ -43,6 +44,7 @@
 		C2974ABC2E8D2A5A00AADFBE /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AB92E8D2A5A00AADFBE /* User.swift */; };
 		C2974AC22E8D2DBE00AADFBE /* DataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974ABF2E8D2DBE00AADFBE /* DataProvider.swift */; };
 		C2974AC62E8DBE5B00AADFBE /* Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AC52E8DBE5700AADFBE /* Strings.swift */; };
+		C2974AD52EA13DF800AADFBE /* Hasher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AD42EA13DF200AADFBE /* Hasher.swift */; };
 		D67AE0A494A8203A06DA4BA0 /* Pods_iosApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DB7BD996663771C2257CCFAE /* Pods_iosApp.framework */; };
 /* End PBXBuildFile section */
 
@@ -75,6 +77,7 @@
 		C27D81822E8C27A400F6CADF /* EnclaveState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnclaveState.swift; sourceTree = "<group>"; };
 		C27D81832E8C27A400F6CADF /* KeyGenerationDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyGenerationDialog.swift; sourceTree = "<group>"; };
 		C27D81852E8C27A400F6CADF /* CommonViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonViews.swift; sourceTree = "<group>"; };
+		D3385CFAB0E74F08B498EA46 /* ViewExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewExtensions.swift; sourceTree = "<group>"; };
 		C27D81A12E8C27A500F6CADF /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
 		C27D81A42E8C27A500F6CADF /* EthSigner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EthSigner.swift; sourceTree = "<group>"; };
 		C27D81A62E8C27A500F6CADF /* MnemonicViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MnemonicViewModel.swift; sourceTree = "<group>"; };
@@ -86,6 +89,7 @@
 		C2974ABA2E8D2A5A00AADFBE /* Wallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Wallet.swift; sourceTree = "<group>"; };
 		C2974ABF2E8D2DBE00AADFBE /* DataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataProvider.swift; sourceTree = "<group>"; };
 		C2974AC52E8DBE5700AADFBE /* Strings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Strings.swift; sourceTree = "<group>"; };
+		C2974AD42EA13DF200AADFBE /* Hasher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hasher.swift; sourceTree = "<group>"; };
 		DB7BD996663771C2257CCFAE /* Pods_iosApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_iosApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		FB21B815C23CCBDB0C1EC03A /* Pods-iosApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosApp.debug.xcconfig"; path = "Target Support Files/Pods-iosApp/Pods-iosApp.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -283,6 +287,7 @@
 		C27D817F2E8C27A400F6CADF /* Security */ = {
 			isa = PBXGroup;
 			children = (
+				C2974AD42EA13DF200AADFBE /* Hasher.swift */,
 				C27D81A42E8C27A500F6CADF /* EthSigner.swift */,
 				C27D817E2E8C27A400F6CADF /* KeyManager.swift */,
 			);
@@ -312,6 +317,7 @@
 			children = (
 				C27D81842E8C27A400F6CADF /* Base */,
 				C27D81862E8C27A400F6CADF /* Components */,
+				D3385CFAB0E74F08B498EA46 /* ViewExtensions.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -449,13 +455,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -512,6 +514,7 @@
 				7555FF83242A565900829871 /* ContentView.swift in Sources */,
 				C27D81882E8C27A400F6CADF /* DIContainer.swift in Sources */,
 				C27D81892E8C27A400F6CADF /* BaseViewModel.swift in Sources */,
+				C2974AD52EA13DF800AADFBE /* Hasher.swift in Sources */,
 				C27D818A2E8C27A400F6CADF /* CredentialDetailView.swift in Sources */,
 				C27D818B2E8C27A400F6CADF /* KeyManager.swift in Sources */,
 				C27D818C2E8C27A400F6CADF /* SettingsViewModel.swift in Sources */,
@@ -533,6 +536,7 @@
 				C2974ABB2E8D2A5A00AADFBE /* Wallet.swift in Sources */,
 				C2974ABC2E8D2A5A00AADFBE /* User.swift in Sources */,
 				C27D81972E8C27A400F6CADF /* CommonViews.swift in Sources */,
+				E59C1A8626654667B9F53641 /* ViewExtensions.swift in Sources */,
 				C27D81982E8C27A400F6CADF /* SettingsView.swift in Sources */,
 				C27D81992E8C27A400F6CADF /* EnclaveState.swift in Sources */,
 				C2974AB22E8D277400AADFBE /* Credential.swift in Sources */,

@@ -3,12 +3,10 @@ package org.idos.enclave
 import kotlinx.serialization.Serializable
 import org.idos.getCurrentTimeMillis
 import org.idos.kwil.types.HexString
-import org.idos.kwil.types.UuidString
 
 /**
  * Metadata for encryption keys stored in the enclave.
  *
- * @param userId User identifier for the key
  * @param publicKey Public key in hex format
  * @param type Type of key storage (LOCAL or MPC)
  * @param expirationType How the key expires (TIMED, SESSION, ONE_SHOT)
@@ -18,7 +16,6 @@ import org.idos.kwil.types.UuidString
  */
 @Serializable
 data class KeyMetadata(
-    val userId: UuidString,
     val publicKey: HexString,
     val type: EnclaveKeyType,
     val expirationType: ExpirationType,
@@ -55,16 +52,29 @@ enum class ExpirationType {
  * Type of key storage backend.
  */
 @Serializable
-enum class EnclaveKeyType {
+enum class EnclaveKeyType(
+    val value: String,
+) {
     /**
      * Key stored in platform secure storage (iOS Keychain, Android KeyStore, etc.)
      */
-    LOCAL,
+    USER("user"),
 
     /**
      * Key stored distributed across MPC network using Shamir's Secret Sharing
      */
-    MPC,
+    MPC("mpc"),
+    ;
+
+    fun other(): EnclaveKeyType =
+        when (this) {
+            USER -> MPC
+            MPC -> USER
+        }
+
+    companion object {
+        fun getByValue(type: String): EnclaveKeyType? = entries.find { it.value == type }
+    }
 }
 
 /**
@@ -77,7 +87,7 @@ enum class EnclaveKeyType {
  * @param expirationMillis Duration in milliseconds (required for TIMED, ignored otherwise)
  */
 @Serializable
-data class MpcSessionConfig(
+data class EnclaveSessionConfig(
     val expirationType: ExpirationType = ExpirationType.SESSION,
     val expirationMillis: Long? = null,
 ) {

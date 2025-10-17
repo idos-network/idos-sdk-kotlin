@@ -4,38 +4,54 @@ import idos_sdk
 /// Settings state
 struct SettingsState {
     var hasEncryptionKey: Bool = false
+    var enclaveStatus: EnclaveUiStatus = .notAvailable
     var isDeleting: Bool = false
     var error: String? = nil
     var showDeleteConfirmation: Bool = false
+    var snackbarMessage: String? = nil
+}
+
+/// Enclave UI status for display
+enum EnclaveUiStatus {
+    case unlocked(metadata: KeyMetadata, formattedExpiration: String)
+    case locked(metadata: KeyMetadata?, formattedExpiration: String?)
+    case notAvailable
+    case unlocking
 }
 
 /// Settings events
 enum SettingsEvent {
     case checkKeyStatus
+    case onEncryptionStatusClick
     case deleteEncryptionKey
     case confirmDelete
     case cancelDelete
     case clearError
+    case dismissSnackbar
 }
 
 /// SettingsViewModel matching Android's SettingsViewModel
 class SettingsViewModel: BaseViewModel<SettingsState, SettingsEvent> {
     private let orchestrator: EnclaveOrchestrator
+    private let metadataStorage: MetadataStorage
     private let keyManager: KeyManager
     private let navigationCoordinator: NavigationCoordinator
 
-    init(orchestrator: EnclaveOrchestrator, keyManager: KeyManager, navigationCoordinator: NavigationCoordinator) {
+    init(orchestrator: EnclaveOrchestrator, metadataStorage: MetadataStorage, keyManager: KeyManager, navigationCoordinator: NavigationCoordinator) {
         self.orchestrator = orchestrator
+        self.metadataStorage = metadataStorage
         self.keyManager = keyManager
         self.navigationCoordinator = navigationCoordinator
         super.init(initialState: SettingsState())
-        checkKeyStatus()
+        observeEnclaveState()
     }
 
     override func onEvent(_ event: SettingsEvent) {
         switch event {
         case .checkKeyStatus:
             checkKeyStatus()
+        case .onEncryptionStatusClick:
+            onEncryptionStatusClick()
         case .deleteEncryptionKey:
             state.showDeleteConfirmation = true
         case .confirmDelete:
@@ -44,26 +60,126 @@ class SettingsViewModel: BaseViewModel<SettingsState, SettingsEvent> {
             state.showDeleteConfirmation = false
         case .clearError:
             state.error = nil
+        case .dismissSnackbar:
+            state.snackbarMessage = nil
         }
+    }
+
+    private func observeEnclaveState() {
+        Task { @MainActor in
+            for await enclaveState in orchestrator.state {
+                switch enclaveState {
+                case is EnclaveState.Unlocked:
+                    if let metadata = await fetchMetadata() {
+                        let status = EnclaveUiStatus.unlocked(
+                            metadata: metadata,
+                            formattedExpiration: formatExpiration(metadata)
+                        )
+                        state.hasEncryptionKey = true
+                        state.enclaveStatus = status
+                    } else {
+                        state.enclaveStatus = .notAvailable
+                    }
+
+                case is EnclaveState.Unlocking:
+                    state.enclaveStatus = .unlocking
+
+                case is EnclaveState.Locked:
+                    let metadata = await fetchMetadata()
+                    let status = EnclaveUiStatus.locked(
+                        metadata: metadata,
+                        formattedExpiration: metadata.map { formatExpiration($0) }
+                    )
+                    state.hasEncryptionKey = false
+                    state.enclaveStatus = status
+
+                case is EnclaveState.NotAvailable:
+                    state.hasEncryptionKey = false
+                    state.enclaveStatus = .notAvailable
+
+                default:
+                    break
+                }
+            }
+        }
+    }
+
+    private func fetchMetadata() async -> KeyMetadata? {
+        do {
+            // Try USER type first, then MPC
+            if let metadata = try await metadataStorage.get(enclaveKeyType: .user) {
+                return metadata
+            }
+            if let metadata = try await metadataStorage.get(enclaveKeyType: .mpc) {
+                return metadata
+            }
+            return nil
+        } catch {
+            print("❌ SettingsViewModel: Failed to fetch metadata - \(error)")
+            return nil
+        }
+    }
+
+    private func formatExpiration(_ metadata: KeyMetadata) -> String {
+        if let expiresAt = metadata.expiresAt {
+            let date = Date(timeIntervalSince1970: TimeInterval(truncating: expiresAt) / 1000.0)
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMM dd, yyyy HH:mm"
+            return "Expires: \(formatter.string(from: date))"
+        }
+
+        switch metadata.expirationType {
+        case .session:
+            return "Expires: End of session"
+        case .oneShot:
+            return "Expires: After first use"
+        case .timed:
+            return "No expiration"
+        @unknown default:
+            return "No expiration"
+        }
+    }
+
+    private func onEncryptionStatusClick() {
+        let message: String
+        switch state.enclaveStatus {
+        case .unlocked(let metadata, _):
+            message = buildMetadataMessage(metadata: metadata, statusLabel: "UNLOCKED")
+        case .locked(let metadata, _):
+            if let metadata = metadata {
+                message = buildMetadataMessage(metadata: metadata, statusLabel: "LOCKED")
+            } else {
+                message = "Enclave is locked\nNo metadata available (key may have expired)"
+            }
+        case .notAvailable:
+            message = "Enclave not available\nNo encryption key has been generated"
+        case .unlocking:
+            message = "Enclave is unlocking..."
+        }
+        state.snackbarMessage = message
+    }
+
+    private func buildMetadataMessage(metadata: KeyMetadata, statusLabel: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM dd, yyyy HH:mm"
+
+        let createdDate = Date(timeIntervalSince1970: TimeInterval(metadata.createdAt) / 1000.0)
+        let lastUsedDate = Date(timeIntervalSince1970: TimeInterval(metadata.lastUsedAt) / 1000.0)
+
+        return """
+        Status: \(statusLabel)
+        Type: \(metadata.type)
+        Expiration Type: \(metadata.expirationType)
+        \(formatExpiration(metadata))
+        Created: \(formatter.string(from: createdDate))
+        Last Used: \(formatter.string(from: lastUsedDate))
+        Public Key: \(String(metadata.publicKey.prefix(16)))...
+        """
     }
 
     private func checkKeyStatus() {
         Task { @MainActor in
-            do {
-                try await orchestrator.checkStatus()
-            } catch {
-            }
-
-            // Check current state value
-            let currentState = orchestrator.state.value
-            switch currentState {
-            case is EnclaveState.Unlocked, is EnclaveState.Unlocking:
-                state.hasEncryptionKey = true
-            case is EnclaveState.Locked:
-                state.hasEncryptionKey = false
-            default:
-                state.hasEncryptionKey = false
-            }
+            try? await orchestrator.checkStatus()
         }
     }
 

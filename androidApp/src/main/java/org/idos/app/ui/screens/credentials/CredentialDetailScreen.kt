@@ -50,8 +50,6 @@ import timber.log.Timber
 fun CredentialDetailScreen(viewModel: CredentialDetailViewModel) {
     val state by viewModel.state.collectAsState()
     val enclaveUiState by viewModel.enclaveUiState.collectAsState()
-    Timber.d("*********UI state is $state")
-    Timber.d("*********enclave UI state is $enclaveUiState")
 
     BaseScreen {
         when (val it = state) {
@@ -68,6 +66,7 @@ fun CredentialDetailScreen(viewModel: CredentialDetailViewModel) {
                 CredentialDetailContent(
                     credential = it.credential,
                     decryptedContent = it.decryptedContent,
+                    isEnabled = it.enabled,
                     isEncrypted = it.decryptedContent == null,
                     onItem = { viewModel.onEvent(CredentialDetailEvent.DecryptCredential) },
                 )
@@ -99,16 +98,26 @@ private fun EnclaveUiOverlay(
     if (enclaveUiState != EnclaveUiState.Hidden) {
         val isGenerating = enclaveUiState is EnclaveUiState.Unlocking
         val error = (enclaveUiState as? EnclaveUiState.UnlockError)?.message
+        val canRetry = (enclaveUiState as? EnclaveUiState.UnlockError)?.canRetry ?: true
+
+        // Get enclave type from the sealed class base property, default to USER if null
+        val enclaveType = enclaveUiState.type ?: org.idos.enclave.EnclaveKeyType.USER
 
         KeyGenerationDialog(
+            enclaveType = enclaveType,
             onGenerateKey = { password, expiration ->
-                onEvent(CredentialDetailEvent.UnlockEnclave(password, expiration))
+                val config = org.idos.enclave.EnclaveSessionConfig(
+                    expirationType = org.idos.enclave.ExpirationType.TIMED,
+                    expirationMillis = expiration.inWholeMilliseconds
+                )
+                onEvent(CredentialDetailEvent.UnlockEnclave(password, config))
             },
             onDismiss = {
                 onEvent(CredentialDetailEvent.DismissEnclave)
             },
             isGenerating = isGenerating,
             error = error,
+            canRetry = canRetry,
         )
     }
 }
@@ -117,6 +126,7 @@ private fun EnclaveUiOverlay(
 private fun CredentialDetailContent(
     credential: CredentialDetail,
     decryptedContent: JsonElement?,
+    isEnabled: Boolean,
     isEncrypted: Boolean,
     onItem: () -> Unit,
     modifier: Modifier = Modifier,
@@ -145,7 +155,7 @@ private fun CredentialDetailContent(
 
         // Display encrypted or decrypted content
         if (isEncrypted || decryptedContent == null) {
-            EncryptedContentPlaceholder(onClick = onItem)
+            EncryptedContentPlaceholder(onClick = onItem, isEnabled)
         } else {
             JsonElementDisplay(jsonElement = decryptedContent)
         }
@@ -155,6 +165,7 @@ private fun CredentialDetailContent(
 @Composable
 private fun EncryptedContentPlaceholder(
     onClick: () -> Unit,
+    isEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -165,6 +176,7 @@ private fun EncryptedContentPlaceholder(
             ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         onClick = onClick,
+        enabled = isEnabled,
     ) {
         Column(
             modifier =
@@ -182,7 +194,7 @@ private fun EncryptedContentPlaceholder(
             )
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
             Text(
-                text = "Enter your password to decrypt",
+                text = if (isEnabled) "Enter your password to decrypt" else "Enclave not available",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

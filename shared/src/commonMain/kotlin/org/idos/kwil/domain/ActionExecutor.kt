@@ -3,8 +3,8 @@ package org.idos.kwil.domain
 import org.idos.kwil.protocol.KwilProtocol
 import org.idos.kwil.protocol.callAction
 import org.idos.kwil.protocol.executeAction
-import org.idos.signer.Signer
 import org.idos.kwil.types.HexString
+import org.idos.signer.Signer
 
 /**
  * Executes KWIL schema actions with Result-based error handling for public APIs.

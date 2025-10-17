@@ -5,6 +5,8 @@ import io.kotest.matchers.shouldNotBe
 import io.ktor.utils.io.core.toByteArray
 import org.idos.IdosClient
 import org.idos.add
+import org.idos.enclave.EnclaveSessionConfig
+import org.idos.enclave.ExpirationType
 import org.idos.enclave.JvmMetadataStorage
 import org.idos.enclave.crypto.JvmEncryption
 import org.idos.enclave.local.LocalEnclave
@@ -64,7 +66,8 @@ class ApiIntegrationTests :
 
                 val data = client.credentials.getOwned(id)
                 val enclave = LocalEnclave(JvmEncryption(), JvmMetadataStorage())
-                enclave.generateKey(profile.id, secrets.password, 1000)
+                val session = EnclaveSessionConfig(ExpirationType.TIMED, 1000)
+                enclave.generateKey(profile.id, secrets.password, session)
                 val content = Base64String(data.content).toByteArray()
                 val pubkey = Base64String(data.encryptorPublicKey).toByteArray()
                 val raw = enclave.decrypt(content, pubkey)

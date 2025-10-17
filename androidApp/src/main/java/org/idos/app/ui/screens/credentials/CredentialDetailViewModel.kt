@@ -13,11 +13,15 @@ import org.idos.app.navigation.NavRoute
 import org.idos.app.navigation.NavigationCommand
 import org.idos.app.navigation.NavigationManager
 import org.idos.app.ui.screens.base.BaseViewModel
+import org.idos.app.ui.screens.settings.EnclaveUiStatus
 import org.idos.enclave.DecryptFailure
 import org.idos.enclave.Enclave
 import org.idos.enclave.EnclaveError
+import org.idos.enclave.EnclaveKeyType
 import org.idos.enclave.EnclaveOrchestrator
+import org.idos.enclave.EnclaveSessionConfig
 import org.idos.enclave.EnclaveState
+import org.idos.enclave.ExpirationType
 import org.idos.kwil.serialization.toByteArray
 import org.idos.kwil.types.Base64String
 import org.idos.kwil.types.UuidString
@@ -30,6 +34,7 @@ sealed class CredentialDetailState {
     data class Loaded(
         val credential: CredentialDetail,
         val decryptedContent: JsonElement? = null, // null = still encrypted
+        val enabled: Boolean = true,
     ) : CredentialDetailState()
 
     data class Error(
@@ -48,8 +53,8 @@ sealed class CredentialDetailEvent {
 
     // Enclave events
     data class UnlockEnclave(
-        val password: String,
-        val expiration: Duration,
+        val password: String?,
+        val expiration: EnclaveSessionConfig,
     ) : CredentialDetailEvent()
 
     data object LockEnclave : CredentialDetailEvent()
@@ -59,17 +64,24 @@ sealed class CredentialDetailEvent {
     data object RetryDecrypt : CredentialDetailEvent()
 }
 
-sealed class EnclaveUiState {
-    data object Hidden : EnclaveUiState()
+sealed class EnclaveUiState(
+    open val type: EnclaveKeyType? = null,
+) {
+    data object Hidden : EnclaveUiState(type = null)
 
-    data object Unlocking : EnclaveUiState()
+    data class Unlocking(
+        override val type: EnclaveKeyType,
+    ) : EnclaveUiState(type)
 
-    data object RequiresUnlock : EnclaveUiState()
+    data class RequiresUnlock(
+        override val type: EnclaveKeyType,
+    ) : EnclaveUiState(type)
 
     data class UnlockError(
+        override val type: EnclaveKeyType,
         val message: String,
         val canRetry: Boolean = true,
-    ) : EnclaveUiState()
+    ) : EnclaveUiState(type)
 }
 
 class CredentialDetailViewModel(
@@ -99,16 +111,23 @@ class CredentialDetailViewModel(
             orchestrator.state.collect { state ->
                 when (state) {
                     is EnclaveState.Unlocked -> {
+                        Timber.i("Enclave unlocked successfully")
                         _enclaveUiState.value = EnclaveUiState.Hidden
                         decryptLoadedCredential()
                     }
 
                     is EnclaveState.Unlocking -> {
-                        _enclaveUiState.value = EnclaveUiState.Unlocking
+                        _enclaveUiState.value = EnclaveUiState.Unlocking(
+                            type = orchestrator.getEnclaveType()
+                        )
                     }
 
                     is EnclaveState.Locked -> {
                         // Don't automatically show dialog - wait for decrypt attempt
+                    }
+
+                    is EnclaveState.NotAvailable -> {
+                        // Noop, credential detail will pass NA state to UI; enclave is not mandatory
                     }
                 }
             }
@@ -123,7 +142,8 @@ class CredentialDetailViewModel(
                 credentialsRepository
                     .getCredential(credentialId)
                     .collect { detail ->
-                        updateState { CredentialDetailState.Loaded(detail, decryptedContent = null) }
+                        val enabled = orchestrator.state.value !is EnclaveState.NotAvailable
+                        updateState { CredentialDetailState.Loaded(detail, decryptedContent = null, enabled) }
                         // Try to decrypt if enclave is unlocked
                         if (orchestrator.state.value is EnclaveState.Unlocked) {
                             decryptLoadedCredential()
@@ -155,7 +175,7 @@ class CredentialDetailViewModel(
                 when (e) {
                     is EnclaveError.NoKey, is EnclaveError.KeyExpired -> {
                         Timber.i("Enclave locked, prompting for password")
-                        _enclaveUiState.value = EnclaveUiState.RequiresUnlock
+                        _enclaveUiState.value = EnclaveUiState.RequiresUnlock(orchestrator.getEnclaveType())
                     }
 
                     is EnclaveError.DecryptionFailed -> {
@@ -164,7 +184,11 @@ class CredentialDetailViewModel(
                                 e.reason == DecryptFailure.WrongPassword -> "Wrong password - key cannot decrypt this data"
                                 else -> "Decryption failed: ${e.message}"
                             }
-                        _enclaveUiState.value = EnclaveUiState.UnlockError(message, canRetry = true)
+                        _enclaveUiState.value = EnclaveUiState.UnlockError(
+                            type = orchestrator.getEnclaveType(),
+                            message = message,
+                            canRetry = true
+                        )
                     }
 
                     else -> {
@@ -185,20 +209,17 @@ class CredentialDetailViewModel(
         return enclave.decrypt(content, pubkey).decodeToString()
     }
 
-    private fun unlockEnclave(
-        password: String,
-        expiration: Duration,
-    ) {
+    private fun unlockEnclave(event: CredentialDetailEvent.UnlockEnclave) {
         viewModelScope.launch {
             try {
                 val user = storageManager.getStoredUser() ?: error("no user stored")
-                orchestrator.unlock(user.id, password, expiration.inWholeMilliseconds)
-                Timber.i("Enclave unlocked successfully")
+                orchestrator.unlock(user.id, event.expiration, event.password)
             } catch (e: EnclaveError) {
                 Timber.e(e, "Failed to unlock enclave")
                 _enclaveUiState.value =
                     EnclaveUiState.UnlockError(
-                        e.message ?: "Failed to unlock enclave",
+                        type = orchestrator.getEnclaveType(),
+                        message = e.message ?: "Failed to unlock enclave",
                         canRetry = false,
                     )
             }
@@ -237,10 +258,10 @@ class CredentialDetailViewModel(
             is CredentialDetailEvent.LoadCredential -> loadCredential()
             is CredentialDetailEvent.DecryptCredential -> {
                 // Trigger decrypt flow
-                if (orchestrator.state.value is EnclaveState.Unlocked) {
-                    decryptLoadedCredential()
-                } else {
-                    _enclaveUiState.value = EnclaveUiState.RequiresUnlock
+                when (orchestrator.state.value) {
+                    is EnclaveState.Unlocked -> decryptLoadedCredential()
+                    is EnclaveState.Locked -> _enclaveUiState.value = EnclaveUiState.RequiresUnlock(orchestrator.getEnclaveType())
+                    else -> {}
                 }
             }
 
@@ -251,7 +272,7 @@ class CredentialDetailViewModel(
                 }
             }
 
-            is CredentialDetailEvent.UnlockEnclave -> unlockEnclave(event.password, event.expiration)
+            is CredentialDetailEvent.UnlockEnclave -> unlockEnclave(event)
             is CredentialDetailEvent.LockEnclave -> lockEnclave()
             is CredentialDetailEvent.DismissEnclave -> dismissEnclave()
             is CredentialDetailEvent.RetryDecrypt -> retryDecrypt()

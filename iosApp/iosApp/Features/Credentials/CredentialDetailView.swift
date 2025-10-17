@@ -1,10 +1,10 @@
 import SwiftUI
+import idos_sdk
 
 /// CredentialDetailView matching Android's CredentialDetailScreen
 struct CredentialDetailView: View {
     @StateObject var viewModel: CredentialDetailViewModel
     @State private var showKeyGenDialog = false
-    @State private var showKeyGenError = false
 
     var body: some View {
         ZStack {
@@ -37,32 +37,93 @@ struct CredentialDetailView: View {
         .navigationTitle("Credential Detail")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showKeyGenDialog) {
-            if .hidden != viewModel.enclaveUiState {
-                KeyGenerationDialog(
-                    isGenerating: viewModel.enclaveUiState == .unlocking,
-                    onGenerate: { password, expiration in
-                        viewModel.onEvent(.unlockEnclave(password: password, expiration: expiration))
-                    },
-                    onDismiss: {
-                        showKeyGenDialog = false
-                        viewModel.onEvent(.dismissEnclave)
-                    }
-                )
-            }
+            enclaveDialogContent()
         }
         .onChange(of: viewModel.enclaveUiState) { newState in
             switch newState {
-            case .requiresUnlock:
+            case .requiresUnlock, .unlocking, .unlockError:
                 showKeyGenDialog = true
             case .hidden:
                 showKeyGenDialog = false
-                // Retry loading credential after key is available
-//                if viewModel.state.credential == nil && !viewModel.state.isLoading {
-//                    viewModel.onEvent(.loadCredential)
-//                }
-            default:
-                break
             }
+        }
+    }
+
+    @ViewBuilder
+    private func enclaveDialogContent() -> some View {
+        switch viewModel.enclaveUiState {
+        case .hidden:
+            KeyGenerationDialog(
+                enclaveType: .user,
+                isGenerating: false,
+                error: nil,
+                canRetry: true,
+                onGenerate: { password, expiration in
+                    let config = EnclaveSessionConfig(
+                        expirationType: .timed,
+                        expirationMillis: KotlinLong(value: expiration.rawValue)
+                    )
+                    viewModel.onEvent(.unlockEnclave(password: password, config: config))
+                },
+                onDismiss: {
+                    showKeyGenDialog = false
+                    viewModel.onEvent(.dismissEnclave)
+                }
+            )
+        case .requiresUnlock(let type):
+            KeyGenerationDialog(
+                enclaveType: type,
+                isGenerating: false,
+                error: nil,
+                canRetry: true,
+                onGenerate: { password, expiration in
+                    let config = EnclaveSessionConfig(
+                        expirationType: .timed,
+                        expirationMillis: KotlinLong(value: expiration.rawValue)
+                    )
+                    viewModel.onEvent(.unlockEnclave(password: password, config: config))
+                },
+                onDismiss: {
+                    showKeyGenDialog = false
+                    viewModel.onEvent(.dismissEnclave)
+                }
+            )
+        case .unlocking(let type):
+            KeyGenerationDialog(
+                enclaveType: type,
+                isGenerating: true,
+                error: nil,
+                canRetry: true,
+                onGenerate: { password, expiration in
+                    let config = EnclaveSessionConfig(
+                        expirationType: .timed,
+                        expirationMillis: KotlinLong(value: expiration.rawValue)
+                    )
+                    viewModel.onEvent(.unlockEnclave(password: password, config: config))
+                },
+                onDismiss: {
+                    showKeyGenDialog = false
+                    viewModel.onEvent(.dismissEnclave)
+                }
+            )
+        case .unlockError(let type, let message, let retry):
+            KeyGenerationDialog(
+                enclaveType: type,
+                isGenerating: false,
+                error: message,
+                canRetry: retry,
+                onGenerate: { password, expiration in
+                    let config = EnclaveSessionConfig(
+                        expirationType: .timed,
+                        expirationMillis: KotlinLong(value: expiration.rawValue)
+                    )
+                    viewModel.onEvent(.unlockEnclave(password: password, config: config))
+                },
+                onDismiss: {
+                    showKeyGenDialog = false
+                    viewModel.onEvent(.dismissEnclave)
+                }
+            )
         }
     }
 

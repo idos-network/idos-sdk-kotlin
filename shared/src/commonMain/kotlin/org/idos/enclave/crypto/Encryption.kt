@@ -47,10 +47,11 @@ abstract class Encryption(
     internal suspend fun generateKey(
         userId: UuidString,
         password: String,
+        enclaveKeyType: EnclaveKeyType,
     ): ByteArray =
         runCatching {
             val secretKey = keyDerivation(password, userId)
-            storage.storeKey(secretKey, EnclaveKeyType.LOCAL)
+            storage.storeKey(secretKey, enclaveKeyType)
             val pubkey = publicKey(secretKey)
             secretKey.fill(0)
             pubkey

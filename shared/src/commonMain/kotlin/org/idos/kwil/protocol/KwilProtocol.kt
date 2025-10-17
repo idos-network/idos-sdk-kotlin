@@ -2,11 +2,11 @@ package org.idos.kwil.protocol
 
 import io.ktor.client.statement.HttpResponse
 import org.idos.kwil.security.auth.Auth
-import org.idos.signer.SignatureType
 import org.idos.kwil.transport.JsonRpcClient
 import org.idos.kwil.transport.TransportError
 import org.idos.kwil.types.Base64String
 import org.idos.kwil.types.HexString
+import org.idos.signer.SignatureType
 
 /**
  * KWIL protocol client (L1 - Protocol Layer).

@@ -43,28 +43,8 @@ class AndroidMetadataStorage(
         prefs.edit().remove(enclaveKeyType.meta()).apply()
     }
 
-    override suspend fun getSessionConfig(): MpcSessionConfig? {
-        val jsonString = prefs.getString(KEY_CONFIG, null) ?: return null
-
-        return try {
-            json.decodeFromString<MpcSessionConfig>(jsonString)
-        } catch (e: Exception) {
-            // Return null for corrupted data instead of throwing
-            null
-        }
-    }
-
-    override suspend fun storeSessionConfig(config: MpcSessionConfig) {
-        val jsonString = json.encodeToString(config)
-        prefs
-            .edit()
-            .putString(KEY_CONFIG, jsonString)
-            .apply()
-    }
-
     companion object {
         private const val KEY_METADATA = "key_metadata"
-        private const val KEY_CONFIG = "key_config"
 
         fun EnclaveKeyType.meta() = "${KEY_METADATA}_${this.name}"
     }

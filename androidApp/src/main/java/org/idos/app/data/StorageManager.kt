@@ -3,9 +3,13 @@ package org.idos.app.data
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.MissingFieldException
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.idos.app.data.model.UserModel
@@ -49,66 +53,81 @@ class StorageManager(
     private val _userState = MutableStateFlow<UserState>(LoadingUser)
     val userState: StateFlow<UserState> = _userState.asStateFlow()
 
-    init {
+    /**
+     * Initialize storage manager by loading user state from SharedPreferences.
+     * Safe to call multiple times - will reload state from disk.
+     */
+    suspend fun initialize() {
         loadUserState()
     }
 
     /**
-     * Load user state from SharedPreferences on startup
+     * Load user state from SharedPreferences on background thread
      */
-    private fun loadUserState() {
-        try {
-            val userJson = prefs.getString(KEY_USER_PROFILE, null)
-            if (userJson != null) {
-                val userModel = json.decodeFromString<UserModel>(userJson)
-                _userState.value = ConnectedUser(userModel)
-                Timber.d("Loaded user profile: ${userModel.id}")
-            } else {
-                _userState.value = NoUser
-                Timber.d("No user profile found in storage")
+    private suspend fun loadUserState() =
+        withContext(Dispatchers.IO) {
+            try {
+                val userJson = prefs.getString(KEY_USER_PROFILE, null)
+                if (userJson != null) {
+                    val userModel = json.decodeFromString<UserModel>(userJson)
+                    _userState.value = ConnectedUser(userModel)
+                    Timber.d("Loaded user profile: ${userModel.id}")
+                } else {
+                    _userState.value = NoUser
+                    Timber.d("No user profile found in storage")
+                }
+            } catch (e: SerializationException) {
+                // there is an issue with serializer, we might have updated the model
+                Timber.w(e, "Failed to load user profile, clearing and logging out")
+                clearUserProfile()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load user profile")
+                _userState.value = UserError("Failed to load user profile: ${e.message}")
             }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load user profile")
-            _userState.value = UserError("Failed to load user profile: ${e.message}")
         }
-    }
 
     /**
-     * Save user profile and update state
+     * Save user profile and update state on background thread
      */
-    fun saveUserProfile(userModel: UserModel) {
-        try {
-            val userJson = json.encodeToString(userModel)
-            prefs.edit {
-                putString(KEY_USER_PROFILE, userJson)
+    suspend fun saveUserProfile(userModel: UserModel) =
+        withContext(Dispatchers.IO) {
+            try {
+                val userJson = json.encodeToString(userModel)
+                prefs.edit {
+                    putString(KEY_USER_PROFILE, userJson)
+                }
+                _userState.value = ConnectedUser(userModel)
+                Timber.d("Saved user profile: ${userModel.id}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to save user profile")
+                _userState.value = UserError("Failed to save user profile: ${e.message}")
             }
-            _userState.value = ConnectedUser(userModel)
-            Timber.d("Saved user profile: ${userModel.id}")
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to save user profile")
-            _userState.value = UserError("Failed to save user profile: ${e.message}")
         }
-    }
 
+    /**
+     * Save wallet address and update state
+     * This doesn't touch disk, just updates in-memory state
+     */
     fun saveWalletAddress(address: Address) {
         _userState.value = ConnectedWallet(address)
     }
 
     /**
-     * Clear user profile and update state
+     * Clear user profile and update state on background thread
      */
-    fun clearUserProfile() {
-        try {
-            prefs.edit {
-                remove(KEY_USER_PROFILE)
+    suspend fun clearUserProfile() =
+        withContext(Dispatchers.IO) {
+            try {
+                prefs.edit {
+                    remove(KEY_USER_PROFILE)
+                }
+                _userState.value = NoUser
+                Timber.d("Cleared user profile")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to clear user profile")
+                _userState.value = UserError("Failed to clear user profile: ${e.message}")
             }
-            _userState.value = NoUser
-            Timber.d("Cleared user profile")
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to clear user profile")
-            _userState.value = UserError("Failed to clear user profile: ${e.message}")
         }
-    }
 
     /**
      * Utility methods

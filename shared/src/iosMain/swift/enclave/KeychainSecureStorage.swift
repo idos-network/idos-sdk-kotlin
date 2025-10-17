@@ -12,6 +12,7 @@ import Security
 /// - Never backed up to iCloud
 /// - Not migrated to new devices
 /// - Matches Android's EncryptedFile + StrongBox security level
+/// - Supports separate storage for USER and MPC enclave types
 ///
 /// ## Usage:
 /// This class is automatically available in Swift when importing the SDK:
@@ -25,7 +26,7 @@ import Security
 /// )
 /// ```
 public class KeychainSecureStorage: SecureStorage {
-    private let keyTag = "org.idos.enclave.key"
+    private let baseKeyTag = "org.idos.enclave.key"
 
     public enum KeychainError: Error {
         case storageFailed(OSStatus)
@@ -35,23 +36,32 @@ public class KeychainSecureStorage: SecureStorage {
 
     public init() {}
 
-    /// Stores an encryption key in iOS Keychain.
+    /// Generate keychain tag for specific enclave type
+    private func keyTag(for type: EnclaveKeyType) -> String {
+        return "\(baseKeyTag)_\(type.name)"
+    }
+
+    /// Stores an encryption key in iOS Keychain for a specific enclave type.
     ///
     /// Uses:
     /// - `kSecClassKey` for key storage
     /// - `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` for maximum security
-    /// - Replaces any existing key
+    /// - Replaces any existing key for the given enclave type
     ///
-    /// - Parameter key: The encryption key bytes to store (as KotlinByteArray)
+    /// - Parameters:
+    ///   - key: The encryption key bytes to store (as KotlinByteArray)
+    ///   - enclaveKeyType: The enclave type (USER or MPC)
     /// - Throws: KeychainError if storage fails
-    public func __storeKey(key: KotlinByteArray) async throws {
+    public func __storeKey(key: KotlinByteArray, enclaveKeyType: EnclaveKeyType) async throws {
         let data = key.toNSData()
-        // Delete existing key first
-        try? await deleteKey()
+        let tag = keyTag(for: enclaveKeyType)
+
+        // Delete existing key first for this enclave type
+        try? await deleteKey(enclaveKeyType: enclaveKeyType)
 
         let query: [String: Any] = [
             kSecClass as String: kSecClassKey,
-            kSecAttrApplicationTag as String: keyTag,
+            kSecAttrApplicationTag as String: tag,
             kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
             kSecValueData as String: data,
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
@@ -63,14 +73,17 @@ public class KeychainSecureStorage: SecureStorage {
         }
     }
 
-    /// Retrieves the stored encryption key from iOS Keychain.
+    /// Retrieves the stored encryption key from iOS Keychain for a specific enclave type.
     ///
+    /// - Parameter enclaveKeyType: The enclave type (USER or MPC)
     /// - Returns: The stored key bytes as KotlinByteArray, or nil if no key is stored
     /// - Throws: KeychainError if retrieval fails (not including "not found")
-    public func __retrieveKey() async throws -> KotlinByteArray? {
+    public func __retrieveKey(enclaveKeyType: EnclaveKeyType) async throws -> KotlinByteArray? {
+        let tag = keyTag(for: enclaveKeyType)
+
         let query: [String: Any] = [
             kSecClass as String: kSecClassKey,
-            kSecAttrApplicationTag as String: keyTag,
+            kSecAttrApplicationTag as String: tag,
             kSecReturnData as String: true
         ]
 
@@ -88,15 +101,18 @@ public class KeychainSecureStorage: SecureStorage {
         return keyData.toKotlinByteArray()
     }
 
-    /// Deletes the stored encryption key from iOS Keychain.
+    /// Deletes the stored encryption key from iOS Keychain for a specific enclave type.
     ///
     /// Succeeds silently if no key exists.
     ///
+    /// - Parameter enclaveKeyType: The enclave type (USER or MPC)
     /// - Throws: KeychainError if deletion fails
-    public func __deleteKey() async throws {
+    public func __deleteKey(enclaveKeyType: EnclaveKeyType) async throws {
+        let tag = keyTag(for: enclaveKeyType)
+
         let query: [String: Any] = [
             kSecClass as String: kSecClassKey,
-            kSecAttrApplicationTag as String: keyTag
+            kSecAttrApplicationTag as String: tag
         ]
 
         let status = SecItemDelete(query as CFDictionary)

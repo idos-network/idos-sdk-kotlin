@@ -20,9 +20,10 @@ class EthSigner: idos_sdk.EthSigner {
         case noStoredKey
     }
 
-    init(keyManager: KeyManager, storageManager: StorageManager) {
+    init(keyManager: KeyManager, storageManager: StorageManager, hasher: Keccak256Hasher) {
         self.keyManager = keyManager
         self.storageManager = storageManager
+        super.init(keccak256: hasher)
     }
 
     // MARK: - EthSigner Override Methods
@@ -82,6 +83,52 @@ class EthSigner: idos_sdk.EthSigner {
         return signature.toKotlinByteArray()
     }
 
+    /// Sign EIP-712 typed data
+    /// Matches Android's EthSigner.signTypedData()
+    ///
+    /// - Parameter typedData: EIP-712 TypedData structure
+    /// - Returns: Signature as hex string
+    override func __signTypedData(typedData: TypedData) async throws -> String {
+        // Get stored private key
+        guard let privateKeyData = try? keyManager.getKey() else {
+            throw EthSignerError.noStoredKey
+        }
+
+        defer {
+            // Clear private key from memory
+            var mutableKey = privateKeyData
+            mutableKey.withUnsafeMutableBytes { ptr in
+                if let baseAddress = ptr.baseAddress {
+                    memset(baseAddress, 0, privateKeyData.count)
+                }
+            }
+        }
+
+        guard let privateKey = PrivateKey(data: privateKeyData) else {
+            throw EthSignerError.invalidPrivateKey
+        }
+
+        // Hash according to EIP-712 spec using shared utils
+        let hashBytes = Eip712Utils.shared.hashTypedData(hasher: keccak256, typedData: typedData)
+        let hash = hashBytes.toNSData()
+
+        // Sign the raw hash (no EIP-191 prefix for EIP-712)
+        guard var signature = privateKey.sign(digest: hash, curve: .secp256k1) else {
+            throw EthSignerError.signingFailed
+        }
+
+        // WalletCore returns v as 0 or 1, but Ethereum expects 27 or 28
+        // Adjust the last byte (v value) to match Ethereum format
+        if signature.count == 65 {
+            let vIndex = signature.count - 1
+            let v = signature[vIndex]
+            signature[vIndex] = v + 27
+        }
+
+        // Convert to hex string
+        return signature.toHexString()
+    }
+
     // MARK: - Static Utility Methods (Companion)
 
     /// Convert mnemonic phrase to private key bytes using BIP39/BIP44
@@ -89,9 +136,9 @@ class EthSigner: idos_sdk.EthSigner {
     ///
     /// - Parameters:
     ///   - mnemonic: 12 or 24 word mnemonic phrase
-    ///   - derivationPath: BIP44 derivation path (default: m/44'/60'/0'/0/47)
+    ///   - derivationPath: BIP44 derivation path
     /// - Returns: 32-byte private key
-    static func mnemonicToPrivateKey(_ mnemonic: String, derivationPath: String = defaultDerivationPath) throws -> Data {
+    static func mnemonicToPrivateKey(_ mnemonic: String, derivationPath: String) throws -> Data {
         // Clean up mnemonic
         let cleanMnemonic = mnemonic
             .trimmingCharacters(in: .whitespacesAndNewlines)

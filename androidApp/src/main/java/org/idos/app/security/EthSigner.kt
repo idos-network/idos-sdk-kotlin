@@ -9,6 +9,7 @@ import org.kethereum.bip32.toKey
 import org.kethereum.bip39.model.MnemonicWords
 import org.kethereum.bip39.toSeed
 import org.kethereum.crypto.signMessage
+import org.kethereum.crypto.signMessageHash
 import org.kethereum.crypto.toAddress
 import org.kethereum.crypto.toECKeyPair
 import org.kethereum.crypto.toHex
@@ -46,7 +47,7 @@ class EthSigner(
             val hash = Eip712Utils.hashTypedData(keccak256, typedData)
 
             // Sign the raw hash (no personal sign prefix for EIP-712)
-            val signature = keyPair.signMessage(hash)
+            val signature = signMessageHash(hash, keyPair)
 
             // Clear sensitive data
             this.fill(0)
@@ -56,7 +57,13 @@ class EthSigner(
         } ?: ""
 
     companion object {
-        fun String.mnemonicToKeypair(derivationPath: String = "m/44'/60'/0'/0/47"): ByteArray {
+        /**
+         * Standard Ethereum BIP44 derivation path matching iOS
+         * m/44'/60'/0'/0/47
+         */
+        const val DEFAULT_DERIVATION_PATH = "m/44'/60'/0'/0/47"
+
+        fun String.mnemonicToKeypair(derivationPath: String): ByteArray {
             val mnemonic = MnemonicWords(this)
             val seed = mnemonic.toSeed("")
             val key = seed.toKey(derivationPath)

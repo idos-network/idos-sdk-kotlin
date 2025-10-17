@@ -48,23 +48,28 @@ class KeyManager(
     /**
      * Generates a new secure key and stores it in the encrypted storage.
      * Returns the address derived from the key.
+     *
+     * @param words The mnemonic phrase
+     * @param derivationPath The BIP44 derivation path
      */
     @Throws(KeyGenerationException::class)
-    suspend fun generateAndStoreKey(words: String) =
-        withContext(Dispatchers.IO) {
-            try {
-                val key = words.mnemonicToKeypair()
-                // Store the key securely, delete first just in case
-                clearStoredKeys()
-                storeKey(key)
-                key.fill(0)
+    suspend fun generateAndStoreKey(
+        words: String,
+        derivationPath: String,
+    ) = withContext(Dispatchers.IO) {
+        try {
+            val key = words.mnemonicToKeypair(derivationPath)
+            // Store the key securely, delete first just in case
+            clearStoredKeys()
+            storeKey(key)
+            key.fill(0)
 
-                Timber.d("Generated and stored new key with address")
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to generate key")
-                throw KeyGenerationException("Failed to generate key", e)
-            }
+            Timber.d("Generated and stored new key with derivation path: $derivationPath")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to generate key")
+            throw KeyGenerationException("Failed to generate key", e)
         }
+    }
 
     /**
      * Stores the provided key data in an encrypted file.

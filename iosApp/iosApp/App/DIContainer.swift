@@ -6,23 +6,19 @@ import Combine
 struct AppConfig {
     let kwilNodeUrl: String
     let chainId: String
-    
-#if DEBUG
-    static let staging = AppConfig(
-        kwilNodeUrl: "https://nodes.staging.idos.network",
-        chainId: "idos-staging"
+    let mpcConfig: MpcConfig
+
+    static let playground = AppConfig(
+        kwilNodeUrl: "https://nodes.playground.idos.network",
+        chainId: "kwil-testnet",
+        mpcConfig: MpcConfig(
+            partisiaRpcUrl: "https://partisia-reader-node.playground.idos.network:8080",
+            contractAddress: "0223996d84146dbf310dd52a0e1d103e91bb8402b3",
+            totalNodes: 6,
+            threshold: 4,
+            maliciousNodes: 2
+        )
     )
-    
-    static let preview = AppConfig(
-        kwilNodeUrl: "https://nodes.staging.idos.network",
-        chainId: "idos-staging"
-    )
-#else
-    static let production = AppConfig(
-        kwilNodeUrl: "https://nodes.idos.network",
-        chainId: "idos-mainnet"
-    )
-#endif
 }
 
 /// Central Dependency Injection container for the iOS app
@@ -33,6 +29,7 @@ class DIContainer: ObservableObject {
     // MARK: - Security Layer
     let encryption: Encryption
     let metadataStorage: MetadataStorage
+    let keccak256Hasher: Keccak256Hasher
     let enclaveOrchestrator: EnclaveOrchestrator
     let keyManager: KeyManager
     let ethSigner: EthSigner
@@ -40,7 +37,7 @@ class DIContainer: ObservableObject {
     // MARK: - Data Layer
     let storageManager: StorageManager
     let dataProvider: DataProvider
-    
+
     // Repositories
     let credentialsRepository: CredentialsRepositoryProtocol
     let userRepository: UserRepositoryProtocol
@@ -50,29 +47,27 @@ class DIContainer: ObservableObject {
     let navigationCoordinator: NavigationCoordinator
 
     private init() {
-        // Load appropriate configuration
-#if DEBUG
-        let config = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" 
-        ? AppConfig.preview 
-        : AppConfig.staging
-#else
-        let config = AppConfig.production
-#endif
-        
-        // Initialize security components (matching Android's securityModule)
+        let config = AppConfig.playground
+
         let secureStorage = KeychainSecureStorage()  // From SDK via SKIE
         self.encryption = IosEncryption(storage: secureStorage)
         self.metadataStorage = IosMetadataStorage()
-        self.enclaveOrchestrator = EnclaveOrchestrator.companion.create(encryption: encryption,
-                                                                        storage: metadataStorage)
+        self.keccak256Hasher = Hasher()  // iOS implementation using WalletCore
         self.keyManager = KeyManager()
 
-        // Initialize data layer (matching Android's repositoryModule)
         self.storageManager = StorageManager()
 
-        // Initialize Ethereum signer (matching Android's EthSigner)
-        self.ethSigner = EthSigner(keyManager: keyManager, storageManager: storageManager)
-        
+        self.ethSigner = EthSigner(keyManager: keyManager, storageManager: storageManager, hasher: keccak256Hasher)
+
+        // Initialize EnclaveOrchestrator with MPC support
+        self.enclaveOrchestrator = EnclaveOrchestrator.companion.create(
+            encryption: encryption,
+            storage: metadataStorage,
+            mpcConfig: config.mpcConfig,
+            signer: ethSigner,
+            hasher: keccak256Hasher
+        )
+
         // Initialize network layer with configuration
         self.dataProvider = DataProvider(
             url: config.kwilNodeUrl,
@@ -92,7 +87,8 @@ class DIContainer: ObservableObject {
             self.userRepository = UserRepository(
                 dataProvider: dataProvider,
                 storageManager: storageManager,
-                keyManager: keyManager
+                keyManager: keyManager,
+                enclaveOrchestrator: enclaveOrchestrator
             )
             self.walletRepository = WalletRepository(dataProvider: dataProvider)
         }
@@ -101,12 +97,12 @@ class DIContainer: ObservableObject {
         self.userRepository = UserRepository(
             dataProvider: dataProvider,
             storageManager: storageManager,
-            keyManager: keyManager
+            keyManager: keyManager,
+            enclaveOrchestrator: enclaveOrchestrator
         )
         self.walletRepository = WalletRepository(dataProvider: dataProvider)
 #endif
 
-        // Initialize navigation (matching Android's navigationModule)
         self.navigationCoordinator = NavigationCoordinator()
     }
 
@@ -155,6 +151,7 @@ class DIContainer: ObservableObject {
     func makeSettingsViewModel() -> SettingsViewModel {
         SettingsViewModel(
             orchestrator: enclaveOrchestrator,
+            metadataStorage: metadataStorage,
             keyManager: keyManager,
             navigationCoordinator: navigationCoordinator
         )

@@ -69,6 +69,7 @@ kotlin {
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.ktor.logger)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.io)
             implementation(project.dependencies.platform(libs.kotlincrypto.hash.bom))
@@ -156,6 +157,11 @@ ktlint {
     android.set(false)
     outputToConsole.set(true)
     ignoreFailures.set(false)
+
+    // Exclude generated code from linting
+    filter {
+        exclude { element -> element.file.path.contains("generated/") }
+    }
 }
 
 // detekt configuration

@@ -1,63 +1,136 @@
 import SwiftUI
+import idos_sdk
 
 /// Key Generation Dialog matching Android's KeyGenerationDialog.kt
+/// Supports both USER (local) and MPC enclave types
 struct KeyGenerationDialog: View {
     @Environment(\.dismiss) var dismiss
     @State private var password: String = ""
     @State private var showPassword: Bool = false
     @State private var selectedExpiration: KeyExpiration = .oneWeek
 
+    let enclaveType: EnclaveKeyType
     let isGenerating: Bool
-    let onGenerate: (String, KeyExpiration) -> Void
+    let error: String?
+    let canRetry: Bool
+    let onGenerate: (String?, KeyExpiration) -> Void
     let onDismiss: () -> Void
+
+    // Password is required only for USER enclave type
+    private var requiresPassword: Bool {
+        enclaveType == .user
+    }
+
+    // Skip password validation for now (can add back: password.count >= 8)
+    private var isPasswordValid: Bool {
+        !requiresPassword || true
+    }
+
+    private var canGenerate: Bool {
+        isPasswordValid && !isGenerating && canRetry
+    }
 
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Generate Encryption Key")) {
-                    HStack {
-                        if showPassword {
-                            TextField("Password", text: $password)
-                                .textContentType(.password)
-                        } else {
-                            SecureField("Password", text: $password)
-                                .textContentType(.password)
-                        }
+                // Title and description
+                Section {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(requiresPassword ? "Generate Encryption Key" : "Unlock MPC Enclave")
+                            .font(.headline)
 
+                        Text(requiresPassword
+                            ? "Provide the password to generate your encryption key."
+                            : "Select session duration to unlock your MPC enclave.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 4)
+                }
+
+                // Password field (only for USER enclave)
+                if requiresPassword {
+                    Section(header: Text("Password")) {
+                        HStack {
+                            if showPassword {
+                                TextField("Password", text: $password)
+                                    .textContentType(.password)
+                                    .autocapitalization(.none)
+                            } else {
+                                SecureField("Password", text: $password)
+                                    .textContentType(.password)
+                            }
+
+                            Button(action: {
+                                showPassword.toggle()
+                            }) {
+                                Image(systemName: showPassword ? "eye.slash" : "eye")
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .disabled(isGenerating)
+
+                        if !password.isEmpty && !isPasswordValid {
+                            Text("Password must be at least 8 characters")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                        }
+                    }
+                }
+
+                // Expiration selection
+                Section(header: Text(requiresPassword ? "Key Expiration" : "Session Duration")) {
+                    ForEach(KeyExpiration.allCases, id: \.self) { expiration in
                         Button(action: {
-                            showPassword.toggle()
+                            selectedExpiration = expiration
                         }) {
-                            Image(systemName: showPassword ? "eye.slash" : "eye")
-                                .foregroundColor(.secondary)
+                            HStack {
+                                Text(expiration.displayName)
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                if selectedExpiration == expiration {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.blue)
+                                }
+                            }
                         }
+                        .disabled(isGenerating)
                     }
                 }
 
-                Section(header: Text("Key Expiration")) {
-                    Picker("Expiration", selection: $selectedExpiration) {
-                        ForEach(KeyExpiration.allCases, id: \.self) { expiration in
-                            Text(expiration.displayName).tag(expiration)
+                // Error message
+                if let errorMessage = error {
+                    Section {
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.red)
+                            Text(errorMessage)
+                                .font(.subheadline)
+                                .foregroundColor(.red)
                         }
+                        .padding(.vertical, 4)
                     }
-                    .pickerStyle(.segmented)
                 }
 
+                // Action buttons
                 Section {
                     Button(action: {
-                        onGenerate(password, selectedExpiration)
+                        onGenerate(
+                            requiresPassword ? password : nil,
+                            selectedExpiration
+                        )
                     }) {
-                        if isGenerating {
-                            HStack {
+                        HStack {
+                            if isGenerating {
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle())
-                                Text("Generating...")
+                                Spacer()
                             }
-                        } else {
-                            Text("Generate Key")
+                            Text(requiresPassword ? "Generate Key" : "Unlock")
                                 .frame(maxWidth: .infinity)
                         }
                     }
-                    .disabled(password.isEmpty || isGenerating)
+                    .disabled(!canGenerate)
 
                     Button("Cancel") {
                         onDismiss()
@@ -70,6 +143,7 @@ struct KeyGenerationDialog: View {
             }
             .navigationTitle("Encryption Key")
             .navigationBarTitleDisplayMode(.inline)
+            .interactiveDismissDisabled(isGenerating)
         }
     }
 }

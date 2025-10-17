@@ -23,6 +23,7 @@ protocol UserRepositoryProtocol: AnyObject {
     var userState: UserState { get }
     var userStatePublisher: AnyPublisher<UserState, Never> { get }
 
+    func initialize()
     func fetchAndStoreUser() async throws -> Void
     func getStoredUser() -> User?
     func clearUserProfile()
@@ -35,6 +36,7 @@ class UserRepository: UserRepositoryProtocol {
     private let dataProvider: DataProvider
     private let storageManager: StorageManager
     private let keyManager: KeyManager
+    private let enclaveOrchestrator: EnclaveOrchestrator
 
     // MARK: - UserRepositoryProtocol
 
@@ -51,14 +53,32 @@ class UserRepository: UserRepositoryProtocol {
     init(
         dataProvider: DataProvider,
         storageManager: StorageManager,
-        keyManager: KeyManager
+        keyManager: KeyManager,
+        enclaveOrchestrator: EnclaveOrchestrator
     ) {
         self.dataProvider = dataProvider
         self.storageManager = storageManager
         self.keyManager = keyManager
+        self.enclaveOrchestrator = enclaveOrchestrator
     }
 
     // MARK: - Public Methods
+
+    /// Initialize the user repository by loading stored user data and initializing enclave
+    func initialize() {
+        print("🔄 UserRepository: Initializing")
+        if let user = getStoredUser() {
+            print("✅ UserRepository: Found stored user with enclave type: \(user.enclaveKeyType)")
+            if let keyType = EnclaveKeyType.companion.getByValue(type: user.enclaveKeyType) {
+                enclaveOrchestrator.initializeType(type: keyType)
+                print("✅ UserRepository: Enclave initialized with type: \(user.enclaveKeyType)")
+            } else {
+                print("⚠️ UserRepository: Invalid enclave type: \(user.enclaveKeyType)")
+            }
+        } else {
+            print("ℹ️ UserRepository: No stored user or enclave type found")
+        }
+    }
 
     /// Fetches user data from the network and stores it
     func fetchAndStoreUser() async throws -> Void {
@@ -85,17 +105,26 @@ class UserRepository: UserRepositoryProtocol {
         do {
             let hasProfile = try await dataProvider.hasUserProfile(address: address)
             guard hasProfile else { throw UserError.noUserProfile }
-            
+
             let user = try await dataProvider.getUser()
-            
+
             let userModel = User(
                 id: user.id,
                 walletAddress: address,
-                lastUpdated: 0)
-            
+                enclaveKeyType: user.encryptionPasswordStore)
+
             await MainActor.run {
-                print("💾 Saving user profile")
+                print("💾 Saving user profile with enclave type: \(user.encryptionPasswordStore)")
                 storageManager.saveUserProfile(userModel)
+                
+                // Initialize enclave with user's chosen type
+                if let keyType = EnclaveKeyType.companion.getByValue(type: user.encryptionPasswordStore) {
+                    enclaveOrchestrator.initializeType(type: keyType)
+                    print("✅ Enclave initialized with type: \(keyType)")
+                } else {
+                    print("⚠️ No enclave type found in user profile, skipping enclave initialization")
+                }
+                
                 print("✅ User profile saved")
             }
         } catch {
@@ -112,6 +141,8 @@ class UserRepository: UserRepositoryProtocol {
     /// Clears the user profile from storage
     func clearUserProfile() {
         storageManager.clearUserProfile()
+        try? keyManager.deleteKey()
+        print("✅ Cleared user profile and keys")
     }
 
     /// Checks if a user profile exists in storage
@@ -138,6 +169,10 @@ class MockUserRepository: UserRepositoryProtocol {
         self.stateSubject = CurrentValueSubject<UserState, Never>(initialState)
     }
 
+    func initialize() {
+        // Mock implementation - no-op
+    }
+
     func fetchAndStoreUser() async throws -> Void {
         stateSubject.send(.loadingUser)
         try? await Task.sleep(nanoseconds: 1_000_000_000)  // Simulate network delay
@@ -145,9 +180,9 @@ class MockUserRepository: UserRepositoryProtocol {
         let mockUser = User(
             id: "user123",
             walletAddress: "0x123...",
-            lastUpdated: 0
+            enclaveKeyType: "user",
         )
-            
+
         stateSubject.send(.connectedUser(user: mockUser))
     }
 

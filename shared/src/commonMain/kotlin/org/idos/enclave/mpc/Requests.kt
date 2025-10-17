@@ -1,8 +1,6 @@
 package org.idos.enclave.mpc
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.idos.crypto.eip712.TypedDataDomain
 import org.idos.crypto.eip712.TypedDataField
 
 /**

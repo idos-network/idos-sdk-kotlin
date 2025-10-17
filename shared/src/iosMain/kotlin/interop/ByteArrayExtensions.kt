@@ -23,6 +23,7 @@ import platform.Foundation.dataWithBytes
  * ```
  */
 
+@Suppress("ktlint:standard:no-consecutive-comments")
 /**
  * Converts a Kotlin ByteArray to NSData.
  *

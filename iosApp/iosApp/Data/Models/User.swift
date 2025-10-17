@@ -4,11 +4,11 @@ import Foundation
 struct User: Codable, Equatable {
     let id: String
     let walletAddress: String
-    let lastUpdated: TimeInterval
-    
+    let enclaveKeyType: String
+
     enum CodingKeys: String, CodingKey {
         case id
         case walletAddress = "wallet_address"
-        case lastUpdated = "last_updated"
+        case enclaveKeyType = "enclave_key_type"
     }
 }

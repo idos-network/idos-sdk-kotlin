@@ -9,7 +9,7 @@ extension String {
     func prettyPrintedJSON() -> String {
         guard let data = self.data(using: .utf8),
               let jsonObject = try? JSONSerialization.jsonObject(with: data),
-              let prettyData = try? JSONSerialization.data(withJSONObject: jsonObject, options: [.prettyPrinted, .sortedKeys]),
+              let prettyData = try? JSONSerialization.data(withJSONObject: jsonObject, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]),
               let prettyString = String(data: prettyData, encoding: .utf8) else {
             return self
         }

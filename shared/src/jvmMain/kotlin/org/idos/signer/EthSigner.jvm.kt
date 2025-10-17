@@ -21,7 +21,6 @@ class JvmEthSigner(
     private val keyPair: ECKeyPair,
 ) : EthSigner(BouncyCastleKeccak256()) {
     val address get() = keyPair.toAddress()
-    val publicKey: ByteArray get() = keyPair.publicKey.key.toByteArray()
 
     override fun getIdentifier(): HexString = keyPair.toAddress().cleanHex
 

@@ -7,6 +7,7 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import org.idos.enclave.EnclaveKeyType
 import org.idos.kwil.types.HexString
 import org.idos.kwil.types.UuidString
 import org.kethereum.model.Address
@@ -40,6 +41,7 @@ data class Wallet(
 data class UserModel(
     val id: UuidString,
     @Serializable(with = AddressSerializer::class) val walletAddress: Address,
+    val enclaveKeyType: EnclaveKeyType?,
     val lastUpdated: Long = System.currentTimeMillis(),
 )
 

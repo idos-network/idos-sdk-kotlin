@@ -57,12 +57,12 @@ class MockEnclave(
     override suspend fun generateKey(
         userId: UuidString,
         password: String,
-        expiration: Long,
+        sessionConfig: EnclaveSessionConfig,
     ): ByteArray {
         generateKeyCallCount++
         return when (behavior) {
             is MockBehavior.KeyGenerationFails -> throw behavior.error
-            else -> super.generateKey(userId, password, expiration)
+            else -> super.generateKey(userId, password, sessionConfig)
         }
     }
 
@@ -130,7 +130,7 @@ internal class MockEncryption(
         receiverPublicKey: ByteArray,
         enclaveKeyType: EnclaveKeyType,
     ): Pair<ByteArray, ByteArray> {
-        val secret = getSecretKey(EnclaveKeyType.LOCAL)
+        val secret = getSecretKey(EnclaveKeyType.USER)
         val nonce = ByteArray(24) { it.toByte() } // Deterministic nonce
         val encrypted =
             message
@@ -146,7 +146,7 @@ internal class MockEncryption(
         senderPublicKey: ByteArray,
         enclaveKeyType: EnclaveKeyType,
     ): ByteArray {
-        val secret = getSecretKey(EnclaveKeyType.LOCAL)
+        val secret = getSecretKey(EnclaveKeyType.USER)
         // XOR is symmetric, so decrypt = encrypt
         return decrypt(fullMessage, secret, senderPublicKey)
     }
@@ -178,7 +178,6 @@ internal class MockEncryption(
  */
 internal class MockMetadataStorage : MetadataStorage {
     private val metadataMap = mutableMapOf<EnclaveKeyType, KeyMetadata>()
-    private var sessionConfig: MpcSessionConfig? = null
 
     override suspend fun store(
         meta: KeyMetadata,
@@ -191,11 +190,5 @@ internal class MockMetadataStorage : MetadataStorage {
 
     override suspend fun delete(enclaveKeyType: EnclaveKeyType) {
         metadataMap.remove(enclaveKeyType)
-    }
-
-    override suspend fun getSessionConfig(): MpcSessionConfig? = sessionConfig
-
-    override suspend fun storeSessionConfig(config: MpcSessionConfig) {
-        sessionConfig = config
     }
 }

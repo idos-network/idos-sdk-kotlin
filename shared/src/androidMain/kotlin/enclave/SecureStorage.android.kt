@@ -18,6 +18,7 @@ class AndroidSecureStorage(
     private val context: Context,
 ) : SecureStorage {
     private val mutex = Mutex()
+
     private companion object {
         private const val MASTER_KEY_ALIAS = "idos_enclave_master"
         private const val KEY_FILENAME = "encrypted_key"

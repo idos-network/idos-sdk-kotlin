@@ -13,7 +13,6 @@ class IosMetadataStorage : MetadataStorage {
 
     companion object {
         private const val KEY_METADATA = "enclave_key_metadata"
-        private const val KEY_CONFIG = "enclave_key_config"
 
         private fun EnclaveKeyType.key() = "${KEY_METADATA}_${this.name}"
     }
@@ -38,21 +37,6 @@ class IosMetadataStorage : MetadataStorage {
 
     override suspend fun delete(enclaveKeyType: EnclaveKeyType) {
         userDefaults.removeObjectForKey(enclaveKeyType.key())
-        userDefaults.synchronize()
-    }
-
-    override suspend fun getSessionConfig(): MpcSessionConfig? {
-        val jsonString = userDefaults.stringForKey(KEY_CONFIG) ?: return null
-        return try {
-            json.decodeFromString(MpcSessionConfig.serializer(), jsonString)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    override suspend fun storeSessionConfig(config: MpcSessionConfig) {
-        val jsonString = json.encodeToString(MpcSessionConfig.serializer(), config)
-        userDefaults.setObject(jsonString, forKey = KEY_CONFIG)
         userDefaults.synchronize()
     }
 }

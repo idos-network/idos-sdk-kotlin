@@ -28,62 +28,57 @@ class LoginViewModel(
     private val userRepository: UserRepository,
     private val navigationManager: NavigationManager,
 ) : BaseViewModel<LoginUiState, LoginEvent>() {
-    private var userStateJob: Job? = null
-
     init {
         monitorUserState()
     }
 
     private fun monitorUserState() {
-        userStateJob?.cancel()
-        userStateJob =
-            viewModelScope.launch {
-                userRepository.userState.collect { userState ->
-                    Timber.d("LoginViewModel user state changed: $userState")
+        viewModelScope.launch {
+            userRepository.userState.collect { userState ->
+                Timber.d("LoginViewModel user state changed: $userState")
 
-                    when (userState) {
-                        is LoadingUser -> {
-                            // Ignore loading state - splash screen handles this
+                when (userState) {
+                    is LoadingUser -> {
+                        // Ignore loading state - splash screen handles this
+                    }
+
+                    is NoUser -> {
+                        updateState {
+                            copy(
+                                showConnectButton = true,
+                                isConnectedUser = false,
+                                error = null,
+                            )
                         }
-                        is NoUser -> {
-                            updateState {
-                                copy(
-                                    showConnectButton = true,
-                                    isConnectedUser = false,
-                                    error = null,
-                                )
-                            }
+                    }
+
+                    is ConnectedWallet -> {
+                        // User is connecting - mnemonic screen will handle this
+                        // Keep splash visible, no login content needed
+                    }
+
+                    is ConnectedUser -> {
+                        updateState {
+                            copy(
+                                showConnectButton = false,
+                                isConnectedUser = true,
+                                error = null,
+                            )
                         }
-                        is ConnectedWallet -> {
-                            // User is connecting - mnemonic screen will handle this
-                            // Keep splash visible, no login content needed
-                        }
-                        is ConnectedUser -> {
-                            updateState {
-                                copy(
-                                    showConnectButton = false,
-                                    isConnectedUser = true,
-                                    error = null,
-                                )
-                            }
-                        }
-                        is UserError -> {
-                            updateState {
-                                copy(
-                                    showConnectButton = true,
-                                    isConnectedUser = false,
-                                    error = userState.message,
-                                )
-                            }
+                    }
+
+                    is UserError -> {
+                        updateState {
+                            copy(
+                                showConnectButton = true,
+                                isConnectedUser = false,
+                                error = userState.message,
+                            )
                         }
                     }
                 }
             }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        userStateJob?.cancel()
+        }
     }
 
     override fun initialState(): LoginUiState = LoginUiState()

@@ -2,9 +2,9 @@ package org.idos.kwil.protocol
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.idos.signer.SignatureType
 import org.idos.kwil.types.Base64String
 import org.idos.kwil.types.HexString
+import org.idos.signer.SignatureType
 
 /**
  * Message body containing action payload and authentication challenge.
