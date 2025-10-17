@@ -2,6 +2,7 @@ package org.idos.enclave
 
 import org.idos.enclave.crypto.Encryption
 import org.idos.getCurrentTimeMillis
+import org.idos.logging.IdosLogger
 
 /**
  * Shared expiration checking logic for both LOCAL and MPC enclaves.
@@ -29,6 +30,7 @@ internal object ExpirationChecker {
             when (meta.expirationType) {
                 ExpirationType.TIMED -> {
                     if (meta.expiresAt != null && now > meta.expiresAt) {
+                        IdosLogger.i("Enclave") { "Key expired (TIMED), deleting: $keyType" }
                         encryption.deleteKey(keyType)
                         storage.delete(keyType)
                         throw EnclaveError.KeyExpired()
@@ -37,6 +39,7 @@ internal object ExpirationChecker {
                 ExpirationType.ONE_SHOT -> {
                     if (meta.lastUsedAt != meta.createdAt) {
                         // Already used once, auto-lock
+                        IdosLogger.i("Enclave") { "Key used once (ONE_SHOT), deleting: $keyType" }
                         encryption.deleteKey(keyType)
                         storage.delete(keyType)
                         throw EnclaveError.KeyExpired()

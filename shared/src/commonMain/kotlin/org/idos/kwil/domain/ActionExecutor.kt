@@ -4,6 +4,8 @@ import org.idos.kwil.protocol.KwilProtocol
 import org.idos.kwil.protocol.callAction
 import org.idos.kwil.protocol.executeAction
 import org.idos.kwil.types.HexString
+import org.idos.logging.HttpLogLevel
+import org.idos.logging.IdosLogger
 import org.idos.signer.Signer
 
 /**
@@ -15,14 +17,16 @@ import org.idos.signer.Signer
  * @param baseUrl KWIL network URL
  * @param chainId Chain identifier
  * @param signer Cryptographic signer for transactions
+ * @param httpLogLevel Log level for HTTP requests/responses
  */
 class ActionExecutor constructor(
     baseUrl: String,
     chainId: String,
     @PublishedApi internal val signer: Signer,
+    httpLogLevel: HttpLogLevel = HttpLogLevel.NONE,
 ) {
     @PublishedApi
-    internal val client = KwilProtocol(baseUrl, chainId)
+    internal val client = KwilProtocol(baseUrl, chainId, httpLogLevel)
 
     /**
      * Executes a view action (read-only query).
@@ -38,6 +42,7 @@ class ActionExecutor constructor(
         input: I,
     ): List<O> =
         runCatchingAuth {
+            IdosLogger.d("Action") { "Calling view action: ${action.name}" }
             client.callAction(action, input, signer)
         }
 
@@ -102,7 +107,10 @@ class ActionExecutor constructor(
         synchronous: Boolean = true,
     ): HexString =
         runCatchingAuth {
-            client.executeAction(action, input, signer, synchronous)
+            IdosLogger.d("Action") { "Executing action: ${action.name} (sync=$synchronous)" }
+            val txHash = client.executeAction(action, input, signer, synchronous)
+            IdosLogger.i("Action") { "Action executed successfully: ${action.name}, tx=$txHash" }
+            txHash
         }
 
     /**
@@ -117,12 +125,15 @@ class ActionExecutor constructor(
             runCatchingDomainErrorAsync { block() }
         } catch (e: DomainError.AuthenticationRequired) {
             // Auto-authenticate and retry once
+            IdosLogger.i("Auth") { "Authentication required, authenticating..." }
             runCatchingDomainErrorAsync {
                 client.authenticate(signer)
+                IdosLogger.i("Auth") { "Authentication successful, retrying operation" }
                 block()
             }
         } catch (e: Exception) {
             // Already a DomainError, pass through
+            IdosLogger.e("Action", e) { "Action failed: ${e.message}" }
             throw e
         }
 }

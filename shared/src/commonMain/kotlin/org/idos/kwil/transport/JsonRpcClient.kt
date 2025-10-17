@@ -3,6 +3,8 @@ package org.idos.kwil.transport
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.request.post
@@ -12,6 +14,9 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import org.idos.logging.HttpLogLevel
+import org.idos.logging.IdosLogger
+import org.idos.logging.toKtorLevel
 import kotlin.concurrent.atomics.AtomicInt
 
 /**
@@ -21,11 +26,13 @@ import kotlin.concurrent.atomics.AtomicInt
  * Handles HTTP communication, request ID generation, and JSON serialization.
  *
  * @param baseUrl The base URL for the JSON-RPC endpoint
+ * @param httpLogLevel Log level for HTTP requests/responses
  * @param requestInterceptor Optional interceptor to modify requests (e.g., add auth headers)
  */
 @OptIn(kotlin.concurrent.atomics.ExperimentalAtomicApi::class)
 internal class JsonRpcClient(
     private val baseUrl: String,
+    private val httpLogLevel: HttpLogLevel = HttpLogLevel.NONE,
     private val requestInterceptor: (HttpRequestBuilder.() -> Unit)? = null,
 ) {
     private val httpClient =
@@ -37,6 +44,21 @@ internal class JsonRpcClient(
                         encodeDefaults = true
                     },
                 )
+            }
+
+            // Install logging if enabled
+            if (httpLogLevel != HttpLogLevel.NONE) {
+                install(Logging) {
+                    logger =
+                        object : Logger {
+                            private val kermitLogger = IdosLogger.withTag("HTTP-KWIL")
+
+                            override fun log(message: String) {
+                                kermitLogger.i { message }
+                            }
+                        }
+                    level = httpLogLevel.toKtorLevel()
+                }
             }
         }
 

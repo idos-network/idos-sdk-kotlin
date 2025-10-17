@@ -15,6 +15,7 @@ kotlinx = "1.10.2"
 koin = "3.5.3"
 kotlinx-io = "0.8.0"
 kotlinCryptoHash = "0.7.1"
+kermit = "2.0.4"
 kotest = "6.0.3"
 ksp = "2.2.10-2.0.2"
 ktlint = "12.1.1"
@@ -61,6 +62,7 @@ kotest-runner = { module = "io.kotest:kotest-runner-junit5", version.ref = "kote
 kotlinx-io = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinx-io" }
 kotlincrypto-hash-bom = { module = "org.kotlincrypto.hash:bom", version.ref = "kotlinCryptoHash" }
 kotlincrypto-hash-sha2 = { module = "org.kotlincrypto.hash:sha2" }
+kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 
 multiplatform-crypto-libsodium-bindings = { module = "com.ionspin.kotlin:multiplatform-crypto-libsodium-bindings", version.ref = "multiplatformCryptoLibsodiumBindings" }
 tweetnacl-java = { module = "com.github.InstantWebP2P:tweetnacl-java", version.ref = "tweetnacl" }

@@ -6,6 +6,7 @@ import org.idos.kwil.transport.JsonRpcClient
 import org.idos.kwil.transport.TransportError
 import org.idos.kwil.types.Base64String
 import org.idos.kwil.types.HexString
+import org.idos.logging.HttpLogLevel
 import org.idos.signer.SignatureType
 
 /**
@@ -16,15 +17,17 @@ import org.idos.signer.SignatureType
  *
  * @param baseUrl KWIL network URL
  * @param chainId Chain identifier
+ * @param httpLogLevel Log level for HTTP requests/responses
  */
 class KwilProtocol(
     val baseUrl: String,
     val chainId: String,
+    httpLogLevel: HttpLogLevel = HttpLogLevel.NONE,
 ) {
     private val auth: Auth = Auth(this, KwilConstants.AUTH_VERSION)
 
     private val jsonRpcClient =
-        JsonRpcClient(baseUrl) {
+        JsonRpcClient(baseUrl, httpLogLevel) {
             auth.applyAuth(this)
         }
 

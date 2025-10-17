@@ -5,6 +5,7 @@ import org.idos.get
 import org.idos.getAll
 import org.idos.getOwned
 import org.idos.hasProfile
+import org.idos.logging.IdosLogConfig
 import org.idos.signer.Signer
 import org.idos.kwil.types.HexString
 import org.idos.kwil.types.UuidString
@@ -13,8 +14,12 @@ class DataProvider(
     url: String,
     signer: Signer,
     chainId: String,
+    logConfig: IdosLogConfig =
+        IdosLogConfig.build {
+            platformSink()
+        },
 ) {
-    private val client = IdosClient.create(url, chainId, signer)
+    private val client = IdosClient.create(url, chainId, signer, logConfig)
 
     suspend fun getWallets() = client.wallets.getAll()
 

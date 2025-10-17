@@ -3,10 +3,8 @@ package org.idos.enclave.mpc
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
-import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.client.request.headers
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
@@ -25,6 +23,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNamingStrategy
 import org.idos.kwil.types.HexString
+import org.idos.logging.HttpLogLevel
+import org.idos.logging.IdosLogger
+import org.idos.logging.toKtorLevel
 
 @Serializable
 data class Sharing(
@@ -45,10 +46,15 @@ data class EncryptedShare(
  * Handles upload, download, and management of encrypted shares.
  *
  * Pure HTTP client - authentication is handled externally via pre-signed signatures.
+ *
+ * @param baseUrl Base URL of the MPC node
+ * @param contractAddress Contract address for the MPC shares
+ * @param httpLogLevel Log level for HTTP requests/responses
  */
 internal class NodeClient(
     private val baseUrl: String,
     private val contractAddress: HexString,
+    private val httpLogLevel: HttpLogLevel = HttpLogLevel.NONE,
 ) {
     @OptIn(ExperimentalSerializationApi::class)
     private val httpClient =
@@ -63,9 +69,19 @@ internal class NodeClient(
                 )
             }
 
-            install(Logging) {
-                logger = Logger.SIMPLE // or Logger.DEFAULT
-                level = LogLevel.ALL // or HEADERS, BODY, INFO, NONE
+            // Install logging if enabled
+            if (httpLogLevel != HttpLogLevel.NONE) {
+                install(Logging) {
+                    logger =
+                        object : Logger {
+                            private val kermitLogger = IdosLogger.withTag("HTTP-MPC")
+
+                            override fun log(message: String) {
+                                kermitLogger.i { message }
+                            }
+                        }
+                    level = httpLogLevel.toKtorLevel()
+                }
             }
         }
 

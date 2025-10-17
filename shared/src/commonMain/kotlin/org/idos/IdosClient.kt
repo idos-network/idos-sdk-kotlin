@@ -4,6 +4,8 @@ import org.idos.kwil.domain.ActionExecutor
 import org.idos.kwil.domain.DomainError
 import org.idos.kwil.domain.generated.view.GetUserResponse
 import org.idos.kwil.domain.runCatchingDomainError
+import org.idos.logging.IdosLogConfig
+import org.idos.logging.IdosLogger
 import org.idos.signer.Signer
 
 /**
@@ -129,6 +131,7 @@ class IdosClient internal constructor(
          * @param baseUrl KWIL network URL (e.g., "https://nodes.staging.idos.network")
          * @param chainId Chain identifier (e.g., "idos-testnet")
          * @param signer Cryptographic signer for transactions
+         * @param logConfig Logging configuration for HTTP and SDK logging
          * @return IdosClient instance
          */
         @Throws(DomainError::class)
@@ -136,6 +139,22 @@ class IdosClient internal constructor(
             baseUrl: String,
             chainId: String,
             signer: Signer,
-        ): IdosClient = runCatchingDomainError { IdosClient(ActionExecutor(baseUrl, chainId, signer), chainId) }
+            logConfig: IdosLogConfig =
+                IdosLogConfig.build {
+                    platformSink()
+                },
+        ): IdosClient =
+            runCatchingDomainError {
+                // Configure SDK logger
+                IdosLogger.configure(logConfig)
+
+                IdosLogger.i("Client") { "Initializing idOS SDK client for chain: $chainId" }
+                IdosLogger.d("Client") { "Base URL: $baseUrl, HTTP logging: ${logConfig.httpLogLevel}" }
+
+                IdosClient(
+                    ActionExecutor(baseUrl, chainId, signer, logConfig.httpLogLevel),
+                    chainId,
+                )
+            }
     }
 }

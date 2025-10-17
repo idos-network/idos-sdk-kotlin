@@ -17,6 +17,8 @@ import org.idos.enclave.runCatchingErrorAsync
 import org.idos.getCurrentTimeMillis
 import org.idos.getSecureRandom
 import org.idos.kwil.types.UuidString
+import org.idos.logging.HttpLogLevel
+import org.idos.logging.IdosLogger
 import org.idos.signer.Signer
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.minutes
@@ -37,6 +39,7 @@ import kotlin.time.Duration.Companion.minutes
  * @param mpcConfig MPC configuration (URL, contract, nodes, threshold, etc.)
  * @param signer Wallet signer implementation (EVM/NEAR/XRPL)
  * @param hasher Keccak256 hasher for computing share commitments
+ * @param httpLogLevel Log level for HTTP requests/responses
  */
 class MpcEnclave(
     private val encryption: Encryption,
@@ -44,11 +47,13 @@ class MpcEnclave(
     private val mpcConfig: MpcConfig,
     private val signer: Signer,
     private val hasher: Keccak256Hasher,
+    httpLogLevel: HttpLogLevel = HttpLogLevel.NONE,
 ) : Enclave {
     private val mpcClient =
         MpcClient(
             encryption = encryption,
             config = mpcConfig,
+            httpLogLevel = httpLogLevel,
         )
 
     /**
@@ -160,6 +165,8 @@ class MpcEnclave(
         userId: UuidString,
         secret: String,
     ) = runCatchingErrorAsync {
+        IdosLogger.i("MPC") { "Uploading secret to MPC network for user: $userId" }
+
         // Split secret into shares
         val shares =
             ShamirSharing.splitByteWiseShamir(
@@ -167,6 +174,7 @@ class MpcEnclave(
                 n = mpcClient.config.totalNodes,
                 k = mpcClient.config.threshold,
             )
+        IdosLogger.d("MPC") { "Split secret into ${shares.size} shares (threshold: ${mpcClient.config.threshold})" }
 
         // Blind all shares
         val blindedShares = shares.map { ShareBlinding.blind(it) }
@@ -186,7 +194,9 @@ class MpcEnclave(
         val signature = signer.signMessageAsAuthHeader(signableMessage)
 
         // Upload to nodes (throws MpcUploadFailed if insufficient nodes)
+        IdosLogger.d("MPC") { "Uploading shares to ${mpcClient.config.totalNodes} nodes" }
         mpcClient.uploadSecret(userId, request, signature, blindedShares)
+        IdosLogger.i("MPC") { "Secret uploaded successfully to MPC network" }
 
         // Store both key and metadata
         // Delete and create new key
@@ -228,8 +238,11 @@ class MpcEnclave(
      */
     suspend fun downloadSecret(userId: UuidString): ByteArray =
         runCatchingErrorAsync {
+            IdosLogger.i("MPC") { "Downloading secret from MPC network for user: $userId" }
+
             // Generate ephemeral keypair for this download
             val ephemeralKeyPair = encryption.generateEphemeralKeyPair()
+            IdosLogger.d("MPC") { "Generated ephemeral keypair for secure download" }
 
             // Create download request
             val request =
@@ -244,7 +257,9 @@ class MpcEnclave(
             val signature = signer.signMessageAsAuthHeader(signableMessage)
 
             // Download secret from nodes
+            IdosLogger.d("MPC") { "Downloading shares from ${mpcClient.config.totalNodes} nodes" }
             val secret = mpcClient.downloadSecret(userId, request, signature, ephemeralKeyPair.secretKey)
+            IdosLogger.i("MPC") { "Secret downloaded and reconstructed successfully" }
 
             // Store secret in secure storage
             encryption.deleteKey(EnclaveKeyType.MPC)

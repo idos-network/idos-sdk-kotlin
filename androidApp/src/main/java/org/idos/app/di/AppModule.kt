@@ -1,5 +1,6 @@
 package org.idos.app.di
 
+import android.content.pm.ApplicationInfo
 import androidx.lifecycle.SavedStateHandle
 import kotlinx.serialization.json.Json
 import org.idos.app.data.ApiClient
@@ -11,6 +12,7 @@ import org.idos.app.data.repository.UserRepository
 import org.idos.app.data.repository.UserRepositoryImpl
 import org.idos.app.data.repository.WalletRepository
 import org.idos.app.data.repository.WalletRepositoryImpl
+import org.idos.app.logging.TimberLogAdapter
 import org.idos.app.navigation.NavigationManager
 import org.idos.app.security.EthSigner
 import org.idos.app.security.KeyManager
@@ -29,6 +31,9 @@ import org.idos.enclave.MetadataStorage
 import org.idos.enclave.crypto.AndroidEncryption
 import org.idos.enclave.crypto.Encryption
 import org.idos.enclave.mpc.MpcConfig
+import org.idos.logging.HttpLogLevel
+import org.idos.logging.IdosLogConfig
+import org.idos.logging.SdkLogLevel
 import org.idos.signer.Signer
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -40,11 +45,44 @@ private const val PG_PARTISIA_URL = "https://partisia-reader-node.playground.ido
 private const val PG_CONTRACT = "0223996d84146dbf310dd52a0e1d103e91bb8402b3"
 private val MPC_CONFIG = MpcConfig(PG_PARTISIA_URL, PG_CONTRACT, 6, 4, 2)
 
+/**
+ * Logging configuration module.
+ *
+ * Provides SDK logging configuration based on build type.
+ * Separate module for easy testing and override.
+ */
+val loggingModule =
+    module {
+        single {
+            // Determine if app is in debug mode
+            val context = androidContext()
+            val isDebuggable = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+
+            // Configure SDK logging with DSL-style builder
+            IdosLogConfig.build {
+                httpLogLevel = if (isDebuggable) HttpLogLevel.INFO else HttpLogLevel.NONE
+                sdkLogLevel = if (isDebuggable) SdkLogLevel.DEBUG else SdkLogLevel.INFO
+
+                // Route all SDK logs to Timber with "idOS-" prefix
+                callbackSink(tagPrefix = "idOS-", callback = TimberLogAdapter::log)
+
+                // Example: Add Crashlytics for errors in production
+                // if (!isDebuggable) {
+                //     callbackSink { level, tag, message ->
+                //         if (level == SdkLogLevel.ERROR) {
+                //             FirebaseCrashlytics.getInstance().log("[$tag] $message")
+                //         }
+                //     }
+                // }
+            }
+        }
+    }
+
 val networkModule =
     module {
         single { Json { ignoreUnknownKeys = true } }
         single { ApiClient() }
-        single { DataProvider(STAGING_URL, get(), STAGING_CHAIN_ID) }
+        single { DataProvider(STAGING_URL, get(), STAGING_CHAIN_ID, get()) }
     }
 
 val dataModule =
@@ -103,6 +141,7 @@ val securityModule =
 
 val appModule =
     listOf(
+        loggingModule,
         networkModule,
         dataModule,
         repositoryModule,

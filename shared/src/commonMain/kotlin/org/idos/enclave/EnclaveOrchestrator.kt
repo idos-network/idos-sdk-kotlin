@@ -12,6 +12,7 @@ import org.idos.enclave.local.LocalEnclave
 import org.idos.enclave.mpc.MpcConfig
 import org.idos.enclave.mpc.MpcEnclave
 import org.idos.kwil.types.UuidString
+import org.idos.logging.IdosLogger
 import org.idos.signer.Signer
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -262,6 +263,7 @@ class EnclaveOrchestrator internal constructor(
                         innerEnclaveType = EnclaveKeyType.MPC
                         updateState(EnclaveState.Unlocked(mpcEnclave))
                     } catch (e: EnclaveError) {
+                        IdosLogger.w("Enclave") { "MPC enrollment failed, reverting to Locked: ${e.message}" }
                         _state.value = EnclaveState.Locked
                         throw e
                     }
@@ -295,6 +297,7 @@ class EnclaveOrchestrator internal constructor(
                 }
             }
         } catch (e: EnclaveError) {
+            IdosLogger.i("Enclave") { "Status check failed, locking enclave: ${e.javaClass.simpleName}" }
             updateState(EnclaveState.Locked)
         }
     }
@@ -389,6 +392,7 @@ class EnclaveOrchestrator internal constructor(
             }
         } catch (e: EnclaveError) {
             // noop, lock anyway
+            IdosLogger.w("Enclave") { "Error during lock (proceeding anyway): ${e.message}" }
         }
         updateState(EnclaveState.Locked)
     }

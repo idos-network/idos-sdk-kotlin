@@ -2,8 +2,10 @@ package org.idos.app.ui.screens.credentials
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import org.idos.app.data.StorageManager
@@ -117,9 +119,10 @@ class CredentialDetailViewModel(
                     }
 
                     is EnclaveState.Unlocking -> {
-                        _enclaveUiState.value = EnclaveUiState.Unlocking(
-                            type = orchestrator.getEnclaveType()
-                        )
+                        _enclaveUiState.value =
+                            EnclaveUiState.Unlocking(
+                                type = orchestrator.getEnclaveType(),
+                            )
                     }
 
                     is EnclaveState.Locked -> {
@@ -165,8 +168,7 @@ class CredentialDetailViewModel(
             try {
                 orchestrator
                     .withEnclave { enclave ->
-                        val decryptedString = decryptCredential(currentState.credential, enclave)
-                        val json = Json.parseToJsonElement(decryptedString)
+                        val json = decryptCredential(currentState.credential, enclave)
                         updateState {
                             (this as CredentialDetailState.Loaded).copy(decryptedContent = json)
                         }
@@ -184,11 +186,12 @@ class CredentialDetailViewModel(
                                 e.reason == DecryptFailure.WrongPassword -> "Wrong password - key cannot decrypt this data"
                                 else -> "Decryption failed: ${e.message}"
                             }
-                        _enclaveUiState.value = EnclaveUiState.UnlockError(
-                            type = orchestrator.getEnclaveType(),
-                            message = message,
-                            canRetry = true
-                        )
+                        _enclaveUiState.value =
+                            EnclaveUiState.UnlockError(
+                                type = orchestrator.getEnclaveType(),
+                                message = message,
+                                canRetry = true,
+                            )
                     }
 
                     else -> {
@@ -203,11 +206,13 @@ class CredentialDetailViewModel(
     private suspend fun decryptCredential(
         data: CredentialDetail,
         enclave: Enclave,
-    ): String {
-        val content = Base64String(data.content).toByteArray()
-        val pubkey = Base64String(data.encryptorPublicKey).toByteArray()
-        return enclave.decrypt(content, pubkey).decodeToString()
-    }
+    ): JsonElement? =
+        withContext(Dispatchers.IO) {
+            val content = Base64String(data.content).toByteArray()
+            val pubkey = Base64String(data.encryptorPublicKey).toByteArray()
+            val decryptedString = enclave.decrypt(content, pubkey).decodeToString()
+            Json.parseToJsonElement(decryptedString)
+        }
 
     private fun unlockEnclave(event: CredentialDetailEvent.UnlockEnclave) {
         viewModelScope.launch {

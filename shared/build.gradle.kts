@@ -74,6 +74,7 @@ kotlin {
             implementation(libs.kotlinx.io)
             implementation(project.dependencies.platform(libs.kotlincrypto.hash.bom))
             implementation(libs.kotlincrypto.hash.sha2)
+            implementation(libs.kermit)
         }
 
         androidMain.dependencies {

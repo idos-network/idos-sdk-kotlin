@@ -9,6 +9,8 @@ import org.idos.enclave.crypto.Encryption
 import org.idos.enclave.crypto.ShamirSharing
 import org.idos.enclave.crypto.ShareBlinding
 import org.idos.kwil.types.HexString
+import org.idos.logging.HttpLogLevel
+import org.idos.logging.IdosLogger
 
 /**
  * Configuration for MPC operations.
@@ -64,10 +66,12 @@ private sealed class NodeResult {
  *
  * @param encryption Encryption instance for decrypting downloaded shares
  * @param config MPC configuration (URL, contract, nodes, threshold, etc.)
+ * @param httpLogLevel Log level for HTTP requests/responses
  */
 internal class MpcClient(
     private val encryption: Encryption,
     val config: MpcConfig,
+    private val httpLogLevel: HttpLogLevel = HttpLogLevel.NONE,
 ) {
     private val rpcClient = PartisiaRpcClient(config.partisiaRpcUrl, config.contractAddress)
 
@@ -86,6 +90,7 @@ internal class MpcClient(
             NodeClient(
                 baseUrl = node.url,
                 contractAddress = config.contractAddress,
+                httpLogLevel = httpLogLevel,
             )
         }
     }
@@ -132,6 +137,7 @@ internal class MpcClient(
                                 client.sendUpload(id, sharingRequests[index], signature)
                                 NodeResult.Success(index, ByteArray(0))
                             } catch (e: Exception) {
+                                IdosLogger.d("MPC") { "Node $index upload failed: ${e.message}" }
                                 NodeResult.Failure(index, e)
                             }
                         }
@@ -191,6 +197,7 @@ internal class MpcClient(
 
                                 NodeResult.Success(index, share)
                             } catch (e: Exception) {
+                                IdosLogger.d("MPC") { "Node $index download failed: ${e.message}" }
                                 NodeResult.Failure(index, e)
                             }
                         }
@@ -240,6 +247,7 @@ internal class MpcClient(
                                 client.sendAddAddress(id, request, signature)
                                 NodeResult.Success(index, ByteArray(0))
                             } catch (e: Exception) {
+                                IdosLogger.d("MPC") { "Node $index add address failed: ${e.message}" }
                                 NodeResult.Failure(index, e)
                             }
                         }
@@ -284,6 +292,7 @@ internal class MpcClient(
                                 client.sendRemoveAddress(id, request, signature)
                                 NodeResult.Success(index, ByteArray(0))
                             } catch (e: Exception) {
+                                IdosLogger.d("MPC") { "Node $index remove address failed: ${e.message}" }
                                 NodeResult.Failure(index, e)
                             }
                         }
@@ -328,6 +337,7 @@ internal class MpcClient(
                                 client.sendUpdate(id, request, signature)
                                 NodeResult.Success(index, ByteArray(0))
                             } catch (e: Exception) {
+                                IdosLogger.d("MPC") { "Node $index update wallets failed: ${e.message}" }
                                 NodeResult.Failure(index, e)
                             }
                         }
