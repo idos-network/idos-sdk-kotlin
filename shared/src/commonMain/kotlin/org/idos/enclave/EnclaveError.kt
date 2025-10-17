@@ -40,7 +40,8 @@ sealed class EnclaveError(
      */
     data class StorageFailed(
         val details: String,
-    ) : EnclaveError("Storage operation failed: $details")
+        override val cause: Throwable? = null,
+    ) : EnclaveError("Storage operation failed: $details", cause)
 
     /**
      * Key generation failed.

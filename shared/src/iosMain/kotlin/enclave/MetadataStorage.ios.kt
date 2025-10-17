@@ -1,6 +1,7 @@
 package org.idos.enclave
 
 import kotlinx.serialization.json.Json
+import org.idos.logging.IdosLogger
 import platform.Foundation.NSUserDefaults
 
 /**
@@ -31,7 +32,10 @@ class IosMetadataStorage : MetadataStorage {
         return try {
             json.decodeFromString(KeyMetadata.serializer(), jsonString)
         } catch (e: Exception) {
-            null
+            IdosLogger.e("MetadataStorage", e) {
+                "Failed to deserialize metadata for $enclaveKeyType: ${e.message}"
+            }
+            throw EnclaveError.StorageFailed("Failed to deserialize metadata for $enclaveKeyType", e)
         }
     }
 

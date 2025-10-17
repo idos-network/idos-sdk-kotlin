@@ -106,54 +106,88 @@ All operations are suspend functions that throw `DomainError` on failure.
 
 ## 🔐 Enclave (Encryption)
 
-The SDK provides stateful encryption management with reactive UI updates via `EnclaveOrchestrator`:
+The SDK supports two encryption modes:
+- **LOCAL**: Password-based encryption with local key storage
+- **MPC**: Distributed encryption using Shamir's Secret Sharing across MPC nodes
+
+All modes provide reactive state management via `EnclaveOrchestrator`:
+
+### LOCAL Mode (Password-Based)
 
 ```kotlin
 import org.idos.enclave.*
 
-// Create enclave components
+// Create orchestrator for LOCAL mode
 val encryption = JvmEncryption()  // or AndroidEncryption(context), IosEncryption()
 val storage = JvmMetadataStorage()  // or AndroidMetadataStorage(context), IosMetadataStorage()
-val enclave = Enclave(encryption, storage)
-val orchestrator = EnclaveOrchestrator(enclave)
+val orchestrator = EnclaveOrchestrator.createLocal(encryption, storage)
 
 // Observe state for UI updates
 orchestrator.state.collect { state ->
     when (state) {
-        is EnclaveFlow.RequiresKey -> showPasswordPrompt()
-        is EnclaveFlow.Available -> enableEncryptedFeatures()
-        is EnclaveFlow.WrongPasswordSuspected ->
-            showError("Decryption failed ${state.attemptCount} times")
-        is EnclaveFlow.Error -> showError(state.message)
-        // ... handle other states
+        is EnclaveState.Locked -> showPasswordPrompt()
+        is EnclaveState.Unlocking -> showLoadingIndicator()
+        is EnclaveState.Unlocked -> enableEncryptedFeatures()
+        is EnclaveState.NotAvailable -> showSetupScreen()
     }
 }
 
-// Generate key when user provides password
-orchestrator.generateKey(
+// Unlock with password
+val sessionConfig = EnclaveSessionConfig(ExpirationType.TIMED, 3600000)  // 1 hour
+orchestrator.unlock(
     userId = userProfile.id,
     password = userPassword,
-    expirationMillis = 3600000  // 1 hour
+    sessionConfig = sessionConfig
 )
 
 // Decrypt credential data
 try {
     val credential = client.credentials.getOwned(credentialId)
-    val decryptedData = orchestrator.decrypt(
-        message = credential.content.toByteArray(),
-        senderPublicKey = credential.encryptorPublicKey.toByteArray()
-    )
+    val decryptedData = orchestrator.withEnclave { enclave ->
+        enclave.decrypt(
+            message = credential.content.toByteArray(),
+            senderPublicKey = credential.encryptorPublicKey.toByteArray()
+        )
+    }
     println(String(decryptedData))
 } catch (e: EnclaveError) {
     when (e) {
-        is EnclaveError.NoKey -> println("Generate key first")
-        is EnclaveError.KeyExpired -> println("Key expired, regenerate")
-        is EnclaveError.DecryptionFailed ->
-            println("Decryption failed: ${e.reason}")
+        is EnclaveError.NoKey -> println("Unlock enclave first")
+        is EnclaveError.KeyExpired -> println("Key expired, unlock again")
+        is EnclaveError.DecryptionFailed -> println("Decryption failed: ${e.reason}")
         else -> println("Error: ${e.message}")
     }
-} catch (e: DomainError) {
-    println("Failed to get credential: ${e.message}")
+}
+```
+
+### MPC Mode (Distributed)
+
+```kotlin
+// Create orchestrator for MPC mode
+val mpcConfig = MpcConfig(
+    partisiaRpcUrl = "https://rpc.partisia.com",
+    contractAddress = HexString("0x..."),
+    totalNodes = 3,
+    threshold = 2
+)
+val orchestrator = EnclaveOrchestrator.createMpc(
+    encryption = encryption,
+    storage = storage,
+    mpcConfig = mpcConfig,
+    signer = signer,  // Wallet signer for authentication
+    hasher = Keccak256Hasher()
+)
+
+// Enroll user (first time)
+orchestrator.enroll(userId, EnclaveKeyType.MPC)
+
+// Unlock (downloads secret from MPC network)
+val sessionConfig = EnclaveSessionConfig(ExpirationType.TIMED, 3600000)
+orchestrator.unlock(userId, sessionConfig)
+
+// Use same decrypt API as LOCAL mode
+orchestrator.withEnclave { enclave ->
+    enclave.decrypt(message, senderPublicKey)
 }
 ```
 
@@ -165,9 +199,8 @@ sealed class EnclaveError : Exception {
     class KeyExpired : EnclaveError()
     data class DecryptionFailed(reason: DecryptFailure) : EnclaveError()
     data class EncryptionFailed(details: String) : EnclaveError()
-    data class InvalidPublicKey(details: String) : EnclaveError()
-    data class KeyGenerationFailed(details: String) : EnclaveError()
-    data class StorageFailed(details: String) : EnclaveError()
+    data class MpcUploadFailed(...) : EnclaveError()  // MPC-specific
+    data class MpcNotEnoughShares(...) : EnclaveError()  // MPC-specific
 }
 
 sealed class DecryptFailure {

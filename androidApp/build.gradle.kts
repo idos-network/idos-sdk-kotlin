@@ -9,10 +9,10 @@ fun getEnvProperties(filePath: String): Properties {
         try {
             FileInputStream(envFile).use { properties.load(it) }
         } catch (e: Exception) {
-            println("Warning: Could not load .env file: ${e.message}")
+            logger.warn("Could not load .env file: ${e.message}")
         }
     } else {
-        println("Warning: .env file not found at $filePath")
+        logger.warn(".env file not found at $filePath")
     }
     return properties
 }

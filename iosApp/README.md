@@ -70,15 +70,19 @@ The shared Kotlin module uses SKIE for seamless Swift interop:
 
 1. **Encryption.ios.kt** - ✅ Implemented using Kotlin Multiplatform libsodium bindings
    - NaCl Box encryption (Curve25519 + XSalsa20 + Poly1305)
-   - Secure key storage via `KeychainSecureStorage` (bundled with SDK)
+   - Supports both LOCAL and MPC encryption modes
+   - Secure key storage via `KeychainSecureStorage`
    - Full compatibility with Android encryption
 
 2. **KeyDerivation.ios.kt** - ✅ Implemented using Kotlin Multiplatform libsodium
-   - SCrypt KDF with parameters: n=16384, r=8, p=1, dkLen=32
-   - Password normalization
+   - Scrypt KDF with parameters: n=16384, r=8, p=1, dkLen=32
+   - Password normalization (Unicode NFC)
    - UUID salt validation
 
 3. **MetadataStorage.ios.kt** - ✅ UserDefaults-based key metadata storage
+   - Tracks key type (LOCAL or MPC)
+   - Session expiration management
+   - Last used timestamps
 
 4. **KeychainSecureStorage.swift** - ✅ Production-ready Keychain implementation
    - `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` for maximum security

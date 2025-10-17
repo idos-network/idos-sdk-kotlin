@@ -347,232 +347,446 @@ try {
 
 ## 🔐 Enclave Layer (`enclave/`)
 
-**Purpose**: Stateful encryption key management with reactive state flow for UI integration
+**Purpose**: Dual-mode encryption with reactive state management for UI integration
+
+The Enclave layer supports two distinct encryption modes:
+- **LOCAL Mode**: Password-based encryption with local key derivation (Scrypt KDF)
+- **MPC Mode**: Distributed encryption using Shamir's Secret Sharing across MPC nodes
 
 ### Architecture Pattern
 
 ```
-┌──────────────────────────────────────────────────┐
-│  EnclaveOrchestrator (StateFlow)                 │  Public API (@Throws EnclaveError)
-│  - State machine with 8 states                   │
-│  - Pending action queue                          │
-│  - Wrong password detection                      │
-├──────────────────────────────────────────────────┤
-│  Enclave (suspend + @Throws)                     │  iOS-compatible via SKIE
-│  - Key expiration checks                         │
-│  - encrypt() / decrypt()                         │
-│  - Throws EnclaveError                           │
-├──────────────────────────────────────────────────┤
-│  Encryption (Platform-specific, throws)          │  Internal
-│  - JVM: TweetNaCl                                │
-│  - Android: Lazysodium (libsodium)               │
-│  - iOS: libsodium XCFramework                    │
-├──────────────────────────────────────────────────┤
-│  SecureStorage + MetadataStorage                 │  Platform-specific
-│  - Android: EncryptedFile (StrongBox)            │
-│  - iOS: Keychain                                 │
-│  - Metadata: SharedPreferences/UserDefaults      │
-│  - JVM: In-memory (testing)                      │
-└──────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│  EnclaveOrchestrator (StateFlow)                           │  Public API
+│  - Factory methods: create(), createLocal(), createMpc()   │
+│  - 4-state model: Locked, Unlocking, Unlocked, NotAvail   │
+│  - Mode detection from metadata or explicit selection      │
+├────────────────────────────────────────────────────────────┤
+│  LocalEnclave              │  MpcEnclave                    │
+│  - Password → Scrypt KDF   │  - Shamir's Secret Sharing    │
+│  - Local key storage       │  - Distributed across nodes   │
+│  - Session expiration      │  - Wallet-authenticated       │
+├────────────────────────────┼────────────────────────────────┤
+│  Enclave (interface)                                        │  iOS-compatible
+│  - encrypt() / decrypt()                                    │  via SKIE
+│  - Key expiration checks                                    │
+│  - Throws EnclaveError                                      │
+├────────────────────────────────────────────────────────────┤
+│  Encryption (Platform-specific, throws)                     │  Internal
+│  - JVM: Lazysodium (libsodium)                             │
+│  - Android: Lazysodium (libsodium JNI)                     │
+│  - iOS: libsodium XCFramework (C interop)                  │
+│  - NaCl Box: Curve25519 + XSalsa20 + Poly1305             │
+├────────────────────────────────────────────────────────────┤
+│  SecureStorage + MetadataStorage                            │  Platform
+│  - Android: EncryptedFile (StrongBox)                      │
+│  - iOS: Keychain                                            │
+│  - Metadata: SharedPreferences/UserDefaults                │
+│  - JVM: In-memory (testing)                                │
+└────────────────────────────────────────────────────────────┘
 ```
 
 ### Key Components
 
 #### 1. EnclaveOrchestrator (`EnclaveOrchestrator.kt`)
-**Purpose**: State machine for enclave lifecycle with reactive UI updates
+**Purpose**: Unified orchestrator for LOCAL and MPC encryption modes with reactive UI updates
 
 ```kotlin
-class EnclaveOrchestrator(private val enclave: Enclave) {
-    val state: StateFlow<EnclaveFlow>  // Reactive state for UI
+class EnclaveOrchestrator internal constructor(
+    private val localEnclave: LocalEnclave?,
+    private val mpcEnclave: MpcEnclave?,
+    private val enclaveType: EnclaveKeyType?
+) {
+    companion object {
+        // Create for both modes (type determined from metadata)
+        fun create(encryption, storage, mpcConfig, signer, hasher): EnclaveOrchestrator
 
-    suspend fun checkStatus()  // Check if key exists and is valid
-    suspend fun generateKey(userId, password, expiration)
-    suspend fun cancel()  // User cancelled flow
-    suspend fun reset()   // Delete key and start over
-    suspend fun retry()   // Retry after error
+        // Create LOCAL-only mode
+        fun createLocal(encryption, storage): EnclaveOrchestrator
 
-    suspend fun requireEnclave(action: suspend (Enclave) -> Unit): Result<Unit>
-    suspend fun encrypt(message, receiverPublicKey): Result<Pair<ByteArray, ByteArray>>
-    suspend fun decrypt(message, senderPublicKey): Result<ByteArray>
+        // Create MPC-only mode
+        fun createMpc(encryption, storage, mpcConfig, signer, hasher): EnclaveOrchestrator
+    }
+
+    val state: StateFlow<EnclaveState>  // Reactive state for UI
+
+    suspend fun enroll(userId, type)     // Enroll user in chosen mode
+    suspend fun checkStatus()            // Check if key exists and is valid
+    suspend fun unlock(userId, sessionConfig, password?)  // Unlock (password for LOCAL)
+    suspend fun lock()                   // Delete key and lock
+    suspend fun <T> withEnclave(action: suspend (Enclave) -> T): T  // Execute with enclave
 }
 ```
 
-**State Model** (`EnclaveFlow.kt`):
+**State Model** (`EnclaveState.kt`):
 ```kotlin
-sealed class EnclaveFlow {
-    data object Loading : EnclaveFlow()           // Checking key status
-    data object RequiresKey : EnclaveFlow()       // No key, need password
-    data object Cancelled : EnclaveFlow()         // User cancelled
-    data object Generating : EnclaveFlow()        // Creating key
-    data class Available(enclave) : EnclaveFlow() // Ready for operations
-    data class KeyGenerationError(message) : EnclaveFlow()
-    data class WrongPasswordSuspected(message, attemptCount) : EnclaveFlow()
-    data class Error(message, canRetry) : EnclaveFlow()
+sealed class EnclaveState {
+    data object Locked : EnclaveState()           // No valid encryption key
+    data object Unlocking : EnclaveState()        // Key generation in progress
+    data class Unlocked(val enclave: Enclave) : EnclaveState()  // Ready for operations
+    data object NotAvailable : EnclaveState()     // Not properly initialized
+}
+```
+
+**Factory Methods**:
+- `create()` - Both LOCAL and MPC support, mode detected from metadata
+- `createLocal()` - LOCAL mode only (password-based)
+- `createMpc()` - MPC mode only (distributed)
+
+**Features**:
+- ✅ Unified API for both LOCAL and MPC modes
+- ✅ Lazy mode detection from stored metadata
+- ✅ StateFlow for reactive UI updates (Android Compose, iOS SwiftUI)
+- ✅ Automatic key expiration checks
+- ✅ Session-based key management
+
+#### 2. LocalEnclave (`LocalEnclave.kt`)
+**Purpose**: Password-based encryption with Scrypt KDF
+
+```kotlin
+class LocalEnclave(
+    private val encryption: Encryption,
+    private val storage: MetadataStorage
+) : Enclave {
+    suspend fun generateKey(userId, password, sessionConfig): ByteArray
+    suspend fun hasValidKey()
+    suspend fun deleteKey()
+
+    // From Enclave interface
+    override suspend fun encrypt(message, receiverPublicKey): Pair<ByteArray, ByteArray>
+    override suspend fun decrypt(message, senderPublicKey): ByteArray
+}
+```
+
+**Key Derivation**:
+- **Algorithm**: Scrypt (memory-hard KDF, OWASP recommended)
+- **Parameters**: n=16384, r=8, p=1, dkLen=32
+- **Salt**: userId (unique per user)
+- **Output**: 32-byte encryption key
+
+**Features**:
+- Password normalization (Unicode NFC)
+- Automatic key expiration checks
+- Flexible expiration modes (TIMED, SESSION, ONE_SHOT)
+- Metadata tracking (createdAt, lastUsedAt, expiresAt)
+
+#### 3. MpcEnclave (`MpcEnclave.kt`)
+**Purpose**: Distributed encryption using Shamir's Secret Sharing
+
+```kotlin
+class MpcEnclave(
+    private val encryption: Encryption,
+    private val storage: MetadataStorage,
+    private val mpcConfig: MpcConfig,
+    private val signer: Signer,
+    private val hasher: Keccak256Hasher
+) : Enclave {
+    suspend fun enroll(userId)  // Generate and upload secret
+    suspend fun uploadSecret(userId, secret)
+    suspend fun downloadSecret(userId): ByteArray
+    suspend fun unlock(userId, sessionConfig)
+    suspend fun addAddress(userId, addressToAdd)
+    suspend fun removeAddress(userId, addressToRemove)
+    suspend fun updateWallets(userId, addresses)
+
+    // From Enclave interface
+    override suspend fun encrypt(message, receiverPublicKey): Pair<ByteArray, ByteArray>
+    override suspend fun decrypt(message, senderPublicKey): ByteArray
+}
+```
+
+**MPC Architecture**:
+```
+┌─────────────────────────────────────────────┐
+│  MpcEnclave                                 │
+│  - enroll(), uploadSecret(), downloadSecret │
+│  - Wallet-authenticated operations          │
+├─────────────────────────────────────────────┤
+│  MpcClient                                  │
+│  - Parallel node communication              │
+│  - Threshold-based success (k of n)         │
+│  - Structured error aggregation             │
+├─────────────────────────────────────────────┤
+│  NodeClient (per node)                      │
+│  - HTTP/JSON-RPC to individual MPC node     │
+│  - EIP-712 typed data signing               │
+├─────────────────────────────────────────────┤
+│  PartisiaRpcClient                          │
+│  - Blockchain RPC for node discovery        │
+│  - Contract state queries                   │
+└─────────────────────────────────────────────┘
+```
+
+**Shamir's Secret Sharing Flow**:
+
+*Upload:*
+1. Generate cryptographically secure random password (20 chars)
+2. Split into n shares with threshold k using byte-wise Shamir
+3. Blind each share with random 32 bytes
+4. Compute Keccak256 commitment for each blinded share
+5. Sign request with wallet (EIP-712 typed data)
+6. Upload to all nodes in parallel
+7. Require minimum k + malicious nodes to succeed
+8. Store secret locally in secure storage
+
+*Download:*
+1. Generate ephemeral Curve25519 keypair
+2. Sign download request with wallet
+3. Download encrypted shares from nodes in parallel
+4. Decrypt shares using NaCl Box with ephemeral key
+5. Remove blinding from decrypted shares
+6. Reconstruct secret using Shamir's algorithm (requires ≥ k shares)
+7. Store secret locally in secure storage
+
+**Configuration** (`MpcConfig`):
+```kotlin
+data class MpcConfig(
+    val partisiaRpcUrl: String,      // Blockchain RPC endpoint
+    val contractAddress: HexString,   // MPC contract address
+    val totalNodes: Int,              // n (total shares)
+    val threshold: Int,               // k (minimum to reconstruct)
+    val maliciousNodes: Int = 0       // Additional nodes required beyond k
+) {
+    val minSuccessfulNodes: Int get() = threshold + maliciousNodes
 }
 ```
 
 **Features**:
-- ✅ Thread-safe pending action queue (Mutex-protected)
-- ✅ Wrong password detection with attempt counter
-- ✅ Prevents infinite retry loops
-- ✅ User cancellation support
-- ✅ StateFlow for reactive UI updates (Android Compose, iOS SwiftUI)
+- ✅ On-demand node discovery (no persistent connections)
+- ✅ Parallel node communication with structured error tracking
+- ✅ Threshold-based success (handles node failures)
+- ✅ EIP-712 wallet authentication for all operations
+- ✅ Multi-wallet recovery support (add/remove addresses)
+- ✅ Same encrypt/decrypt API as LOCAL mode
 
-#### 2. Enclave (`Enclave.kt`)
-**Purpose**: Public API for encryption operations (suspend + @Throws, iOS-compatible via SKIE)
+#### 4. Enclave Interface (`Enclave.kt`)
+**Purpose**: Common API for both LOCAL and MPC modes (iOS-compatible via SKIE)
 
 ```kotlin
-open class Enclave(
-    private val encryption: Encryption,
-    private val storage: MetadataStorage
-) {
-    @Throws(EnclaveError::class)
-    open suspend fun generateKey(userId, password, expiration): ByteArray
+interface Enclave {
+    @Throws(CancellationException::class, EnclaveError::class)
+    suspend fun encrypt(message: ByteArray, receiverPublicKey: ByteArray): Pair<ByteArray, ByteArray>
 
-    @Throws(EnclaveError::class)
-    open suspend fun deleteKey()
-
-    @Throws(EnclaveError::class)
-    open suspend fun encrypt(message, receiverPublicKey): Pair<ByteArray, ByteArray>
-
-    @Throws(EnclaveError::class)
-    open suspend fun decrypt(message, senderPublicKey): ByteArray
-
-    @Throws(EnclaveError::class)
-    open suspend fun hasValidKey()
+    @Throws(CancellationException::class, EnclaveError::class)
+    suspend fun decrypt(message: ByteArray, senderPublicKey: ByteArray): ByteArray
 }
 ```
 
 **Responsibilities**:
-- Key expiration checking
-- Metadata storage updates (lastUsedAt)
+- Unified encrypt/decrypt API for both modes
+- Key expiration checking (via metadata)
 - Exception wrapping to EnclaveError hierarchy
 - iOS compatibility via SKIE (auto-converts to Swift async/throws)
 
-#### 3. Encryption (`Encryption.kt`)
+#### 5. Encryption (`Encryption.kt`)
 **Purpose**: Platform-specific NaCl Box encryption (throws exceptions internally)
 
 ```kotlin
 abstract class Encryption(protected val storage: SecureStorage) {
-    abstract suspend fun encrypt(message, receiverPublicKey): Pair<ByteArray, ByteArray>
-    abstract suspend fun decrypt(fullMessage, senderPublicKey): ByteArray
+    abstract suspend fun encrypt(
+        message: ByteArray,
+        receiverPublicKey: ByteArray,
+        enclaveKeyType: EnclaveKeyType
+    ): Pair<ByteArray, ByteArray>
 
-    suspend fun generateKey(userId, password): ByteArray
-    suspend fun deleteKey()
-    protected suspend fun getSecretKey(): ByteArray  // throws NoKey
-    protected abstract suspend fun publicKey(secret: ByteArray): ByteArray
+    abstract suspend fun decrypt(
+        fullMessage: ByteArray,
+        senderPublicKey: ByteArray,
+        enclaveKeyType: EnclaveKeyType
+    ): ByteArray
+
+    abstract fun generateEphemeralKeyPair(): KeyPair  // For MPC downloads
+
+    suspend fun generateKey(userId: String, password: String, keyType: EnclaveKeyType): ByteArray
+    suspend fun deleteKey(keyType: EnclaveKeyType)
+    protected suspend fun getSecretKey(keyType: EnclaveKeyType): ByteArray  // throws NoKey
 }
 ```
 
 **Platform Implementations**:
-- **JVM**: `JvmEncryption` - TweetNaCl (pure Java NaCl)
+- **JVM**: `JvmEncryption` - Lazysodium (libsodium)
 - **Android**: `AndroidEncryption` - Lazysodium (libsodium JNI)
 - **iOS**: `IosEncryption` - libsodium XCFramework (C interop)
+
+**NaCl Box Encryption**:
+- **Key Exchange**: Curve25519 (ECDH)
+- **Cipher**: XSalsa20 stream cipher
+- **MAC**: Poly1305 authenticator
+- **Nonce**: 24 bytes random (generated per message)
+- **Output**: nonce || ciphertext || mac (24 + message.length + 16 bytes)
 
 **Why exceptions throughout?**
 - Natural for platform code (Swift, Java throw natively)
 - SKIE converts suspend + @Throws to Swift async/throws seamlessly
 - Cleaner API than Result<T> for both Kotlin and Swift users
 
-#### 4. Storage Abstractions
+#### 6. Storage Abstractions
 
 **SecureStorage** - Encryption key persistence:
 ```kotlin
 interface SecureStorage {
-    suspend fun storeKey(key: ByteArray)
-    suspend fun retrieveKey(): ByteArray?
-    suspend fun deleteKey()
+    suspend fun storeKey(key: ByteArray, enclaveKeyType: EnclaveKeyType)
+    suspend fun retrieveKey(enclaveKeyType: EnclaveKeyType): ByteArray?
+    suspend fun deleteKey(enclaveKeyType: EnclaveKeyType)
 }
 ```
 
-**MetadataStorage** - Key metadata (expiration, userId):
+**MetadataStorage** - Key metadata (expiration, type, userId):
 ```kotlin
 interface MetadataStorage {
-    suspend fun store(meta: KeyMetadata)
-    suspend fun get(): KeyMetadata?
-    suspend fun delete()
+    suspend fun store(meta: KeyMetadata, enclaveKeyType: EnclaveKeyType)
+    suspend fun get(enclaveKeyType: EnclaveKeyType): KeyMetadata?
+    suspend fun delete(enclaveKeyType: EnclaveKeyType)
 }
 
 data class KeyMetadata(
-    val userId: UuidString,
     val publicKey: HexString,
-    val expiredAt: Long,
+    val type: EnclaveKeyType,
+    val expirationType: ExpirationType,
+    val expiresAt: Long?,
     val createdAt: Long,
     val lastUsedAt: Long
 )
+
+enum class EnclaveKeyType { USER, MPC }
+enum class ExpirationType { TIMED, SESSION, ONE_SHOT }
 ```
 
 **Platform Implementations**:
-- **Android**: `EncryptedFile` + `SharedPreferences` (StrongBox support)
-- **iOS**: `Keychain` + `UserDefaults`
-- **JVM**: In-memory (for testing)
+- **Android**: `AndroidSecureStorage` (EncryptedFile with StrongBox) + `AndroidMetadataStorage` (SharedPreferences)
+- **iOS**: `KeychainSecureStorage` + `IosMetadataStorage` (UserDefaults)
+- **JVM**: `JvmSecureStorage` (in-memory) + `JvmMetadataStorage` (in-memory, for testing)
 
 ### Error Hierarchy
 
 ```kotlin
 sealed class EnclaveError : Exception {
+    // Common errors (both LOCAL and MPC)
     class NoKey : EnclaveError()
     class KeyExpired : EnclaveError()
-    data class DecryptionFailed(reason: DecryptFailure) : EnclaveError()
+    data class DecryptionFailed(reason: DecryptFailure, details: String) : EnclaveError()
     data class EncryptionFailed(details: String) : EnclaveError()
     data class InvalidPublicKey(details: String) : EnclaveError()
     data class KeyGenerationFailed(details: String) : EnclaveError()
-    data class StorageFailed(details: String) : EnclaveError()
-    data class Unknown(details, cause) : EnclaveError()
+    data class StorageFailed(details: String, cause: Throwable?) : EnclaveError()
+    data class SignatureFailed(details: String, cause: Throwable?) : EnclaveError()
+
+    // MPC-specific errors
+    data class MpcNotInitialized(details: String) : EnclaveError()
+    data class MpcNotEnoughNodes(details: String) : EnclaveError()
+    data class MpcUploadFailed(
+        val successCount: Int,
+        val required: Int,
+        val failures: List<MpcNodeFailure>
+    ) : EnclaveError()
+    data class MpcNotEnoughShares(
+        val obtained: Int,
+        val required: Int,
+        val failures: List<MpcNodeFailure>
+    ) : EnclaveError()
+    data class MpcManagementFailed(
+        val operation: String,
+        val successCount: Int,
+        val required: Int,
+        val failures: List<MpcNodeFailure>
+    ) : EnclaveError()
 }
 
 sealed class DecryptFailure {
     data object WrongPassword : DecryptFailure()
     data object CorruptedData : DecryptFailure()
     data object InvalidCiphertext : DecryptFailure()
-    data class Unknown(message) : DecryptFailure()
 }
+
+data class MpcNodeFailure(
+    val nodeIndex: Int,
+    val error: Throwable
+)
 ```
 
 **Benefits**:
 - ✅ Type-safe error handling (exhaustive when expressions)
 - ✅ iOS-compatible (no Kotlin Result type erasure)
-- ✅ Detailed error information for debugging
+- ✅ Detailed MPC error information (which nodes failed, why)
 - ✅ Distinguishes wrong password from corrupted data
+- ✅ Structured failure tracking for distributed operations
 
 ### Usage Example
 
+#### LOCAL Mode
 ```kotlin
-// 1. Create orchestrator
-val orchestrator = EnclaveOrchestrator(
-    Enclave(JvmEncryption(), JvmMetadataStorage())
-)
+// 1. Create orchestrator for LOCAL mode
+val encryption = JvmEncryption()
+val storage = JvmMetadataStorage()
+val orchestrator = EnclaveOrchestrator.createLocal(encryption, storage)
 
 // 2. Observe state in UI
 orchestrator.state.collect { state ->
     when (state) {
-        is EnclaveFlow.RequiresKey -> showPasswordPrompt()
-        is EnclaveFlow.Generating -> showLoadingSpinner()
-        is EnclaveFlow.Available -> enableEncryptedFeatures()
-        is EnclaveFlow.WrongPasswordSuspected ->
-            showError("Failed ${state.attemptCount} times. Reset key?")
-        is EnclaveFlow.Error -> showError(state.message)
-        // ...
+        is EnclaveState.Locked -> showPasswordPrompt()
+        is EnclaveState.Unlocking -> showLoadingSpinner()
+        is EnclaveState.Unlocked -> enableEncryptedFeatures()
+        is EnclaveState.NotAvailable -> showSetupScreen()
     }
 }
 
-// 3. Generate key when user enters password
-orchestrator.generateKey(userId, password, expiration = 3600000)
+// 3. Unlock with password
+val sessionConfig = EnclaveSessionConfig(ExpirationType.TIMED, 3600000)
+orchestrator.unlock(userId, sessionConfig, password)
 
 // 4. Decrypt data
-orchestrator.decrypt(ciphertext, senderPubKey)
-    .onSuccess { plaintext -> display(plaintext) }
-    .onFailure { error ->
-        when (error) {
-            is EnclaveError.NoKey -> orchestrator.checkStatus()
-            is EnclaveError.KeyExpired -> promptRegenerate()
-            is EnclaveError.DecryptionFailed ->
-                when (error.reason) {
-                    DecryptFailure.WrongPassword -> offerReset()
-                    DecryptFailure.CorruptedData -> reportError()
-                }
-        }
+try {
+    val plaintext = orchestrator.withEnclave { enclave ->
+        enclave.decrypt(ciphertext, senderPubKey)
     }
+    display(plaintext)
+} catch (e: EnclaveError) {
+    when (e) {
+        is EnclaveError.NoKey -> orchestrator.checkStatus()
+        is EnclaveError.KeyExpired -> promptUnlock()
+        is EnclaveError.DecryptionFailed ->
+            when (e.reason) {
+                DecryptFailure.WrongPassword -> showError("Wrong password")
+                DecryptFailure.CorruptedData -> reportError()
+                else -> showError(e.details)
+            }
+        else -> showError(e.message)
+    }
+}
+```
+
+#### MPC Mode
+```kotlin
+// 1. Create orchestrator for MPC mode
+val mpcConfig = MpcConfig(
+    partisiaRpcUrl = "https://rpc.partisia.com",
+    contractAddress = HexString("0x..."),
+    totalNodes = 3,
+    threshold = 2
+)
+val orchestrator = EnclaveOrchestrator.createMpc(
+    encryption, storage, mpcConfig, signer, Keccak256Hasher()
+)
+
+// 2. Enroll user (first time)
+try {
+    orchestrator.enroll(userId, EnclaveKeyType.MPC)
+    // State automatically transitions to Unlocked
+} catch (e: EnclaveError.MpcUploadFailed) {
+    showError("Upload failed: ${e.successCount}/${e.required} nodes succeeded")
+    e.failures.forEach { failure ->
+        log("Node ${failure.nodeIndex}: ${failure.error.message}")
+    }
+}
+
+// 3. Unlock on subsequent sessions
+val sessionConfig = EnclaveSessionConfig(ExpirationType.TIMED, 3600000)
+orchestrator.unlock(userId, sessionConfig)  // No password needed
+
+// 4. Use same decrypt API
+orchestrator.withEnclave { enclave ->
+    enclave.decrypt(ciphertext, senderPubKey)
+}
 ```
 
 ### Engineering Notes
@@ -581,27 +795,38 @@ orchestrator.decrypt(ciphertext, senderPubKey)
 - All layers throw exceptions (natural for platform code)
 - SKIE automatically converts to Swift async/throws
 - Consistent error handling across all platforms
+- MPC errors include detailed failure information
 
 **State Management**:
 - StateFlow for reactive UI updates
 - Works with Android Compose `collectAsState()`
-- Works with iOS SwiftUI via wrapper
+- Works with iOS SwiftUI via Combine wrapper
+- 4-state model: Locked, Unlocking, Unlocked, NotAvailable
 
 **Thread Safety**:
-- Mutex-protected pending action queue
-- Safe for concurrent `requireEnclave()` calls
-- Platform Encryption implementations use own locking
+- Mutex-protected storage access in platform implementations
+- Safe concurrent operations on EnclaveOrchestrator
+- Coroutine-based concurrency throughout
 
-**Key Derivation**:
-- Argon2id (memory-hard, OWASP recommended)
+**Key Derivation (LOCAL)**:
+- Scrypt (memory-hard, OWASP recommended)
+- Parameters: n=16384, r=8, p=1, dkLen=32
 - Salt: userId (unique per user)
-- Iterations: 3, Memory: 64MB, Parallelism: 4
+- Password normalization (Unicode NFC)
+
+**MPC Security**:
+- Shamir's Secret Sharing (threshold k of n nodes)
+- Share blinding for added security
+- Keccak256 commitments for integrity
+- EIP-712 wallet authentication
+- Ephemeral key encryption for downloads
+- No single point of failure (distributed trust)
 
 **Security Features**:
-- Key expiration (configurable TTL)
+- Key expiration (TIMED, SESSION, ONE_SHOT)
 - Secure key erasure (`ByteArray.fill(0)`)
-- Platform secure storage (Keychain, EncryptedFile)
-- Wrong password detection (prevents brute force)
+- Platform secure storage (Keychain, EncryptedFile with StrongBox)
+- Hardware-backed encryption when available
 
 ---
 

@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import org.idos.logging.IdosLogger
 import java.io.ByteArrayOutputStream
 import java.io.File
 
@@ -97,10 +98,18 @@ class AndroidSecureStorage(
                 try {
                     val file = File(context.filesDir, enclaveKeyType.filename())
                     if (file.exists()) {
-                        file.delete()
+                        val deleted = file.delete()
+                        if (!deleted) {
+                            IdosLogger.w("SecureStorage") {
+                                "Failed to delete key file for $enclaveKeyType"
+                            }
+                        }
                     }
                 } catch (e: Exception) {
-                    // Ignore deletion errors
+                    IdosLogger.e("SecureStorage", e) {
+                        "Error deleting key for $enclaveKeyType: ${e.message}"
+                    }
+                    // Don't throw - deletion errors should not prevent lock/cleanup operations
                 }
             }
         }

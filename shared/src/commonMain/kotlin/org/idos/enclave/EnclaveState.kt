@@ -5,8 +5,6 @@ package org.idos.enclave
  * Simple 3-state model for reactive UI updates across platforms.
  */
 sealed class EnclaveState {
-    // TODO add N/A, in case it was not properly initialized, would show some warning to user
-
     /**
      * Enclave not available for the user.
      * We were not able to initialize properly.
