@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import OSLog
 import idos_sdk
 
 enum UserError: Error, LocalizedError {
@@ -66,42 +67,42 @@ class UserRepository: UserRepositoryProtocol {
 
     /// Initialize the user repository by loading stored user data and initializing enclave
     func initialize() {
-        print("🔄 UserRepository: Initializing")
+        Logger.repository.debug("UserRepository: Initializing")
         if let user = getStoredUser() {
-            print("✅ UserRepository: Found stored user with enclave type: \(user.enclaveKeyType)")
+            Logger.repository.info("UserRepository: Found stored user with enclave type: \(user.enclaveKeyType)")
             if let keyType = EnclaveKeyType.companion.getByValue(type: user.enclaveKeyType) {
                 enclaveOrchestrator.initializeType(type: keyType)
-                print("✅ UserRepository: Enclave initialized with type: \(user.enclaveKeyType)")
+                Logger.repository.info("UserRepository: Enclave initialized with type: \(user.enclaveKeyType)")
             } else {
-                print("⚠️ UserRepository: Invalid enclave type: \(user.enclaveKeyType)")
+                Logger.repository.error("UserRepository: Invalid enclave type: \(user.enclaveKeyType)")
             }
         } else {
-            print("ℹ️ UserRepository: No stored user or enclave type found")
+            Logger.repository.debug("UserRepository: No stored user or enclave type found")
         }
     }
 
     /// Fetches user data from the network and stores it
     func fetchAndStoreUser() async throws -> Void {
-        print("🔄 UserRepository: Starting fetchAndStoreUser")
+        Logger.repository.debug("UserRepository: Starting fetchAndStoreUser")
 
         // 1. Get wallet address from storage
         guard let address = storageManager.getStoredWallet() else {
-            print("❌ UserRepository: No wallet address found in storage")
+            Logger.repository.error("UserRepository: No wallet address found in storage")
             throw UserError.noKeyFound
         }
-        print("📍 UserRepository: Using wallet address: \(address)")
+        Logger.repository.debug("UserRepository: Using wallet address: \(address, privacy: .private)")
 
         // 2. Get key from key manager to verify it exists
         do {
             _ = try keyManager.getKey()
-            print("✅ UserRepository: Private key verified in keychain")
+            Logger.repository.info("UserRepository: Private key verified in keychain")
         } catch {
-            print("❌ UserRepository: No key found in keychain")
+            Logger.repository.error("UserRepository: No key found in keychain")
             throw UserError.noKeyFound
         }
 
         // 3. Check if user has profile
-        print("🔍 UserRepository: Checking if user has profile for address: \(address)")
+        Logger.repository.debug("UserRepository: Checking if user has profile for address: \(address, privacy: .private)")
         do {
             let hasProfile = try await dataProvider.hasUserProfile(address: address)
             guard hasProfile else { throw UserError.noUserProfile }
@@ -114,21 +115,21 @@ class UserRepository: UserRepositoryProtocol {
                 enclaveKeyType: user.encryptionPasswordStore)
 
             await MainActor.run {
-                print("💾 Saving user profile with enclave type: \(user.encryptionPasswordStore)")
+                Logger.repository.debug("UserRepository: Saving user profile with enclave type: \(user.encryptionPasswordStore)")
                 storageManager.saveUserProfile(userModel)
-                
+
                 // Initialize enclave with user's chosen type
                 if let keyType = EnclaveKeyType.companion.getByValue(type: user.encryptionPasswordStore) {
                     enclaveOrchestrator.initializeType(type: keyType)
-                    print("✅ Enclave initialized with type: \(keyType)")
+                    Logger.repository.info("UserRepository: Enclave initialized with type: \(keyType.name)")
                 } else {
-                    print("⚠️ No enclave type found in user profile, skipping enclave initialization")
+                    Logger.repository.notice("UserRepository: No enclave type found in user profile, skipping enclave initialization")
                 }
-                
-                print("✅ User profile saved")
+
+                Logger.repository.info("UserRepository: User profile saved")
             }
         } catch {
-            print("⚠️ No user profile found")
+            Logger.repository.notice("UserRepository: No user profile found")
             throw UserError.noUserProfile
         }
     }
@@ -142,7 +143,7 @@ class UserRepository: UserRepositoryProtocol {
     func clearUserProfile() {
         storageManager.clearUserProfile()
         try? keyManager.deleteKey()
-        print("✅ Cleared user profile and keys")
+        Logger.repository.info("UserRepository: Cleared user profile and keys")
     }
 
     /// Checks if a user profile exists in storage

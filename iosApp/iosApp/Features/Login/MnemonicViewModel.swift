@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import OSLog
 
 /// Mnemonic state matching Android's MnemonicState
 struct MnemonicState {
@@ -70,7 +71,7 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
     }
 
     private func importWallet() {
-        print("🔐 MnemonicViewModel: Starting wallet import")
+        Logger.viewModel.debug("MnemonicViewModel: Starting wallet import")
         updateState {
             $0.isLoading = true
             $0.error = nil
@@ -85,7 +86,7 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
                     .filter { !$0.isEmpty }
 
                 guard words.count == 12 || words.count == 24 else {
-                    print("❌ MnemonicViewModel: Invalid mnemonic word count: \(words.count)")
+                    Logger.viewModel.error("MnemonicViewModel: Invalid mnemonic word count: \(words.count)")
                     await MainActor.run {
                         updateState {
                             $0.error = "Please enter a valid 12 or 24 word recovery phrase"
@@ -95,20 +96,20 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
                     return
                 }
 
-                print("✅ MnemonicViewModel: Mnemonic validated (\(words.count) words)")
-                print("🔑 MnemonicViewModel: Generating and storing private key with derivation path: \(state.derivationPath)")
+                Logger.viewModel.info("MnemonicViewModel: Mnemonic validated (\(words.count) words)")
+                Logger.viewModel.debug("MnemonicViewModel: Generating and storing private key with derivation path: \(self.state.derivationPath)")
 
                 // Generate and store key using KeyManager (matches Android implementation)
                 // This derives the private key using BIP39/BIP44 and stores it securely
                 let address = try keyManager.generateAndStoreKey(words: state.mnemonic, derivationPath: state.derivationPath)
 
-                print("✅ MnemonicViewModel: Key generated, address: \(address)")
+                Logger.viewModel.info("MnemonicViewModel: Key generated, address: \(address, privacy: .private)")
 
                 await MainActor.run {
-                    print("💾 MnemonicViewModel: Storing wallet address to storage")
+                    Logger.viewModel.debug("MnemonicViewModel: Storing wallet address to storage")
                     // Store the wallet address
                     storageManager.saveWalletAddress(address)
-                    print("✅ MnemonicViewModel: Wallet import complete, showing success dialog")
+                    Logger.viewModel.info("MnemonicViewModel: Wallet import complete, showing success dialog")
 
                     updateState {
                         $0.isLoading = false
@@ -116,7 +117,7 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
                     }
                 }
             } catch EthSigner.EthSignerError.invalidMnemonic {
-                print("❌ MnemonicViewModel: Invalid mnemonic phrase")
+                Logger.viewModel.error("MnemonicViewModel: Invalid mnemonic phrase")
                 await MainActor.run {
                     updateState {
                         $0.error = "Invalid mnemonic phrase. Please check your recovery words."
@@ -124,7 +125,7 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
                     }
                 }
             } catch {
-                print("❌ MnemonicViewModel: Import failed - \(error.localizedDescription)")
+                Logger.viewModel.error("MnemonicViewModel: Import failed - \(error.localizedDescription)")
                 await MainActor.run {
                     updateState {
                         $0.error = error.localizedDescription
@@ -136,7 +137,7 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
     }
 
     private func fetchUser() {
-        print("🔄 MnemonicViewModel: Starting user fetch")
+        Logger.viewModel.debug("MnemonicViewModel: Starting user fetch")
 
         // Set loading state while keeping success dialog visible
         updateState {
@@ -149,11 +150,11 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
                 // Fetch user profile from API and store
                 try await userRepository.fetchAndStoreUser()
 
-                print("✅ MnemonicViewModel: User fetched and stored successfully")
+                Logger.viewModel.info("MnemonicViewModel: User fetched and stored successfully")
                 // Success - dialog will auto-dismiss when UserRepository navigates
                 // No need to update state here, navigation will happen automatically
             } catch UserError.noUserProfile {
-                print("⚠️ MnemonicViewModel: No user profile found")
+                Logger.viewModel.notice("MnemonicViewModel: No user profile found")
                 await MainActor.run {
                     updateState {
                         $0.isLoading = false
@@ -162,7 +163,7 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
                     }
                 }
             } catch {
-                print("❌ MnemonicViewModel: Failed to fetch user - \(error.localizedDescription)")
+                Logger.viewModel.error("MnemonicViewModel: Failed to fetch user - \(error.localizedDescription)")
                 await MainActor.run {
                     updateState {
                         $0.isLoading = false

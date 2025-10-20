@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 /// User state matching Android's UserState sealed class
 enum UserState: Equatable {
@@ -35,30 +36,30 @@ class StorageManager: ObservableObject {
     
     /// Saves the user profile and updates the state
     func saveUserProfile(_ user: User) {
-        print("💾 StorageManager: Saving user profile (id: \(user.id), address: \(user.walletAddress))")
+        Logger.storage.debug("StorageManager: Saving user profile (id: \(user.id), address: \(user.walletAddress, privacy: .private))")
         do {
             let data = try jsonEncoder.encode(user)
             userDefaults.set(data, forKey: Keys.userProfile)
             userState = .connectedUser(user: user)
-            print("✅ StorageManager: User profile saved, state updated to .connectedUser")
+            Logger.storage.info("StorageManager: User profile saved, state updated to .connectedUser")
         } catch {
-            print("❌ StorageManager: Failed to save user profile: \(error)")
+            Logger.storage.error("StorageManager: Failed to save user profile: \(error)")
             userState = .userError(message: "Failed to save user profile: \(error.localizedDescription)")
         }
     }
     
     /// Saves the wallet address and updates the state
     func saveWalletAddress(_ address: String) {
-        print("💾 StorageManager: Saving wallet address: \(address)")
+        Logger.storage.debug("StorageManager: Saving wallet address: \(address, privacy: .private)")
         userState = .connectedWallet(address: address)
-        print("✅ StorageManager: State updated to .connectedWallet")
+        Logger.storage.info("StorageManager: State updated to .connectedWallet")
     }
-    
+
     /// Clears the user profile and updates the state
     func clearUserProfile() {
         userDefaults.removeObject(forKey: Keys.userProfile)
         userState = .noUser
-        print("✅ Cleared user profile")
+        Logger.storage.info("StorageManager: Cleared user profile")
     }
     
     /// Returns the stored user if available
@@ -95,10 +96,10 @@ class StorageManager: ObservableObject {
         if let userData = userDefaults.data(forKey: Keys.userProfile),
            let user = try? jsonDecoder.decode(User.self, from: userData) {
             userState = .connectedUser(user: user)
-            print("✅ Loaded user profile: \(user.id)")
+            Logger.storage.info("StorageManager: Loaded user profile: \(user.id)")
         } else {
             userState = .noUser
-            print("ℹ️ No user or wallet found in storage")
+            Logger.storage.debug("StorageManager: No user or wallet found in storage")
         }
     }
 }

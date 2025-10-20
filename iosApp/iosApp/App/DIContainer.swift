@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import idos_sdk
 import Combine
 
@@ -19,6 +20,32 @@ struct AppConfig {
             maliciousNodes: 2
         )
     )
+}
+
+// MARK: - Logging Configuration
+
+extension DIContainer {
+    /// SDK logging configuration matching Android's loggingModule
+    /// Build-type-aware: Debug = verbose, Release = production-safe
+    static func createLogConfig() -> IdosLogConfig {
+        #if DEBUG
+        // Debug builds: INFO level HTTP logs, DEBUG level SDK logs
+        Logger.network.debug("SDK logging configured: HTTP .info, SDK .debug")
+        return IdosLogConfig.companion.build { builder in
+            builder.httpLogLevel = .info
+            builder.sdkLogLevel = .debug
+            builder.platformSink()
+        }
+        #else
+        // Release builds: NONE for HTTP logs, INFO level SDK logs
+        Logger.network.info("SDK logging configured: HTTP .none, SDK .info")
+        return IdosLogConfig.companion.build { builder in
+            builder.httpLogLevel = .none
+            builder.sdkLogLevel = .info
+            builder.platformSink()
+        }
+        #endif
+    }
 }
 
 /// Central Dependency Injection container for the iOS app
@@ -68,11 +95,12 @@ class DIContainer: ObservableObject {
             hasher: keccak256Hasher
         )
 
-        // Initialize network layer with configuration
+        // Initialize network layer with SDK logging configuration
         self.dataProvider = DataProvider(
             url: config.kwilNodeUrl,
             signer: ethSigner,
-            chainId: config.chainId
+            chainId: config.chainId,
+            logConfig: DIContainer.createLogConfig()
         )
 
         // Initialize repositories (use mocks for previews)

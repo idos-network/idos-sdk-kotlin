@@ -1,4 +1,5 @@
 import SwiftUI
+import OSLog
 
 /// MnemonicView for wallet import matching Android's MnemonicScreen
 struct MnemonicView: View {
@@ -156,7 +157,7 @@ struct MnemonicView: View {
                                         .foregroundColor(.secondary)
                                 } else {
                                     Button("OK") {
-                                        print("💾 MnemonicView: User clicked OK, triggering user fetch")
+                                        Logger.viewModel.debug("MnemonicView: User clicked OK, triggering user fetch")
                                         viewModel.onEvent(.fetchUser)
                                     }
                                     .buttonStyle(.borderedProminent)

@@ -1,18 +1,37 @@
 import Foundation
+import OSLog
 import idos_sdk
 
 /// Main data provider for the app that handles all network requests
 class DataProvider {
     // MARK: - Properties
-    
+
     private let client: IdosClient
-    
+
     // MARK: - Initialization
-    
-    init(url: String, signer: Signer, chainId: String) {
+
+    /// Initialize DataProvider with SDK logging configuration
+    /// - Parameters:
+    ///   - url: Kwil node URL
+    ///   - signer: Ethereum signer for authentication
+    ///   - chainId: Kwil chain ID
+    ///   - logConfig: SDK logging configuration (provided by DIContainer)
+    init(
+        url: String,
+        signer: Signer,
+        chainId: String,
+        logConfig: IdosLogConfig
+    ) {
         do {
-            self.client = try IdosClient.companion.create(baseUrl: url, chainId: chainId, signer: signer)
+            self.client = try IdosClient.companion.create(
+                baseUrl: url,
+                chainId: chainId,
+                signer: signer,
+                logConfig: logConfig
+            )
+            Logger.network.info("DataProvider: IdosClient initialized successfully")
         } catch {
+            Logger.network.fault("DataProvider: Fatal error - cannot create API client: \(error)")
             fatalError("Fatal Error: cannot create api client")
         }
     }

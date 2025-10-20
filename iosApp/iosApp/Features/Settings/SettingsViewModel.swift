@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import idos_sdk
 
 /// Settings state
@@ -115,7 +116,7 @@ class SettingsViewModel: BaseViewModel<SettingsState, SettingsEvent> {
             }
             return nil
         } catch {
-            print("❌ SettingsViewModel: Failed to fetch metadata - \(error)")
+            Logger.viewModel.error("SettingsViewModel: Failed to fetch metadata - \(error)")
             return nil
         }
     }
@@ -192,11 +193,11 @@ class SettingsViewModel: BaseViewModel<SettingsState, SettingsEvent> {
                 try await orchestrator.lock()
                 state.hasEncryptionKey = false
                 state.isDeleting = false
-                print("✅ SettingsViewModel: Encryption key deleted successfully")
+                Logger.viewModel.info("SettingsViewModel: Encryption key deleted successfully")
             } catch {
                 state.error = error.localizedDescription
                 state.isDeleting = false
-                print("❌ SettingsViewModel: Delete failed - \(error.localizedDescription)")
+                Logger.viewModel.error("SettingsViewModel: Delete failed - \(error.localizedDescription)")
             }
         }
     }

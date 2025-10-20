@@ -297,7 +297,7 @@ class EnclaveOrchestrator internal constructor(
                 }
             }
         } catch (e: EnclaveError) {
-            IdosLogger.i("Enclave") { "Status check failed, locking enclave: ${e.javaClass.simpleName}" }
+            IdosLogger.i("Enclave") { "Status check failed, locking enclave: $e" }
             updateState(EnclaveState.Locked)
         }
     }
