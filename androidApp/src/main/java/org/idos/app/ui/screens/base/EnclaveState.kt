@@ -11,7 +11,7 @@ data class KeyGenerationOptions(
     companion object {
         val DEFAULT_OPTIONS =
             listOf(
-                KeyGenerationOptions("1 Day", 10.seconds),
+                KeyGenerationOptions("30s", 30.seconds),
 //            KeyGenerationOptions("1 Day", 1.days),
                 KeyGenerationOptions("1 Week", 7.days),
                 KeyGenerationOptions("1 Month", 30.days),

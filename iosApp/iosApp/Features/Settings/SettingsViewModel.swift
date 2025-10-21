@@ -29,6 +29,7 @@ enum SettingsEvent {
     case cancelDelete
     case clearError
     case dismissSnackbar
+    case disconnectWallet
 }
 
 /// SettingsViewModel matching Android's SettingsViewModel
@@ -37,12 +38,20 @@ class SettingsViewModel: BaseViewModel<SettingsState, SettingsEvent> {
     private let metadataStorage: MetadataStorage
     private let keyManager: KeyManager
     private let navigationCoordinator: NavigationCoordinator
+    private let userRepository: UserRepositoryProtocol
 
-    init(orchestrator: EnclaveOrchestrator, metadataStorage: MetadataStorage, keyManager: KeyManager, navigationCoordinator: NavigationCoordinator) {
+    init(
+        orchestrator: EnclaveOrchestrator,
+        metadataStorage: MetadataStorage,
+        keyManager: KeyManager,
+        navigationCoordinator: NavigationCoordinator,
+        userRepository: UserRepositoryProtocol
+    ) {
         self.orchestrator = orchestrator
         self.metadataStorage = metadataStorage
         self.keyManager = keyManager
         self.navigationCoordinator = navigationCoordinator
+        self.userRepository = userRepository
         super.init(initialState: SettingsState())
         observeEnclaveState()
     }
@@ -63,6 +72,8 @@ class SettingsViewModel: BaseViewModel<SettingsState, SettingsEvent> {
             state.error = nil
         case .dismissSnackbar:
             state.snackbarMessage = nil
+        case .disconnectWallet:
+            disconnectWallet()
         }
     }
 
@@ -199,6 +210,14 @@ class SettingsViewModel: BaseViewModel<SettingsState, SettingsEvent> {
                 state.isDeleting = false
                 Logger.viewModel.error("SettingsViewModel: Delete failed - \(error.localizedDescription)")
             }
+        }
+    }
+
+    private func disconnectWallet() {
+        Task { @MainActor in
+            Logger.viewModel.info("SettingsViewModel: Disconnecting wallet")
+            await userRepository.clearUserProfile()
+            navigationCoordinator.replace(with: .login)
         }
     }
 }

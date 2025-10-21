@@ -99,6 +99,7 @@ class UserRepositoryImpl(
     override suspend fun clearUserProfile() {
         storageManager.clearUserProfile()
         keyManager.clearStoredKeys() // Also clear the keys when logging out
+        enclaveOrchestrator.lock()
         Timber.d("Cleared user profile and keys")
     }
 

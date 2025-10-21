@@ -1,5 +1,8 @@
 package org.idos.app.ui.screens.login
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,8 +28,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.idos.app.R
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun LoginScreen(viewModel: LoginViewModel) {
+fun SharedTransitionScope.LoginScreen(
+    viewModel: LoginViewModel,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+) {
     val uiState by viewModel.state.collectAsState()
 
     Box(
@@ -70,7 +77,14 @@ fun LoginScreen(viewModel: LoginViewModel) {
 
                     Button(
                         onClick = { viewModel.onEvent(LoginEvent.ConnectWallet) },
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp)
+                                .sharedBounds(
+                                    sharedContentState = rememberSharedContentState(key = "primaryButton"),
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                ),
                     ) {
                         Text("Connect Wallet")
                     }

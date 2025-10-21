@@ -5,6 +5,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -24,6 +26,7 @@ import org.idos.app.ui.theme.AppTheme
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.compose.koinInject
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 class LoginActivity : ComponentActivity() {
     private val loginViewModel: LoginViewModel by viewModel()
 
@@ -56,19 +59,24 @@ class LoginActivity : ComponentActivity() {
                 }
 
                 Scaffold { paddingValues ->
-                    NavHost(
-                        navController = navController,
-                        startDestination = "login",
-                        modifier =
-                            Modifier
-                                .padding(paddingValues)
-                                .consumeWindowInsets(paddingValues),
-                    ) {
-                        composable("login") {
-                            LoginScreen(viewModel = loginViewModel)
-                        }
-                        composable("mnemonic") {
-                            MnemonicScreen()
+                    SharedTransitionLayout {
+                        NavHost(
+                            navController = navController,
+                            startDestination = "login",
+                            modifier =
+                                Modifier
+                                    .padding(paddingValues)
+                                    .consumeWindowInsets(paddingValues),
+                        ) {
+                            composable("login") {
+                                LoginScreen(
+                                    viewModel = loginViewModel,
+                                    animatedVisibilityScope = this,
+                                )
+                            }
+                            composable("mnemonic") {
+                                MnemonicScreen(animatedVisibilityScope = this)
+                            }
                         }
                     }
                 }

@@ -40,7 +40,7 @@ struct SettingsView: View {
 
             Section(header: Text("Account")) {
                 Button(role: .destructive, action: {
-                    disconnectWallet()
+                    viewModel.onEvent(.disconnectWallet)
                 }) {
                     Label("Disconnect Wallet", systemImage: "arrow.right.square")
                 }
@@ -86,10 +86,5 @@ struct SettingsView: View {
                 Text(error)
             }
         }
-    }
-
-    private func disconnectWallet() {
-        diContainer.storageManager.clearUserProfile()
-        diContainer.navigationCoordinator.replace(with: .login)
     }
 }

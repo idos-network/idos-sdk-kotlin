@@ -27,7 +27,7 @@ protocol UserRepositoryProtocol: AnyObject {
     func initialize()
     func fetchAndStoreUser() async throws -> Void
     func getStoredUser() -> User?
-    func clearUserProfile()
+    func clearUserProfile() async
     func hasStoredProfile() -> Bool
 }
 
@@ -140,9 +140,10 @@ class UserRepository: UserRepositoryProtocol {
     }
 
     /// Clears the user profile from storage
-    func clearUserProfile() {
+    func clearUserProfile() async {
         storageManager.clearUserProfile()
         try? keyManager.deleteKey()
+        try? await enclaveOrchestrator.lock()
         Logger.repository.info("UserRepository: Cleared user profile and keys")
     }
 

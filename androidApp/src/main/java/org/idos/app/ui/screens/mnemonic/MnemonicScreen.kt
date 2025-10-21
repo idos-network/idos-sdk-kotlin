@@ -1,5 +1,8 @@
 package org.idos.app.ui.screens.mnemonic
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -28,9 +31,12 @@ import org.idos.app.ui.screens.base.BaseScreen
 import org.idos.app.ui.screens.base.spacing
 import org.koin.androidx.compose.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
-fun MnemonicScreen(viewModel: MnemonicViewModel = koinViewModel()) {
+fun SharedTransitionScope.MnemonicScreen(
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    viewModel: MnemonicViewModel = koinViewModel(),
+) {
     val state by viewModel.state.collectAsState()
 
     // Show dialog for loading, success, or error states
@@ -156,7 +162,13 @@ fun MnemonicScreen(viewModel: MnemonicViewModel = koinViewModel()) {
             Button(
                 onClick = { viewModel.onEvent(MnemonicEvent.GenerateWallet) },
                 enabled = state.isGenerateButtonEnabled && !state.isLoading,
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .sharedBounds(
+                            sharedContentState = rememberSharedContentState(key = "primaryButton"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                        ),
             ) {
                 Text("Generate Wallet")
             }

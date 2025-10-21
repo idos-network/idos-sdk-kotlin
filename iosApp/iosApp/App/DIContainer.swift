@@ -181,7 +181,8 @@ class DIContainer: ObservableObject {
             orchestrator: enclaveOrchestrator,
             metadataStorage: metadataStorage,
             keyManager: keyManager,
-            navigationCoordinator: navigationCoordinator
+            navigationCoordinator: navigationCoordinator,
+            userRepository: userRepository
         )
     }
 }
