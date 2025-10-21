@@ -17,16 +17,15 @@ fun concatBytes(vararg arrays: ByteArray): ByteArray {
     return result
 }
 
-fun isDecimal(n: Number): Boolean =
-    n.toString().contains('.')
+fun isDecimal(n: Number): Boolean = n.toString().contains('.')
 
 // https://github.com/trufnetwork/kwil-js/blob/main/src/utils/kwilEncoding.ts#L57
 fun encodeActionExecution(action: UnencodedActionPayload<List<List<EncodedValue>>>): String {
     // The version of the action execution encoding used by the Kwil DB Engine
-    val actionExecutionVersion = 0;
+    val actionExecutionVersion = 0
 
-    val encodedVersion = numberToUint16LittleEndian(actionExecutionVersion);
-    val encodedDbId = prefixBytesLength(stringToBytes(action.dbid));
+    val encodedVersion = numberToUint16LittleEndian(actionExecutionVersion)
+    val encodedDbId = prefixBytesLength(stringToBytes(action.dbid))
     val encodedAction = prefixBytesLength(stringToBytes(action.action))
 
     val numArgs = action.arguments?.size ?: 0
@@ -44,19 +43,21 @@ fun encodeActionExecution(action: UnencodedActionPayload<List<List<EncodedValue>
             argBytes = concatBytes(argBytes, prefixEvBytes)
         }
 
-
         actionArguments = concatBytes(actionArguments, argLength, argBytes)
     }
 
-    val encodedActionArguments = concatBytes(encodedNumArgs, actionArguments);
+    val encodedActionArguments = concatBytes(encodedNumArgs, actionArguments)
 
     return Base64.encode(
-        concatBytes(encodedVersion, encodedDbId, encodedAction, encodedActionArguments)
-    );
+        concatBytes(encodedVersion, encodedDbId, encodedAction, encodedActionArguments),
+    )
 }
 
 // https://github.com/trufnetwork/kwil-js/blob/main/src/utils/kwilEncoding.ts#L198
-fun encodeValue(value: Any?, o: VarType?): ByteArray {
+fun encodeValue(
+    value: Any?,
+    o: VarType?,
+): ByteArray {
     if (o != null) {
         return overrideValue(value, o)
     }
@@ -89,12 +90,15 @@ fun encodeValue(value: Any?, o: VarType?): ByteArray {
     }
 }
 
-fun overrideValue(v: Any?, o: VarType): ByteArray {
+fun overrideValue(
+    v: Any?,
+    o: VarType,
+): ByteArray {
     if (v === null) {
         return encodeNull()
     }
 
-    return when(o) {
+    return when (o) {
         VarType.NULL -> encodeNull()
         VarType.TEXT -> encodeNotNull(stringToBytes(v as String))
         VarType.INT8 -> encodeNotNull(numberToBytes(v as Number))
@@ -106,8 +110,7 @@ fun overrideValue(v: Any?, o: VarType): ByteArray {
     }
 }
 
-fun encodeNull(): ByteArray =
-    byteArrayOf(0)
+fun encodeNull(): ByteArray = byteArrayOf(0)
 
 fun encodeNotNull(v: ByteArray): ByteArray {
     val bytes = ByteArray(v.size + 1)
@@ -119,9 +122,7 @@ fun encodeNotNull(v: ByteArray): ByteArray {
 //
 // https://github.com/trufnetwork/kwil-js/blob/4ffabc8ef583f9b0b8e71abaa7e7527c5e4f5b85/src/utils/kwilEncoding.ts#L28
 //
-fun encodeActionCall(
-    actionCall: UnencodedActionPayload<MutableList<EncodedValue>>
-): String {
+fun encodeActionCall(actionCall: UnencodedActionPayload<MutableList<EncodedValue>>): String {
     val actionCallVersion = 0
     val encodedVersion = numberToUint16LittleEndian(actionCallVersion)
     val encodedDbId = prefixBytesLength(stringToBytes(actionCall.dbid))
@@ -140,7 +141,7 @@ fun encodeActionCall(
     val encodedActionArguments = concatBytes(encodedNumArgs, actionArguments)
     val finalBytes = concatBytes(encodedVersion, encodedDbId, encodedAction, encodedActionArguments)
 
-    return Base64.encode(finalBytes);
+    return Base64.encode(finalBytes)
 }
 
 //

@@ -6,19 +6,19 @@ import org.idos.kwil.utils.stringToBytes
 // https://github.com/idos-network/idos-sdk-js/blob/main/packages/utils/src/encryption/idOSKeyDerivation.ts
 abstract class KeyDerivation {
     companion object {
-        private const val latestVersion = 0.1
+        private const val LATEST_VERSION = 0.1
         private val allowedVersions = setOf(0.0, 0.1)
-        
+
         fun deriveKey(
             password: String,
             salt: String,
-            version: Double = latestVersion,
+            version: Double = LATEST_VERSION,
         ): ByteArray {
             val keyDerivation = getKeyDerivation()
             return keyDerivation.deriveKeyImpl(password, salt, version)
         }
     }
-    
+
     data class KDFConfig(
         val normalizePassword: (String) -> String,
         val validateSalt: (String) -> Boolean,
@@ -28,7 +28,7 @@ abstract class KeyDerivation {
         val dkLen: Int,
     )
 
-    protected fun kdfConfig(version: Double = latestVersion): KDFConfig {
+    protected fun kdfConfig(version: Double = LATEST_VERSION): KDFConfig {
         if (!allowedVersions.contains(version)) {
             throw IllegalArgumentException("Wrong KDF version $version")
         }
@@ -43,6 +43,7 @@ abstract class KeyDerivation {
                     p = 1,
                     dkLen = 32,
                 )
+
             0.1 ->
                 KDFConfig(
                     normalizePassword = { normalizeString(it) },
@@ -52,6 +53,7 @@ abstract class KeyDerivation {
                     p = 1,
                     dkLen = 32,
                 )
+
             else -> throw IllegalArgumentException("Unsupported KDF version")
         }
     }
@@ -59,7 +61,7 @@ abstract class KeyDerivation {
     fun deriveKeyImpl(
         password: String,
         salt: String,
-        version: Double = latestVersion,
+        version: Double = LATEST_VERSION,
     ): ByteArray {
         val cfg = kdfConfig(version)
 
@@ -71,26 +73,18 @@ abstract class KeyDerivation {
 
         return scryptGenerate(passwordBytes, saltBytes, cfg.n, cfg.r, cfg.p, cfg.dkLen)
     }
-    
+
     abstract fun normalizeString(input: String): String
+
     abstract fun scryptGenerate(
         passwordBytes: ByteArray,
         saltBytes: ByteArray,
         n: Int,
-        r: Int, 
+        r: Int,
         p: Int,
-        dkLen: Int
+        dkLen: Int,
     ): ByteArray
 }
 
 // Get platform-specific key derivation implementation
 expect fun getKeyDerivation(): KeyDerivation
-
-// For backward compatibility
-object idOSKeyDerivation {
-    fun deriveKey(
-        password: String,
-        salt: String,
-        version: Double = 0.1,
-    ): ByteArray = KeyDerivation.deriveKey(password, salt, version)
-}

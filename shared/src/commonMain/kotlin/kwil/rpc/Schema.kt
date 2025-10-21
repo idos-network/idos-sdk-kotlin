@@ -1,8 +1,8 @@
 package org.idos.kwil.rpc
 
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -14,14 +14,13 @@ import org.idos.kwil.transaction.AccessModifier
 import org.idos.kwil.transaction.PositionalParams
 import org.idos.kwil.transaction.PositionalTypes
 
-
 // Base JSON-RPC types
 @Serializable
 data class JsonRPCRequest<T>(
     val jsonrpc: String = "2.0",
     val id: Int,
     val method: String,
-    val params: T
+    val params: T,
 )
 
 @Serializable
@@ -29,14 +28,14 @@ data class JsonRPCResponse<T>(
     val jsonrpc: String,
     val id: Int,
     val result: T? = null,
-    val error: JsonRPCError? = null
+    val error: JsonRPCError? = null,
 )
 
 @Serializable
 data class JsonRPCError(
     val code: Int? = null,
     val message: String? = null,
-    val data: kotlinx.serialization.json.JsonElement? = null
+    val data: kotlinx.serialization.json.JsonElement? = null,
 )
 
 // https://github.com/trufnetwork/kwil-js/blob/4ffabc8ef583f9b0b8e71abaa7e7527c5e4f5b85/src/core/action.ts#L163
@@ -49,17 +48,21 @@ data class CallBody(
 
 // https://github.com/trufnetwork/kwil-js/blob/main/src/core/enums.ts#L67
 @Serializable
-enum class AuthenticationMode(val value: String) {
+enum class AuthenticationMode(
+    val value: String,
+) {
     @SerialName("private")
     PRIVATE(value = "private"),
 
     @SerialName("open")
-    OPEN(value = "open");
+    OPEN(value = "open"),
 }
 
 // Enums
 @Serializable
-enum class JSONRPCMethod(val value: String) {
+enum class JSONRPCMethod(
+    val value: String,
+) {
     @SerialName("user.health")
     METHOD_HEALTH("user.health"),
 
@@ -103,17 +106,21 @@ enum class JSONRPCMethod(val value: String) {
     METHOD_KGW_LOGOUT("kgw.logout"),
 
     @SerialName("user.challenge")
-    METHOD_CHALLENGE("user.challenge")
+    METHOD_CHALLENGE("user.challenge"),
 }
 
 @Serializable(with = AccountStatusSerializer::class)
-enum class AccountStatus(val value: Int) {
+enum class AccountStatus(
+    val value: Int,
+) {
     LATEST(0),
-    PENDING(1);
+    PENDING(1),
+    ;
 
     companion object {
-        fun fromInt(value: Int) = entries.find { it.value == value }
-            ?: throw IllegalArgumentException("Unknown BroadcastSyncType: $value")
+        fun fromInt(value: Int) =
+            entries.find { it.value == value }
+                ?: throw IllegalArgumentException("Unknown BroadcastSyncType: $value")
     }
 }
 
@@ -121,7 +128,10 @@ object AccountStatusSerializer : KSerializer<AccountStatus> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("AccountStatus", PrimitiveKind.INT)
 
-    override fun serialize(encoder: Encoder, value: AccountStatus) {
+    override fun serialize(
+        encoder: Encoder,
+        value: AccountStatus,
+    ) {
         encoder.encodeInt(value.value)
     }
 
@@ -132,13 +142,17 @@ object AccountStatusSerializer : KSerializer<AccountStatus> {
 }
 
 @Serializable(with = BroadcastSyncTypeSerializer::class)
-enum class BroadcastSyncType(val value: Int) {
+enum class BroadcastSyncType(
+    val value: Int,
+) {
     SYNC(0),
-    COMMIT(1);
+    COMMIT(1),
+    ;
 
     companion object {
-        fun fromInt(value: Int) = entries.find { it.value == value }
-            ?: throw IllegalArgumentException("Unknown BroadcastSyncType: $value")
+        fun fromInt(value: Int) =
+            entries.find { it.value == value }
+                ?: throw IllegalArgumentException("Unknown BroadcastSyncType: $value")
     }
 }
 
@@ -146,7 +160,10 @@ object BroadcastSyncTypeSerializer : KSerializer<BroadcastSyncType> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("BroadcastSyncType", PrimitiveKind.INT)
 
-    override fun serialize(encoder: Encoder, value: BroadcastSyncType) {
+    override fun serialize(
+        encoder: Encoder,
+        value: BroadcastSyncType,
+    ) {
         encoder.encodeInt(value.value)
     }
 
@@ -165,7 +182,7 @@ enum class BytesEncodingStatus {
     HEX_ENCODED,
 
     @SerialName("raw")
-    RAW
+    RAW,
 }
 
 @Serializable
@@ -183,7 +200,7 @@ enum class PayloadType {
     TRANSFER,
 
     @SerialName("raw_statement")
-    RAW_STATEMENT
+    RAW_STATEMENT,
 }
 
 // Type aliases for better readability
@@ -194,25 +211,25 @@ typealias HexString = String
 data class AccountId(
     val identifier: String?,
     @SerialName("key_type")
-    val keyType: KeyType
+    val keyType: KeyType,
 )
 
 // Request types
 @Serializable
 data class SchemaRequest(
-    val namespace: String
+    val namespace: String,
 )
 
 @Serializable
 data class AccountRequest(
     val id: AccountId,
-    val status: AccountStatus
+    val status: AccountStatus,
 )
 
 @Serializable
 data class BroadcastRequest(
     val tx: TransactionBase64,
-    val sync: BroadcastSyncType? = null
+    val sync: BroadcastSyncType? = null,
 )
 
 @Serializable
@@ -226,29 +243,29 @@ class HealthRequest
 
 @Serializable
 data class ListDatabasesRequest(
-    val owner: HexString? = null
+    val owner: HexString? = null,
 )
 
 @Serializable
 data class PingRequest(
-    val message: String
+    val message: String,
 )
 
 @Serializable
 data class EstimatePriceRequest(
-    val tx: TransactionBase64
+    val tx: TransactionBase64,
 )
 
 @Serializable
 data class SelectQueryRequest(
     val query: String,
-    val params: Map<String, kotlinx.serialization.json.JsonElement>
+    val params: Map<String, kotlinx.serialization.json.JsonElement>,
 )
 
 @Serializable
 data class TxQueryRequest(
     @SerialName("tx_hash")
-    val txHash: String
+    val txHash: String,
 )
 
 @Serializable
@@ -269,13 +286,13 @@ data class Signature(
 
 @Serializable
 data class AuthnLogoutRequest(
-    val account: Base64String
+    val account: Base64String,
 )
 
 // Response types
 @Serializable
 data class SchemaResponse(
-    val schema: DatabaseSchema
+    val schema: DatabaseSchema,
 )
 
 @Serializable
@@ -284,13 +301,13 @@ data class DatabaseSchema(
     val name: String? = null,
     val tables: List<Table>? = null,
     val actions: List<Action>? = null,
-    val extensions: List<Extension>? = null
+    val extensions: List<Extension>? = null,
 )
 
 @Serializable
 data class Table(
     val name: String,
-    val columns: List<Column>
+    val columns: List<Column>,
 )
 
 @Serializable
@@ -300,7 +317,7 @@ data class Column(
     @SerialName("is_primary")
     val isPrimary: Boolean = false,
     @SerialName("is_not_null")
-    val isNotNull: Boolean = false
+    val isNotNull: Boolean = false,
 )
 
 @Serializable
@@ -310,28 +327,28 @@ data class Action(
     val parameters: List<String>? = null,
     val public: Boolean = false,
     val modifiers: List<AccessModifier>? = null,
-    val body: String? = null
+    val body: String? = null,
 )
 
 @Serializable
 data class Extension(
     val name: String,
     val initialization: List<kotlinx.serialization.json.JsonElement>? = null,
-    val alias: String? = null
+    val alias: String? = null,
 )
 
 @Serializable
 data class AccountResponse(
     val id: AccountId? = null,
     val balance: String,
-    val nonce: Int
+    val nonce: Int,
 )
 
 @Serializable
 data class BroadcastResponse(
     @SerialName("tx_hash")
     val txHash: Base64String,
-    val result: BroadcastResult? = null
+    val result: BroadcastResult? = null,
 )
 
 @Serializable
@@ -349,12 +366,12 @@ data class ChainInfoResponse(
     @SerialName("block_height")
     val blockHeight: Long,
     @SerialName("block_hash")
-    val blockHash: String
+    val blockHash: String,
 )
 
 @Serializable
 data class ChallengeResponse(
-    val challenge: HexString
+    val challenge: HexString,
 )
 
 @Serializable
@@ -378,7 +395,7 @@ data class HealthResponse(
     val appHash: HexString,
     @SerialName("peer_count")
     val peerCount: Int,
-    val mode: AuthenticationMode
+    val mode: AuthenticationMode,
 )
 
 @Serializable
@@ -386,7 +403,7 @@ data class QueryResponse(
     @SerialName("column_names")
     val columnNames: List<String>? = null,
     @SerialName("column_types")
-    val columnTypes: List<ColumnType>?= null,
+    val columnTypes: List<ColumnType>? = null,
     val values: List<List<kotlinx.serialization.json.JsonElement>>? = null,
 )
 
@@ -395,7 +412,7 @@ data class ColumnType(
     val name: String,
     @SerialName("is_array")
     val isArray: Boolean,
-    val metadata: List<Int>
+    val metadata: List<Int>,
 )
 
 @Serializable
@@ -403,12 +420,12 @@ data class CallResponse(
     @SerialName("query_result")
     val queryResult: QueryResponse,
     val logs: String? = null,
-    val error: String? = null
+    val error: String? = null,
 )
 
 @Serializable
 data class ListDatabasesResponse(
-    val databases: List<DatasetInfoServer>? = null
+    val databases: List<DatasetInfoServer>? = null,
 )
 
 @Serializable
@@ -416,17 +433,17 @@ data class DatasetInfoServer(
     val name: String,
     val owner: String,
     @SerialName("dbid")
-    val dbId: String
+    val dbId: String,
 )
 
 @Serializable
 data class PingResponse(
-    val message: String
+    val message: String,
 )
 
 @Serializable
 data class EstimatePriceResponse(
-    val price: String
+    val price: String,
 )
 
 @Serializable
@@ -436,7 +453,7 @@ data class TxQueryResponse(
     val height: Long,
     // TODO: val tx: TxnData,
     @SerialName("tx_result")
-    val txResult: TxResult
+    val txResult: TxResult,
 )
 
 @Serializable
@@ -467,5 +484,5 @@ data class TxResult(
     @SerialName("gas_used")
     val gasUsed: Long? = null,
     val events: List<kotlinx.serialization.json.JsonElement>? = null,
-    val codespace: String? = null
+    val codespace: String? = null,
 )

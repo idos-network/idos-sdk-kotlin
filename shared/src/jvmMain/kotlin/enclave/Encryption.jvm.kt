@@ -59,7 +59,9 @@ class JvmEncryption : Encryption() {
 }
 
 // Wrapper class to implement our KeyPair interface
-class TweetNaclKeyPair(private val naclKeyPair: TweetNaclFast.Box.KeyPair) : KeyPair {
+class TweetNaclKeyPair(
+    private val naclKeyPair: TweetNaclFast.Box.KeyPair,
+) : KeyPair {
     override val publicKey: ByteArray = naclKeyPair.publicKey
     override val secretKey: ByteArray = naclKeyPair.secretKey
 }

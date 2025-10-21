@@ -6,30 +6,23 @@ import org.idos.kwil.transaction.EncodedValue
 import org.idos.kwil.transaction.UnencodedActionPayload
 import org.idos.kwil.utils.encodeActionCall
 
-data class PayloadMsgOptions(
-    val signature: String? = null,
-    val challenge: String? = null,
-    val signer: BaseSigner? = null,
-    val identifier: HexString? = null,
-    val signatureType: SignatureType? = null
-)
+// https://github.com/trufnetwork/kwil-js/blob/main/src/message/payloadMsg.ts#L22
 
 /**
  * `PayloadMsg` class creates a call message payload that can be sent over GRPC.
  */
-// https://github.com/trufnetwork/kwil-js/blob/main/src/message/payloadMsg.ts#L22
 class PayloadMsg(
     val payload: UnencodedActionPayload<MutableList<EncodedValue>>,
     val challenge: HexString? = null,
     var signatureType: SignatureType? = null,
     var identifier: HexString? = null,
     var signer: BaseSigner? = null,
-    val signature: String? = null
+    val signature: String? = null,
 ) {
     companion object {
         fun createMsg(
             payload: UnencodedActionPayload<MutableList<EncodedValue>>?,
-            options: PayloadMsgOptions
+            options: PayloadMsgOptions,
         ): PayloadMsg {
             requireNotNull(payload) {
                 "Payload is required for Payload Msg Builder. Please pass a valid payload."
@@ -41,25 +34,25 @@ class PayloadMsg(
                 challenge = options.challenge,
                 signer = options.signer,
                 identifier = options.identifier,
-                signatureType = options.signatureType
+                signatureType = options.signatureType,
             )
         }
 
         fun authMessage(
             message: Message,
             identifier: HexString,
-            signatureType: SignatureType
+            signatureType: SignatureType,
         ): Message {
-            val copy = Message.copy(message);
-            copy.authType = signatureType;
-            copy.sender = identifier;
-            return copy;
+            val copy = Message.copy(message)
+            copy.authType = signatureType
+            copy.sender = identifier
+            return copy
         }
     }
 
     // https://github.com/trufnetwork/kwil-js/blob/main/src/message/payloadMsg.ts#L76C9-L76C17
     fun buildMsg(): Message {
-        val message = Message.create();
+        val message = Message.create()
 
         message.body.payload = encodeActionCall(payload)
         message.body.challenge = challenge ?: ""
@@ -70,7 +63,7 @@ class PayloadMsg(
                 message,
                 requireNotNull(identifier),
                 requireNotNull(signatureType),
-            );
+            )
         }
 
         // return the unsigned message, with the payload base64 encoded
@@ -78,3 +71,11 @@ class PayloadMsg(
         return copiedMessage
     }
 }
+
+data class PayloadMsgOptions(
+    val signature: String? = null,
+    val challenge: String? = null,
+    val signer: BaseSigner? = null,
+    val identifier: HexString? = null,
+    val signatureType: SignatureType? = null,
+)

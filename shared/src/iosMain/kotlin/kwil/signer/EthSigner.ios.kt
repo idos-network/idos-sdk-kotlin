@@ -3,8 +3,9 @@ package org.idos.kwil.signer
 import org.idos.kwil.rpc.HexString
 
 // TODO: Implement iOS-specific Ethereum signer using appropriate crypto libraries
-class IosEthSigner(override val privateKeyHex: String) : EthSigner() {
-    
+class IosEthSigner(
+    override val privateKeyHex: String,
+) : EthSigner() {
     override fun getIdentifier(): HexString {
         TODO("iOS Ethereum address derivation implementation not yet available")
     }

@@ -3,7 +3,7 @@ package org.idos.kwil.utils
 // https://github.com/trufnetwork/kwil-js/blob/main/src/core/action.ts#L16
 data class ParamsTypes(
     val v: Any?,
-    val o: DataInfo?
+    val o: DataInfo?,
 )
 
 // https://github.com/trufnetwork/kwil-js/blob/main/src/utils/parameterEncoding.ts#L86
@@ -14,7 +14,9 @@ data class FullParamsType(
 )
 
 // https://github.com/trufnetwork/kwil-js/blob/main/src/core/enums.ts#L7
-enum class VarType(val value: String) {
+enum class VarType(
+    val value: String,
+) {
     UUID("uuid"),
     TEXT("text"),
     INT8("int8"),
@@ -22,10 +24,10 @@ enum class VarType(val value: String) {
     NUMERIC("numeric"),
     NULL("null"),
     BYTEA("bytea"),
-    UNKNOWN("unknown");
+    UNKNOWN("unknown"),
+    ;
 
     companion object {
-        fun fromValue(value: String): VarType? =
-            entries.find { it.value == value }
+        fun fromValue(value: String): VarType? = entries.find { it.value == value }
     }
 }
