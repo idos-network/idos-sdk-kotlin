@@ -2,11 +2,6 @@ name: Publish
 
 on:
   workflow_call:
-    inputs:
-      version:
-        description: 'Version to publish (e.g., 0.1.0)'
-        required: true
-        type: string
     secrets:
       MAVEN_CENTRAL_USERNAME:
         required: true
@@ -38,11 +33,23 @@ jobs:
         with:
           cache-read-only: false
 
+      - name: Print version to summary
+        run: |
+          VERSION=$(./gradlew properties --no-configuration-cache | grep "^version:" | awk '{print $2}')
+          echo "### Publishing version: $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "Publishing version: $VERSION"
+
       - name: Download Android AAR artifacts
         uses: actions/download-artifact@v4
         with:
           name: android-release-aar
           path: shared/build/outputs/aar/
+
+      - name: Download iOS XCFramework artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-release-xcframework
+          path: shared/build/XCFrameworks/release/idos_sdk.xcframework/
 
       - name: Publish Android AAR to GitHub Release
         uses: softprops/action-gh-release@v1
@@ -54,7 +61,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to Maven Central
-        if: ${{ !contains(inputs.version, 'SNAPSHOT') }}
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
@@ -63,8 +69,45 @@ jobs:
         run: |
           ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache --stacktrace --no-daemon
 
-      - name: Publish iOS with KMMBridge
+      - name: Zip iOS XCFramework for distribution
+        run: |
+          cd shared/build/XCFrameworks/release
+          zip -r idos_sdk.xcframework.zip idos_sdk.xcframework
+          shasum -a 256 idos_sdk.xcframework.zip > idos_sdk.xcframework.zip.sha256
+
+      - name: Publish iOS XCFramework to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            shared/build/XCFrameworks/release/idos_sdk.xcframework.zip
+            shared/build/XCFrameworks/release/idos_sdk.xcframework.zip.sha256
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Package.swift with new checksum and move tag
         run: |
-          ./gradlew kmmBridgePublish --no-configuration-cache --stacktrace --no-daemon
+          CHECKSUM=$(cat shared/build/XCFrameworks/release/idos_sdk.xcframework.zip.sha256 | awk '{print $1}')
+          VERSION=$(./gradlew properties --no-configuration-cache | grep "^version:" | awk '{print $2}')
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # We're already on the tag (detached HEAD) from checkout
+          # Update Package.swift with new checksum
+          sed -i.bak "s/checksum: \".*\"/checksum: \"$CHECKSUM\"/" Package.swift
+          rm Package.swift.bak
+          git add Package.swift
+          git commit -m "Update Package.swift checksum for $VERSION [skip ci]"
+
+          # Delete the old tag remotely
+          git push origin :refs/tags/$TAG_NAME
+
+          # Create new tag at the current commit (with updated Package.swift)
+          git tag -f $TAG_NAME
+
+          # Push the new tag (no branch push needed - avoids conflicts)
+          git push origin $TAG_NAME

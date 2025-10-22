@@ -63,10 +63,6 @@ iosApp/*.xcworkspace/xcuserdata/
 iosApp/*.xcodeproj/xcuserdata/
 iosApp/*.xcodeproj/project.xcworkspace/xcuserdata/
 
-# Swift Package Manager
-iosApp/.swiftpm/
-iosApp/.build/
-
 # Xcode build products
 iosApp/build/
 iosApp/DerivedData/
