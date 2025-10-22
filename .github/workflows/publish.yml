@@ -33,12 +33,6 @@ jobs:
         with:
           cache-read-only: false
 
-      - name: Print version to summary
-        run: |
-          VERSION=$(./gradlew properties --no-configuration-cache | grep "^version:" | awk '{print $2}')
-          echo "### Publishing version: $VERSION" >> $GITHUB_STEP_SUMMARY
-          echo "Publishing version: $VERSION"
-
       - name: Download Android AAR artifacts
         uses: actions/download-artifact@v4
         with:

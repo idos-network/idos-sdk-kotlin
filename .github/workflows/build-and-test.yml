@@ -30,8 +30,26 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Cache Android SDK
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.android/sdk
+            ~/.android/avd
+          key: ${{ runner.os }}-android-sdk-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-android-sdk-
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+
+      - name: Cache Kotlin/Native compiler
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: ${{ runner.os }}-konan-${{ hashFiles('**/*.gradle.kts', 'gradle/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-konan-
 
       - name: Validate Gradle Wrapper
         uses: gradle/wrapper-validation-action@v2
@@ -40,15 +58,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: false
-
-      - name: Print version to summary
-        run: |
-          VERSION=$(./gradlew properties --no-configuration-cache | grep "^version:" | awk '{print $2}')
-          echo "### Building version: $VERSION" >> $GITHUB_STEP_SUMMARY
-          echo "Version: $VERSION"
-
-      - name: Lint (ktlint + detekt)
-        run: ./gradlew ktlintCheck detekt --stacktrace --no-daemon --no-configuration-cache
 
       - name: Create .env for tests from GitHub Secrets
         shell: bash
@@ -63,8 +72,8 @@ jobs:
           EOF
           echo ".env created with test credentials"
 
-      - name: Run all platform tests
-        run: ./gradlew allTests --stacktrace --no-daemon --no-configuration-cache
+      - name: Lint and Test
+        run: ./gradlew ktlintCheck detekt allTests --stacktrace --no-daemon --no-configuration-cache
 
       - name: Publish Test Report
         if: always()
@@ -84,11 +93,8 @@ jobs:
             **/build/reports/ktlint/*.xml
           if-no-files-found: ignore
 
-      - name: Build Android Release AAR
-        run: ./gradlew :shared:assembleRelease --stacktrace --no-daemon --no-configuration-cache
-
-      - name: Build iOS XCFramework
-        run: ./gradlew :shared:assembleIdos_sdkReleaseXCFramework --stacktrace --no-daemon --no-configuration-cache
+      - name: Build Android Release AAR and iOS XCFramework
+        run: ./gradlew :shared:assembleRelease :shared:assembleIdos_sdkReleaseXCFramework --stacktrace --no-daemon --no-configuration-cache
 
       - name: Upload Android AAR artifacts
         if: ${{ inputs.upload-artifacts }}
