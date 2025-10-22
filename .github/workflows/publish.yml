@@ -44,27 +44,10 @@ jobs:
           name: android-release-aar
           path: shared/build/outputs/aar/
 
-      - name: Download iOS XCFramework artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: ios-xcframework
-          path: shared/build/XCFrameworks/release/
-
       - name: Publish Android AAR to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: shared/build/outputs/aar/*.aar
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish iOS XCFramework to GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            shared/build/XCFrameworks/release/idos_sdk.xcframework.zip
-            shared/build/XCFrameworks/release/idos_sdk.xcframework.zip.sha256
           draft: false
           prerelease: false
         env:
@@ -80,17 +63,8 @@ jobs:
         run: |
           ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache --stacktrace --no-daemon
 
-      - name: Update Package.swift with checksum
+      - name: Publish iOS with KMMBridge
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          CHECKSUM=$(cat shared/build/XCFrameworks/release/idos_sdk.xcframework.zip.sha256)
-          VERSION=${{ inputs.version }}
-          sed -i '' "s/CHECKSUM_PLACEHOLDER/$CHECKSUM/" Package.swift
-          sed -i '' "s/let version = \".*\"/let version = \"$VERSION\"/" Package.swift
-
-      - name: Commit and push Package.swift
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add Package.swift
-          git commit -m "Update Package.swift for version ${{ inputs.version }}" || echo "No changes to commit"
-          git push origin HEAD:main || echo "Failed to push, continuing..."
+          ./gradlew kmmBridgePublish --no-configuration-cache --stacktrace --no-daemon

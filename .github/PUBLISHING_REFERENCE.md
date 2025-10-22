@@ -132,21 +132,13 @@ open "https://central.sonatype.com/artifact/org.idos/idos-sdk-kotlin"
 ```bash
 export ORG_GRADLE_PROJECT_mavenCentralUsername="your-username"
 export ORG_GRADLE_PROJECT_mavenCentralPassword="your-password"
-
-# Using base64 format (recommended):
-export ORG_GRADLE_PROJECT_signingInMemoryKey="$(cat key.base64)"
-# OR using ASCII-armored format:
-# export ORG_GRADLE_PROJECT_signingInMemoryKey="$(cat key.asc)"
-
+export ORG_GRADLE_PROJECT_signingInMemoryKey="$(cat key.asc)"
 export ORG_GRADLE_PROJECT_signingInMemoryKeyPassword="key-password"
 ```
 
 ### GPG Key Export
 ```bash
-# Base64 format (recommended - single line, no formatting issues):
-gpg --export-secret-keys YOUR_KEY_ID | base64 | tr -d '\n' > key.base64
-
-# ASCII-armored format (alternative - human-readable):
+# Export in ASCII-armored format
 gpg --armor --export-secret-keys YOUR_KEY_ID > key.asc
 ```
 
@@ -217,18 +209,6 @@ dependencies: [
 ]
 ```
 
-### Test CocoaPods (if published)
-```ruby
-# Podfile
-pod 'IdosSDK', '~> 0.1.0'
-
-# Install
-pod install
-
-# Update
-pod update IdosSDK
-```
-
 ## 🐛 Troubleshooting
 
 ### Clear Gradle Caches
@@ -250,10 +230,7 @@ rm -rf .gradle/configuration-cache/
 # List keys
 gpg --list-secret-keys --keyid-format LONG
 
-# Export key for CI (choose format)
-# Base64 (recommended):
-gpg --export-secret-keys YOUR_KEY_ID | base64 | tr -d '\n' > key.base64
-# ASCII-armored:
+# Export key for CI
 gpg --armor --export-secret-keys YOUR_KEY_ID > key.asc
 
 # Test signing

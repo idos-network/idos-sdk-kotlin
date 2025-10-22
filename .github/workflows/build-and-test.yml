@@ -81,14 +81,8 @@ jobs:
       - name: Build Android Release AAR
         run: ./gradlew :shared:assembleRelease --stacktrace --no-daemon --no-configuration-cache
 
-      - name: Build iOS XCFramework
+      - name: Build iOS XCFramework (validation only)
         run: ./gradlew :shared:assembleIdos_sdkXCFramework --stacktrace --no-daemon --no-configuration-cache
-
-      - name: Zip iOS XCFramework
-        working-directory: shared/build/XCFrameworks/release
-        run: |
-          zip -r idos_sdk.xcframework.zip idos_sdk.xcframework
-          shasum -a 256 idos_sdk.xcframework.zip | awk '{print $1}' > idos_sdk.xcframework.zip.sha256
 
       - name: Upload Android AAR artifacts
         if: ${{ inputs.upload-artifacts }}
@@ -96,14 +90,4 @@ jobs:
         with:
           name: android-release-aar
           path: shared/build/outputs/aar/*.aar
-          if-no-files-found: error
-
-      - name: Upload iOS XCFramework artifacts
-        if: ${{ inputs.upload-artifacts }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-xcframework
-          path: |
-            shared/build/XCFrameworks/release/idos_sdk.xcframework.zip
-            shared/build/XCFrameworks/release/idos_sdk.xcframework.zip.sha256
           if-no-files-found: error

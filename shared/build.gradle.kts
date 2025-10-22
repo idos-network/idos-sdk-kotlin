@@ -10,9 +10,7 @@ plugins {
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
     alias(libs.plugins.mavenPublish)
-    // Note: KMMBridge plugin is available but not applied by default
-    // Uncomment below to use automated iOS publishing with KMMBridge
-    // alias(libs.plugins.kmmbridge)
+    alias(libs.plugins.kmmbridge)
     id("co.touchlab.skie") version "0.10.6"
 }
 
@@ -224,4 +222,16 @@ mavenPublishing {
 
     // Sign all publications
     signAllPublications()
+}
+
+// KMMBridge Configuration for iOS Publishing
+kmmbridge {
+    // Publish XCFramework to GitHub Releases
+    githubReleaseArtifacts()
+
+    // Generate and update Package.swift for Swift Package Manager
+    spm()
+
+    // Use git-versioning plugin for version
+    versionPrefix.set(version.toString())
 }

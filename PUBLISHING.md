@@ -41,7 +41,6 @@ The SDK publishes to multiple channels automatically:
 | **Maven Central** | Android AAR, JVM JAR, iOS Klib | Version tag (`v*.*.*`) | `implementation("org.idos:idos-sdk-kotlin:VERSION")` |
 | **GitHub Releases** | AAR, XCFramework.zip | Version tag (`v*.*.*`) | Manual download |
 | **Swift Package Manager** | XCFramework (binary) | Version tag (`v*.*.*`) | Xcode or Package.swift |
-| **CocoaPods** (optional) | XCFramework | Manual publish | `pod 'IdosSDK'` |
 
 ### What Gets Published
 
@@ -90,30 +89,14 @@ gpg --gen-key
 gpg --list-secret-keys --keyid-format LONG
 # Output shows: sec   rsa3072/YOUR_KEY_ID 2024-01-01
 
-# 3. Export private key (choose ONE format below)
-
-# ✅ OPTION 1: Base64 format (RECOMMENDED - cleaner, no formatting issues)
-gpg --export-secret-keys YOUR_KEY_ID | base64 | tr -d '\n' > key.base64
-# Result: Single line of base64 text - ideal for GitHub Secrets
-
-# OPTION 2: ASCII-armored format (alternative - human-readable)
+# 3. Export private key in ASCII-armored format
 gpg --armor --export-secret-keys YOUR_KEY_ID > key.asc
-# Result: Multi-line text with BEGIN/END headers - traditional format
 
 # 4. Publish key to keyserver
 gpg --keyserver hkps://keys.openpgp.org --send-keys YOUR_KEY_ID
 
 # 5. Note your key password - you'll need it for GitHub Secrets
 ```
-
-**Format Comparison:**
-
-| Format | Pros | Cons | Best For |
-|--------|------|------|----------|
-| **Base64** | Single line, no special chars, copy-paste safe | Not human-readable | ✅ CI/CD (GitHub Secrets) |
-| **ASCII-armored** | Human-readable, traditional format | Multi-line, BEGIN/END headers can be truncated | Local use, debugging |
-
-**Both formats work identically** with the Vanniktech Maven Publish plugin - choose based on your preference.
 
 ### Step 3: Configure GitHub Secrets
 
@@ -125,16 +108,12 @@ Add these 4 secrets:
 |-------------|-------|------------|
 | `MAVEN_CENTRAL_USERNAME` | Your Sonatype username | From Step 1 |
 | `MAVEN_CENTRAL_PASSWORD` | Your Sonatype password | From Step 1 |
-| `SIGNING_KEY` | Full GPG private key | Content of `key.base64` OR `key.asc` from Step 2 |
+| `SIGNING_KEY` | Full GPG private key (ASCII-armored) | Content of `key.asc` from Step 2 |
 | `SIGNING_PASSWORD` | GPG key password | Password you set in Step 2 |
 
-**SIGNING_KEY format options:**
-
-- **Base64 format** (recommended): Copy entire content of `key.base64` (single line, no newlines)
-- **ASCII-armored format**: Copy entire content of `key.asc` including `-----BEGIN PGP PRIVATE KEY BLOCK-----` and `-----END PGP PRIVATE KEY BLOCK-----`
-
 **Important**:
-- No trailing spaces or extra newlines
+- Copy the entire `key.asc` content including `-----BEGIN PGP PRIVATE KEY BLOCK-----` and `-----END PGP PRIVATE KEY BLOCK-----`
+- Preserve all newlines and formatting
 - Test by pasting into a text editor first to verify format
 - `GITHUB_TOKEN` is automatically provided by GitHub Actions
 
@@ -208,20 +187,15 @@ Pushing the tag triggers `.github/workflows/release.yml`:
 
 1. **Validate** (5-10 min)
    - Runs linting (ktlint, detekt)
-   - Runs JVM tests
+   - Runs all platform tests (JVM, Android, iOS)
 
-2. **Build Android** (5-10 min)
-   - Builds release AAR
-   - Uploads to GitHub Releases
-   - Publishes to Maven Central
+2. **Build and Publish** (10-15 min)
+   - **Android**: Builds AAR, uploads to GitHub Releases, publishes to Maven Central
+   - **iOS**: KMMBridge builds XCFramework, uploads to GitHub Release, updates Package.swift, and moves tag to include the updated Package.swift
 
-3. **Build iOS** (10-15 min)
-   - Builds XCFramework for all architectures
-   - Zips and calculates checksum
-   - Uploads to GitHub Releases
-   - Updates `Package.swift` with new checksum
+**Total time**: ~15-25 minutes
 
-**Total time**: ~20-30 minutes
+**Note**: iOS publishing uses KMMBridge which automatically handles Package.swift updates and tag management to ensure Swift Package Manager works correctly.
 
 ### Monitor Progress
 
@@ -379,26 +353,18 @@ shasum -a 256 idos_sdk.xcframework.zip
 # Verify key exists locally
 gpg --list-secret-keys
 
-# Verify secret format in GitHub Actions
-# For ASCII-armored format:
+# Verify secret format
 echo $SIGNING_KEY | head -1  # Should show -----BEGIN PGP PRIVATE KEY BLOCK-----
 
-# For base64 format:
-echo $SIGNING_KEY | head -c 50  # Should show base64 characters only
-
 # Re-export key
-# Base64 (recommended):
-gpg --export-secret-keys YOUR_KEY_ID | base64 | tr -d '\n' > key.base64
-
-# ASCII-armored:
 gpg --armor --export-secret-keys YOUR_KEY_ID > key.asc
 
-# Copy new content to GitHub Secret and retry
+# Copy entire content (including BEGIN/END lines) to GitHub Secret and retry
 ```
 
 **Common signing issues:**
-- Multi-line ASCII key with missing newlines → Use base64 format instead
-- Extra whitespace at end of key → Use `tr -d '\n'` to strip newlines
+- Missing BEGIN/END headers → Ensure you copied the entire key.asc content
+- Truncated key → Verify all lines are present in the GitHub Secret
 - Wrong key ID → Verify with `gpg --list-secret-keys --keyid-format LONG`
 
 #### "Namespace not verified"
@@ -467,60 +433,6 @@ rm -rf .gradle/configuration-cache/
 
 ## Advanced Configuration
 
-### Using KMMBridge (Alternative)
-
-KMMBridge can automate iOS publishing. To enable:
-
-1. **Uncomment plugin** in `shared/build.gradle.kts`:
-   ```kotlin
-   plugins {
-       alias(libs.plugins.kmmbridge)  // Uncomment this
-   }
-
-   // Uncomment and configure
-   kmmbridge {
-       githubReleaseArtifacts()
-       spm()
-       versionPrefix.set(providers.gradleProperty("VERSION_NAME").getOrElse("0.1.0"))
-   }
-   ```
-
-2. **Update release workflow** (`.github/workflows/release.yml`):
-   ```yaml
-   build-ios:
-     if: false  # Disable manual approach
-
-   publish-spm-kmmbridge:
-     if: true   # Enable KMMBridge
-   ```
-
-3. **Publish**:
-   ```bash
-   export GITHUB_TOKEN="ghp_xxxx"
-   ./gradlew kmmBridgePublish
-   ```
-
-### CocoaPods Publishing
-
-To publish to CocoaPods (optional):
-
-```bash
-# Register with CocoaPods (one-time)
-pod trunk register dev@idos.network 'idOS Team'
-
-# Update IdosSDK.podspec
-vim IdosSDK.podspec  # Update version and checksum
-
-# Validate
-pod spec lint IdosSDK.podspec
-
-# Publish
-pod trunk push IdosSDK.podspec
-
-# Verify
-pod search IdosSDK
-```
-
 ### Custom Publishing
 
 For manual control over the entire process:
@@ -533,12 +445,7 @@ For manual control over the entire process:
 # 2. Publish to Maven Central
 export ORG_GRADLE_PROJECT_mavenCentralUsername="username"
 export ORG_GRADLE_PROJECT_mavenCentralPassword="password"
-
-# Using base64 format:
-export ORG_GRADLE_PROJECT_signingInMemoryKey="$(cat key.base64)"
-# OR using ASCII-armored format:
-# export ORG_GRADLE_PROJECT_signingInMemoryKey="$(cat key.asc)"
-
+export ORG_GRADLE_PROJECT_signingInMemoryKey="$(cat key.asc)"
 export ORG_GRADLE_PROJECT_signingInMemoryKeyPassword="password"
 ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache
 
@@ -624,7 +531,6 @@ gh run watch
 - `shared/build.gradle.kts` - Build and publishing config
 - `.github/workflows/release.yml` - Release automation
 - `Package.swift` - Swift Package Manager manifest
-- `IdosSDK.podspec` - CocoaPods spec
 
 ### Important URLs
 
