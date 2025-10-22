@@ -72,8 +72,9 @@ jobs:
 
           # We're already on the tag (detached HEAD) from checkout
           # Update Package.swift with new version and checksum
-          sed -i.bak "s/let version = \".*\"/let version = \"$VERSION\"/" Package.swift
-          sed -i.bak "s/checksum: \".*\"/checksum: \"$CHECKSUM\"/" Package.swift
+          sed -i.bak "s/VERSION_PLACEHOLDER/$VERSION/" Package.swift
+          sed -i.bak "s|TAG_PLACEHOLDER|$TAG_NAME|" Package.swift
+          sed -i.bak "s/CHECKSUM_PLACEHOLDER/$CHECKSUM/" Package.swift
           rm Package.swift.bak
           git add Package.swift
           git commit -m "Update Package.swift version $VERSION and checksum [skip ci]"
@@ -101,3 +102,4 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

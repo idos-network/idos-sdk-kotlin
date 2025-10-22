@@ -18,7 +18,7 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: packageName,
-            url: "https://github.com/idos-network/idos-sdk-kotlin/releases/download/\(version)/idos_sdk.xcframework.zip",
+            url: "https://github.com/idos-network/idos-sdk-kotlin/releases/download/TAG_PLACEHOLDER/idos_sdk.xcframework.zip",
             checksum: "CHECKSUM_PLACEHOLDER"
         )
     ]
