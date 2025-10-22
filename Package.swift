@@ -2,7 +2,7 @@
 import PackageDescription
 
 let packageName = "IdosSDK"
-let version = "0.1.0"
+let version = "VERSION_PLACEHOLDER"
 
 let package = Package(
     name: packageName,

@@ -86,7 +86,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update Package.swift with new checksum and move tag
+      - name: Update Package.swift with new version and checksum, then move tag
         run: |
           CHECKSUM=$(cat shared/build/XCFrameworks/release/idos_sdk.xcframework.zip.sha256 | awk '{print $1}')
           VERSION=$(./gradlew properties --no-configuration-cache | grep "^version:" | awk '{print $2}')
@@ -97,11 +97,12 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           # We're already on the tag (detached HEAD) from checkout
-          # Update Package.swift with new checksum
+          # Update Package.swift with new version and checksum
+          sed -i.bak "s/let version = \".*\"/let version = \"$VERSION\"/" Package.swift
           sed -i.bak "s/checksum: \".*\"/checksum: \"$CHECKSUM\"/" Package.swift
           rm Package.swift.bak
           git add Package.swift
-          git commit -m "Update Package.swift checksum for $VERSION [skip ci]"
+          git commit -m "Update Package.swift version $VERSION and checksum [skip ci]"
 
           # Delete the old tag remotely
           git push origin :refs/tags/$TAG_NAME
