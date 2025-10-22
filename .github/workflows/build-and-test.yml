@@ -43,13 +43,15 @@ jobs:
         run: ./gradlew ktlintCheck detekt --stacktrace --no-daemon
 
       - name: Create .env for tests from GitHub Secrets
-        if: ${{ secrets.MNEMONIC_WORDS != '' }}
         shell: bash
+        env:
+          MNEMONIC_WORDS: ${{ secrets.MNEMONIC_WORDS }}
+          PASSWORD: ${{ secrets.PASSWORD }}
         run: |
           # Write .env used by dotenv-kotlin in tests. Values come from repository secrets.
-          cat > .env <<'EOF'
-          MNEMONIC_WORDS=${{ secrets.MNEMONIC_WORDS }}
-          PASSWORD=${{ secrets.PASSWORD }}
+          cat > .env <<EOF
+          MNEMONIC_WORDS=$MNEMONIC_WORDS
+          PASSWORD=$PASSWORD
           EOF
           echo ".env created with test credentials"
 

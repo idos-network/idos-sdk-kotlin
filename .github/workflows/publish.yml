@@ -16,8 +16,6 @@ on:
         required: true
       SIGNING_PASSWORD:
         required: true
-      GITHUB_TOKEN:
-        required: true
 
 jobs:
   publish:
