@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v0.1.0, v1.2.3, etc.
+
+jobs:
+  extract-version:
+    name: Extract Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+  build-and-test:
+    name: Build and Test
+    needs: extract-version
+    uses: ./.github/workflows/build-and-test.yml
+    with:
+      upload-artifacts: true
+    secrets:
+      MNEMONIC_WORDS: ${{ secrets.MNEMONIC_WORDS }}
+      PASSWORD: ${{ secrets.PASSWORD }}
+
+  publish:
+    name: Publish Artifacts
+    needs: [extract-version, build-and-test]
+    uses: ./.github/workflows/publish.yml
+    with:
+      version: ${{ needs.extract-version.outputs.version }}
+    secrets:
+      MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+      MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+      SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+      SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

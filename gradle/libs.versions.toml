@@ -20,6 +20,9 @@ kotest = "6.0.3"
 ksp = "2.2.10-2.0.2"
 ktlint = "12.1.1"
 detekt = "1.23.6"
+mavenPublish = "0.29.0"
+kmmbridge = "1.1.0"
+gitVersioning = "6.4.4"
 securityCryptoKtx = "1.1.0-alpha06"
 timber = "5.0.1"
 kethereum = "0.86.0"
@@ -141,6 +144,9 @@ kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
+kmmbridge = { id = "co.touchlab.kmmbridge", version.ref = "kmmbridge" }
+gitVersioning = { id = "me.qoomon.git-versioning", version.ref = "gitVersioning" }
 
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 kotlinCompose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

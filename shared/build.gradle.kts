@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -8,6 +9,10 @@ plugins {
     alias(libs.plugins.kotest)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.mavenPublish)
+    // Note: KMMBridge plugin is available but not applied by default
+    // Uncomment below to use automated iOS publishing with KMMBridge
+    // alias(libs.plugins.kmmbridge)
     id("co.touchlab.skie") version "0.10.6"
 }
 
@@ -20,7 +25,8 @@ kotlin {
 
     jvm()
 
-    // Configure iOS targets
+    // Configure iOS targets with XCFramework support
+    val xcf = XCFramework("idos_sdk")
     val iosTargets =
         listOf(
             iosArm64(),
@@ -33,6 +39,8 @@ kotlin {
             baseName = "idos_sdk"
             freeCompilerArgs += listOf("-Xbinary=bundleId=org.idos")
             isStatic = true
+            // Add to XCFramework
+            xcf.add(this)
         }
     }
 
@@ -179,4 +187,41 @@ tasks.withType<Test> {
         junitXml.required.set(true)
     }
     systemProperty("gradle.build.dir", layout.buildDirectory.asFile.get())
+}
+
+// Maven Publishing Configuration
+// Note: The version, group, and artifactId are read from gradle.properties
+mavenPublishing {
+    pom {
+        name.set("idOS SDK for Kotlin Multiplatform")
+        description.set("Kotlin Multiplatform SDK for idOS - Identity Operating System")
+        url.set("https://github.com/idos-network/idos-sdk-kotlin")
+
+        licenses {
+            license {
+                name.set("MIT License")
+                url.set("https://opensource.org/licenses/MIT")
+            }
+        }
+
+        developers {
+            developer {
+                id.set("idos")
+                name.set("idOS Team")
+                email.set("dev@idos.network")
+            }
+        }
+
+        scm {
+            url.set("https://github.com/idos-network/idos-sdk-kotlin")
+            connection.set("scm:git:git://github.com/idos-network/idos-sdk-kotlin.git")
+            developerConnection.set("scm:git:ssh://git@github.com/idos-network/idos-sdk-kotlin.git")
+        }
+    }
+
+    // Publish to Maven Central
+    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL, automaticRelease = true)
+
+    // Sign all publications
+    signAllPublications()
 }

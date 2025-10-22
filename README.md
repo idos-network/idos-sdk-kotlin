@@ -2,6 +2,62 @@
 
 Kotlin Multiplatform SDK for idOS - Android, iOS, and JVM support.
 
+## 📦 Installation
+
+### Android / JVM (Gradle)
+
+Add the dependency to your `build.gradle.kts`:
+
+```kotlin
+dependencies {
+    implementation("org.idos:idos-sdk-kotlin:0.1.0")
+}
+```
+
+Or in Groovy `build.gradle`:
+
+```groovy
+dependencies {
+    implementation 'org.idos:idos-sdk-kotlin:0.1.0'
+}
+```
+
+### iOS (Swift Package Manager)
+
+Add the package dependency in Xcode:
+
+1. Go to **File → Add Package Dependencies...**
+2. Enter the repository URL: `https://github.com/idos-network/idos-sdk-kotlin`
+3. Select version `0.1.0` or specify a version rule
+4. Add to your target
+
+Or add to your `Package.swift`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/idos-network/idos-sdk-kotlin", from: "0.1.0")
+]
+```
+
+### iOS (CocoaPods) - Optional
+
+Add to your `Podfile`:
+
+```ruby
+pod 'IdosSDK', '~> 0.1.0'
+```
+
+Then run:
+```bash
+pod install
+```
+
+### Manual Download
+
+Download the latest release artifacts:
+- **Android**: Get the `.aar` file from [GitHub Releases](https://github.com/idos-network/idos-sdk-kotlin/releases)
+- **iOS**: Get the `idos_sdk.xcframework.zip` from [GitHub Releases](https://github.com/idos-network/idos-sdk-kotlin/releases)
+
 ## 🚀 Quick Start
 
 ### 1. Create a Signer
@@ -294,8 +350,17 @@ try {
 ## 📖 Further Reading
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Detailed architecture documentation
+- [PUBLISHING.md](PUBLISHING.md) - Complete guide for publishing releases
 - [KWIL Protocol](https://github.com/kwilteam/kwil-db) - KWIL database documentation
 - [idOS Schema](https://github.com/idos-networks/idos-schema) - Schema definitions
+
+## 🚀 Publishing
+
+For maintainers publishing new releases, see [PUBLISHING.md](PUBLISHING.md) for:
+- Initial setup (Maven Central, GPG keys, GitHub secrets)
+- Creating releases (automated via GitHub Actions)
+- Build tasks and troubleshooting
+- Distribution to Maven Central, GitHub Releases, and Swift Package Manager
 
 ## 📄 License
 

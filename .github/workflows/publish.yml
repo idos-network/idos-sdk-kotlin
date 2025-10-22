@@ -1,0 +1,98 @@
+name: Publish
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 0.1.0)'
+        required: true
+        type: string
+    secrets:
+      MAVEN_CENTRAL_USERNAME:
+        required: true
+      MAVEN_CENTRAL_PASSWORD:
+        required: true
+      SIGNING_KEY:
+        required: true
+      SIGNING_PASSWORD:
+        required: true
+      GITHUB_TOKEN:
+        required: true
+
+jobs:
+  publish:
+    name: Publish Artifacts
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for git versioning
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Download Android AAR artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-aar
+          path: shared/build/outputs/aar/
+
+      - name: Download iOS XCFramework artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-xcframework
+          path: shared/build/XCFrameworks/release/
+
+      - name: Publish Android AAR to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: shared/build/outputs/aar/*.aar
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish iOS XCFramework to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            shared/build/XCFrameworks/release/idos_sdk.xcframework.zip
+            shared/build/XCFrameworks/release/idos_sdk.xcframework.zip.sha256
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to Maven Central
+        if: ${{ !contains(inputs.version, 'SNAPSHOT') }}
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+        run: |
+          ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache --stacktrace --no-daemon
+
+      - name: Update Package.swift with checksum
+        run: |
+          CHECKSUM=$(cat shared/build/XCFrameworks/release/idos_sdk.xcframework.zip.sha256)
+          VERSION=${{ inputs.version }}
+          sed -i '' "s/CHECKSUM_PLACEHOLDER/$CHECKSUM/" Package.swift
+          sed -i '' "s/let version = \".*\"/let version = \"$VERSION\"/" Package.swift
+
+      - name: Commit and push Package.swift
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add Package.swift
+          git commit -m "Update Package.swift for version ${{ inputs.version }}" || echo "No changes to commit"
+          git push origin HEAD:main || echo "Failed to push, continuing..."
