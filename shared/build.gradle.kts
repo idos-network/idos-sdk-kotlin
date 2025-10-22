@@ -1,5 +1,4 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -10,7 +9,7 @@ plugins {
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
     alias(libs.plugins.mavenPublish)
-    alias(libs.plugins.kmmbridge)
+    id("co.touchlab.kmmbridge.github") version "1.2.1"
     id("co.touchlab.skie") version "0.10.6"
 }
 
@@ -23,8 +22,7 @@ kotlin {
 
     jvm()
 
-    // Configure iOS targets with XCFramework support
-    val xcf = XCFramework("idos_sdk")
+    // Configure iOS targets - KMMBridge handles XCFramework creation
     val iosTargets =
         listOf(
             iosArm64(),
@@ -37,12 +35,10 @@ kotlin {
             baseName = "idos_sdk"
             freeCompilerArgs += listOf("-Xbinary=bundleId=org.idos")
             isStatic = true
-            // Add to XCFramework
-            xcf.add(this)
         }
     }
 
-    // Configure cinterop for iOS device (arm64) - XCFramework
+    // Configure cinterop for iOS device (arm64)
     iosArm64().compilations.getByName("main") {
         cinterops {
             val libsodium by creating {
@@ -227,11 +223,8 @@ mavenPublishing {
 // KMMBridge Configuration for iOS Publishing
 kmmbridge {
     // Publish XCFramework to GitHub Releases
-    githubReleaseArtifacts()
+    gitHubReleaseArtifacts()
 
     // Generate and update Package.swift for Swift Package Manager
     spm()
-
-    // Use git-versioning plugin for version
-    versionPrefix.set(version.toString())
 }

@@ -20,7 +20,10 @@ let package = Package(
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "1.8.0"),
 
         // web3.swift - Ethereum and Web3 functionality (BIP39, BIP32, secp256k1)
-        .package(url: "https://github.com/argentlabs/web3.swift", from: "1.6.0")
+        .package(url: "https://github.com/argentlabs/web3.swift", from: "1.6.0"),
+
+        // TrustWalletCore - Comprehensive blockchain wallet functionality
+        .package(url: "https://github.com/trustwallet/wallet-core", from: "4.0.0")
     ],
     targets: [
         .target(
@@ -28,7 +31,8 @@ let package = Package(
             dependencies: [
                 .product(name: "Sodium", package: "swift-sodium"),
                 .product(name: "CryptoSwift", package: "CryptoSwift"),
-                .product(name: "web3.swift", package: "web3.swift")
+                .product(name: "web3.swift", package: "web3.swift"),
+                .product(name: "WalletCore", package: "wallet-core")
             ],
             path: "iosApp"
         )
