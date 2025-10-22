@@ -40,7 +40,7 @@ jobs:
           cache-read-only: false
 
       - name: Lint (ktlint + detekt)
-        run: ./gradlew ktlintCheck detekt --stacktrace --no-daemon
+        run: ./gradlew ktlintCheck detekt --stacktrace --no-daemon --no-configuration-cache
 
       - name: Create .env for tests from GitHub Secrets
         shell: bash
@@ -56,7 +56,7 @@ jobs:
           echo ".env created with test credentials"
 
       - name: Run all platform tests
-        run: ./gradlew allTests --stacktrace --no-daemon
+        run: ./gradlew allTests --stacktrace --no-daemon --no-configuration-cache
 
       - name: Publish Test Report
         if: always()
@@ -77,10 +77,10 @@ jobs:
           if-no-files-found: ignore
 
       - name: Build Android Release AAR
-        run: ./gradlew :shared:assembleRelease --stacktrace --no-daemon
+        run: ./gradlew :shared:assembleRelease --stacktrace --no-daemon --no-configuration-cache
 
       - name: Build iOS XCFramework
-        run: ./gradlew :shared:assembleIdos_sdkXCFramework --stacktrace --no-daemon
+        run: ./gradlew :shared:assembleIdos_sdkXCFramework --stacktrace --no-daemon --no-configuration-cache
 
       - name: Zip iOS XCFramework
         working-directory: shared/build/XCFrameworks/release
