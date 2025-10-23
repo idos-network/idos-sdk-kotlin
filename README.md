@@ -1,6 +1,16 @@
 # idOS SDK Kotlin
 
+[![Latest Release](https://img.shields.io/github/v/release/idos-network/idos-sdk-kotlin)](https://github.com/idos-network/idos-sdk-kotlin/releases/latest)
+[![Maven Central](https://img.shields.io/maven-central/v/org.idos/idos-sdk-kotlin)](https://central.sonatype.com/artifact/org.idos/idos-sdk-kotlin)
+
 Kotlin Multiplatform SDK for idOS - Android, iOS, and JVM support.
+
+## ⚙️ Requirements
+
+- **Kotlin**: 2.2.10+
+- **Android**: API 28+ (Android 9.0 Pie)
+- **iOS**: 15.0+
+- **JVM**: Java 11+
 
 ## 📦 Installation
 
@@ -10,7 +20,7 @@ Add the dependency to your `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("org.idos:idos-sdk-kotlin:0.1.0")
+    implementation("org.idos:idos-sdk-kotlin:0.0.8")
 }
 ```
 
@@ -18,7 +28,7 @@ Or in Groovy `build.gradle`:
 
 ```groovy
 dependencies {
-    implementation 'org.idos:idos-sdk-kotlin:0.1.0'
+    implementation 'org.idos:idos-sdk-kotlin:0.0.8'
 }
 ```
 
@@ -28,28 +38,15 @@ Add the package dependency in Xcode:
 
 1. Go to **File → Add Package Dependencies...**
 2. Enter the repository URL: `https://github.com/idos-network/idos-sdk-kotlin`
-3. Select version `0.1.0` or specify a version rule
+3. Select version `0.0.8` or specify a version rule
 4. Add to your target
 
 Or add to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/idos-network/idos-sdk-kotlin", from: "0.1.0")
+    .package(url: "https://github.com/idos-network/idos-sdk-kotlin", from: "0.0.8")
 ]
-```
-
-### iOS (CocoaPods) - Optional
-
-Add to your `Podfile`:
-
-```ruby
-pod 'IdosSDK', '~> 0.1.0'
-```
-
-Then run:
-```bash
-pod install
 ```
 
 ### Manual Download
@@ -166,17 +163,24 @@ The SDK supports two encryption modes:
 - **LOCAL**: Password-based encryption with local key storage
 - **MPC**: Distributed encryption using Shamir's Secret Sharing across MPC nodes
 
-All modes provide reactive state management via `EnclaveOrchestrator`:
-
-### LOCAL Mode (Password-Based)
+The default `EnclaveOrchestrator.create()` supports both modes with type detection based on user enrollment. Use `createLocal()` or `createMpc()` for single-mode apps.
 
 ```kotlin
 import org.idos.enclave.*
 
-// Create orchestrator for LOCAL mode
+// Create orchestrator supporting BOTH modes (default)
 val encryption = JvmEncryption()  // or AndroidEncryption(context), IosEncryption()
 val storage = JvmMetadataStorage()  // or AndroidMetadataStorage(context), IosMetadataStorage()
-val orchestrator = EnclaveOrchestrator.createLocal(encryption, storage)
+val orchestrator = EnclaveOrchestrator.create(
+    encryption = encryption,
+    storage = storage,
+    mpcConfig = mpcConfig,
+    signer = signer,
+    hasher = Keccak256Hasher()
+)
+
+// Initialize type based on user's choice
+orchestrator.initializeType(EnclaveKeyType.USER)  // or EnclaveKeyType.MPC
 
 // Observe state for UI updates
 orchestrator.state.collect { state ->
@@ -188,24 +192,19 @@ orchestrator.state.collect { state ->
     }
 }
 
-// Unlock with password
+// Unlock (password required for LOCAL, optional for MPC)
 val sessionConfig = EnclaveSessionConfig(ExpirationType.TIMED, 3600000)  // 1 hour
-orchestrator.unlock(
-    userId = userProfile.id,
-    password = userPassword,
-    sessionConfig = sessionConfig
-)
+orchestrator.unlock(userId, sessionConfig, password)
 
 // Decrypt credential data
 try {
-    val credential = client.credentials.getOwned(credentialId)
-    val decryptedData = orchestrator.withEnclave { enclave ->
-        enclave.decrypt(
+    orchestrator.withEnclave { enclave ->
+        val decryptedData = enclave.decrypt(
             message = credential.content.toByteArray(),
             senderPublicKey = credential.encryptorPublicKey.toByteArray()
         )
+        println(String(decryptedData))
     }
-    println(String(decryptedData))
 } catch (e: EnclaveError) {
     when (e) {
         is EnclaveError.NoKey -> println("Unlock enclave first")
@@ -216,55 +215,7 @@ try {
 }
 ```
 
-### MPC Mode (Distributed)
-
-```kotlin
-// Create orchestrator for MPC mode
-val mpcConfig = MpcConfig(
-    partisiaRpcUrl = "https://rpc.partisia.com",
-    contractAddress = HexString("0x..."),
-    totalNodes = 3,
-    threshold = 2
-)
-val orchestrator = EnclaveOrchestrator.createMpc(
-    encryption = encryption,
-    storage = storage,
-    mpcConfig = mpcConfig,
-    signer = signer,  // Wallet signer for authentication
-    hasher = Keccak256Hasher()
-)
-
-// Enroll user (first time)
-orchestrator.enroll(userId, EnclaveKeyType.MPC)
-
-// Unlock (downloads secret from MPC network)
-val sessionConfig = EnclaveSessionConfig(ExpirationType.TIMED, 3600000)
-orchestrator.unlock(userId, sessionConfig)
-
-// Use same decrypt API as LOCAL mode
-orchestrator.withEnclave { enclave ->
-    enclave.decrypt(message, senderPublicKey)
-}
-```
-
-### Enclave Error Types
-
-```kotlin
-sealed class EnclaveError : Exception {
-    class NoKey : EnclaveError()
-    class KeyExpired : EnclaveError()
-    data class DecryptionFailed(reason: DecryptFailure) : EnclaveError()
-    data class EncryptionFailed(details: String) : EnclaveError()
-    data class MpcUploadFailed(...) : EnclaveError()  // MPC-specific
-    data class MpcNotEnoughShares(...) : EnclaveError()  // MPC-specific
-}
-
-sealed class DecryptFailure {
-    data object WrongPassword : DecryptFailure()
-    data object CorruptedData : DecryptFailure()
-    data object InvalidCiphertext : DecryptFailure()
-}
-```
+For real-world usage patterns handling enclave state in a ViewModel, see CredentialDetailViewModel.kt:103-138
 
 ## 🧪 Testing
 
@@ -297,20 +248,6 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation on:
 - Transaction signing scheme
 - Error handling strategy
 - Platform-specific implementations
-
-## 📦 Type Safety
-
-The SDK uses type-safe wrappers for common values:
-
-```kotlin
-import org.idos.kwil.types.HexString
-import org.idos.kwil.types.Base64String
-import org.idos.kwil.types.UuidString
-
-val address = HexString("0x1234...")  // Ethereum address
-val txHash = HexString("0xabcd...")   // Transaction hash
-val credentialId = UuidString("550e8400-e29b-41d4-a716-446655440000")
-```
 
 ## ⚠️ Error Handling
 

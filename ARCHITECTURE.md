@@ -2,7 +2,36 @@
 
 Kotlin Multiplatform SDK for idOS - Android, iOS, and JVM support with KWIL database backend.
 
-## 🏗️ Layer Architecture
+## 🏗️ Component Architecture
+
+The SDK consists of three major components:
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        IdosClient (Public API)                   │
+│                    suspend + @Throws(DomainError)                │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌────────────────────┐  ┌────────────────┐  ┌──────────────┐    │
+│  │   KWIL Protocol    │  │    Enclave     │  │   Logging    │    │
+│  │                    │  │                │  │              │    │
+│  │ • Domain Layer     │  │ • Orchestrator │  │ • IdosLogger │    │
+│  │ • Protocol Layer   │  │ • LocalEnclave │  │ • Kermit     │    │
+│  │ • Serialization    │  │ • MpcEnclave   │  │ • LogSink    │    │
+│  │ • Transport (HTTP) │  │ • Encryption   │  │              │    │
+│  │ • Security (Auth)  │  │ • Storage      │  │              │    │
+│  └────────────────────┘  └────────────────┘  └──────────────┘    │
+│                                                                  │
+├──────────────────────────────────────────────────────────────────┤
+│                   Platform Layer (JVM, Android, iOS)             │
+│  • Signer (KEthereum/platform crypto)                            │
+│  • libsodium (Encryption)                                        │
+│  • Secure Storage (Keychain, EncryptedFile)                      │
+│  • HTTP Engine (OkHttp, Darwin)                                  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### KWIL Protocol Component (4-Layer Architecture)
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -16,6 +45,44 @@ Kotlin Multiplatform SDK for idOS - Android, iOS, and JVM support with KWIL data
 └─────────────────────────────────────────────┘
 ```
 
+### Enclave Component (Dual-Mode Encryption)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  EnclaveOrchestrator (StateFlow)                            │  Public API
+│  • create(), createLocal(), createMpc()                     │
+│  • State: Locked/Unlocking/Unlocked/NA                      │
+├─────────────────────────────────────────────────────────────┤
+│  LocalEnclave          │   MpcEnclave                       │
+│  • User password       │   • Password from MPC network      │
+│  • Scrypt KDF          │   • Shamir Secret Sharing          │
+│                        │   • Then same Scrypt KDF           │
+├────────────────────────┴────────────────────────────────────┤
+│  Enclave (interface) - Same encrypt/decrypt for both modes  │  iOS-compatible
+│  • encrypt() / decrypt()                                    │  via SKIE
+├─────────────────────────────────────────────────────────────┤
+│  Encryption (Platform-specific)                             │  Internal
+│  • JVM/Android: Lazysodium                                  │
+│  • iOS: libsodium XCFramework                               │
+│  • NaCl Box (Curve25519 + XSalsa20)                         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Logging Component
+
+```
+┌─────────────────────────────────────────────┐
+│  IdosLogger (Internal SDK)                  │
+│  • Lazy evaluation, tagged logging          │
+├─────────────────────────────────────────────┤
+│  Kermit (Cross-platform)                    │
+│  • Platform defaults (Logcat/OSLog)         │
+├─────────────────────────────────────────────┤
+│  LogSink (Consumer API)                     │
+│  • Optional custom destinations             │
+└─────────────────────────────────────────────┘
+```
+
 ---
 
 ## 📦 Package Structure
@@ -25,16 +92,44 @@ org.idos/
 ├── IdosClient.kt                    # Main SDK entry point
 ├── IdosClientExtensions.kt          # All public operations
 │
+├── crypto/                          # Cryptographic primitives
+│   ├── Signer.kt                    # Common signer interface
+│   ├── EthSigner.kt                 # Ethereum signer (common)
+│   ├── SignerType.kt                # Signature types
+│   ├── Keccak256Hasher.kt           # Keccak256 hashing for MPC
+│   └── eip712/                      # EIP-712 typed data
+│       ├── TypedData.kt
+│       └── EIP712Encoder.kt
+│
+├── signer/                          # Platform-specific signer impls
+│   └── EthSigner.jvm.kt             # JVM-specific impl (KEthereum)
+│
+├── logging/                         # SDK logging
+│   ├── IdosLogger.kt                # Internal logger (Kermit wrapper)
+│   ├── IdosLogConfig.kt             # Consumer configuration
+│   └── LogSink.kt                   # Custom log sink interface
+│
 ├── enclave/                         # Encryption & key derivation
-│   ├── Enclave.kt
-│   ├── Encryption.kt
-│   ├── KeyDerivation.kt
-│   ├── SecureStorage.kt
-│   └── MetadataStorage.kt
+│   ├── Enclave.kt                   # Common enclave interface
+│   ├── EnclaveOrchestrator.kt       # State management & factory
+│   ├── EnclaveState.kt              # State model (Locked, Unlocking, etc.)
+│   ├── EnclaveError.kt              # Error hierarchy
+│   ├── MetadataStorage.kt           # Key metadata persistence
+│   ├── crypto/
+│   │   ├── Encryption.kt            # Platform crypto (libsodium)
+│   │   ├── KeyDerivation.kt         # Scrypt KDF
+│   │   └── SecureStorage.kt         # Platform secure storage
+│   ├── local/
+│   │   └── LocalEnclave.kt          # Password-based encryption
+│   └── mpc/
+│       ├── MpcEnclave.kt            # Distributed encryption
+│       ├── MpcClient.kt             # Parallel node communication
+│       ├── MpcConfig.kt             # MPC configuration
+│       └── NodeClient.kt            # Individual node RPC
 │
 └── kwil/                            # KWIL protocol implementation
     ├── domain/                      # Domain layer (public API boundary)
-    │   ├── ActionExecutor.kt        # Result-based executor
+    │   ├── ActionExecutor.kt        # Executor with error handling
     │   ├── DomainError.kt           # Public error types
     │   ├── Schema.kt                # Type aliases (PositionalParams, etc.)
     │   ├── NoParamsAction.kt        # Helper for parameterless actions
@@ -63,14 +158,9 @@ org.idos/
     │   ├── KwilEncoding.kt          # Low-level encoding utilities
     │   └── Bytes.kt                 # Byte manipulation helpers
     │
-    ├── security/                    # Cryptographic signing & auth
-    │   ├── signer/
-    │   │   ├── Signer.kt            # Common signer interface
-    │   │   ├── EthSigner.kt         # Ethereum signer (common)
-    │   │   ├── Types.kt             # Signature types
-    │   │   └── EthSigner.jvm.kt     # JVM-specific impl (KEthereum)
+    ├── security/                    # KGW authentication
     │   └── auth/
-    │       ├── Auth.kt              # KGW authentication
+    │       ├── Auth.kt              # Challenge-response auth
     │       └── AuthMessage.kt       # Auth message formatting
     │
     ├── transport/                   # HTTP/JSON-RPC layer
@@ -78,11 +168,8 @@ org.idos/
     │   ├── Models.kt                # JSON-RPC models
     │   └── TransportError.kt        # Transport errors
     │
-    ├── types/                       # Type-safe wrappers
-    │   └── ValueTypes.kt            # HexString, Base64String, UuidString
-    │
-    └── utils/                       # Utilities
-        └── Crypto.kt                # SHA-256 hashing
+    └── types/                       # Type aliases
+        └── ValueTypes.kt            # HexString, Base64String, UuidString
 ```
 
 ---
@@ -349,41 +436,44 @@ try {
 
 **Purpose**: Dual-mode encryption with reactive state management for UI integration
 
-The Enclave layer supports two distinct encryption modes:
-- **LOCAL Mode**: Password-based encryption with local key derivation (Scrypt KDF)
-- **MPC Mode**: Distributed encryption using Shamir's Secret Sharing across MPC nodes
+The Enclave layer supports two encryption modes that share the same underlying KDF and encryption:
+- **LOCAL Mode**: User provides password → Scrypt KDF → Encryption key
+- **MPC Mode**: Password from MPC network (Shamir Secret Sharing) → Same Scrypt KDF → Encryption key
+
+Both modes use the same Scrypt KDF and NaCl Box encryption. MPC is essentially an extension where the password source differs.
 
 ### Architecture Pattern
 
 ```
-┌────────────────────────────────────────────────────────────┐
-│  EnclaveOrchestrator (StateFlow)                           │  Public API
-│  - Factory methods: create(), createLocal(), createMpc()   │
-│  - 4-state model: Locked, Unlocking, Unlocked, NotAvail   │
-│  - Mode detection from metadata or explicit selection      │
-├────────────────────────────────────────────────────────────┤
-│  LocalEnclave              │  MpcEnclave                    │
-│  - Password → Scrypt KDF   │  - Shamir's Secret Sharing    │
-│  - Local key storage       │  - Distributed across nodes   │
-│  - Session expiration      │  - Wallet-authenticated       │
-├────────────────────────────┼────────────────────────────────┤
-│  Enclave (interface)                                        │  iOS-compatible
-│  - encrypt() / decrypt()                                    │  via SKIE
-│  - Key expiration checks                                    │
-│  - Throws EnclaveError                                      │
-├────────────────────────────────────────────────────────────┤
-│  Encryption (Platform-specific, throws)                     │  Internal
-│  - JVM: Lazysodium (libsodium)                             │
-│  - Android: Lazysodium (libsodium JNI)                     │
-│  - iOS: libsodium XCFramework (C interop)                  │
-│  - NaCl Box: Curve25519 + XSalsa20 + Poly1305             │
-├────────────────────────────────────────────────────────────┤
-│  SecureStorage + MetadataStorage                            │  Platform
-│  - Android: EncryptedFile (StrongBox)                      │
-│  - iOS: Keychain                                            │
-│  - Metadata: SharedPreferences/UserDefaults                │
-│  - JVM: In-memory (testing)                                │
-└────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│  EnclaveOrchestrator (StateFlow)                             │  Public API
+│  - Factory methods: create(), createLocal(), createMpc()     │
+│  - 4-state model: Locked, Unlocking, Unlocked, NotAvail      │
+│  - Mode detection from metadata or explicit selection        │
+├──────────────────────────────────────────────────────────────┤
+│  LocalEnclave              │  MpcEnclave                     │
+│  - User password           │  - Password from MPC network    │
+│  - ↓ Scrypt KDF            │  - (Shamir Secret Sharing)      │
+│                            │  - ↓ Same Scrypt KDF            │
+├────────────────────────────┴──────────────────────────────────┤
+│  Enclave (interface) - Same encrypt/decrypt for both modes   │  iOS-compatible
+│  - encrypt() / decrypt()                                     │  via SKIE
+│  - Key expiration checks                                     │
+│  - Throws EnclaveError                                       │
+├──────────────────────────────────────────────────────────────┤
+│  Encryption (Platform-specific, throws)                      │  Internal
+│  - Scrypt KDF (shared by both LOCAL and MPC)                 │
+│  - JVM: Lazysodium (libsodium)                               │
+│  - Android: Lazysodium (libsodium JNI)                       │
+│  - iOS: libsodium XCFramework (C interop)                    │
+│  - NaCl Box: Curve25519 + XSalsa20 + Poly1305                │
+├──────────────────────────────────────────────────────────────┤
+│  SecureStorage + MetadataStorage                             │  Platform
+│  - Android: EncryptedFile (StrongBox)                         │
+│  - iOS: Keychain                                             │
+│  - Metadata: SharedPreferences/UserDefaults                  │
+│  - JVM: In-memory (testing)                                  │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ### Key Components
@@ -471,7 +561,9 @@ class LocalEnclave(
 - Metadata tracking (createdAt, lastUsedAt, expiresAt)
 
 #### 3. MpcEnclave (`MpcEnclave.kt`)
-**Purpose**: Distributed encryption using Shamir's Secret Sharing
+**Purpose**: Network-sourced password encryption using Shamir's Secret Sharing
+
+MPC mode retrieves a password from the MPC network instead of asking the user. This password is then used with the same Scrypt KDF as LOCAL mode.
 
 ```kotlin
 class MpcEnclave(
@@ -519,24 +611,25 @@ class MpcEnclave(
 
 **Shamir's Secret Sharing Flow**:
 
-*Upload:*
+*Upload (Enrollment):*
 1. Generate cryptographically secure random password (20 chars)
-2. Split into n shares with threshold k using byte-wise Shamir
+2. Split password into n shares with threshold k using byte-wise Shamir
 3. Blind each share with random 32 bytes
 4. Compute Keccak256 commitment for each blinded share
 5. Sign request with wallet (EIP-712 typed data)
 6. Upload to all nodes in parallel
 7. Require minimum k + malicious nodes to succeed
-8. Store secret locally in secure storage
+8. Store password locally in secure storage (used with Scrypt KDF like LOCAL mode)
 
-*Download:*
+*Download (Unlock):*
 1. Generate ephemeral Curve25519 keypair
 2. Sign download request with wallet
 3. Download encrypted shares from nodes in parallel
 4. Decrypt shares using NaCl Box with ephemeral key
 5. Remove blinding from decrypted shares
-6. Reconstruct secret using Shamir's algorithm (requires ≥ k shares)
-7. Store secret locally in secure storage
+6. Reconstruct password using Shamir's algorithm (requires ≥ k shares)
+7. Store password locally in secure storage
+8. Password is used with Scrypt KDF (same as LOCAL mode) to derive encryption key
 
 **Configuration** (`MpcConfig`):
 ```kotlin
@@ -808,25 +901,124 @@ orchestrator.withEnclave { enclave ->
 - Safe concurrent operations on EnclaveOrchestrator
 - Coroutine-based concurrency throughout
 
-**Key Derivation (LOCAL)**:
-- Scrypt (memory-hard, OWASP recommended)
+**Key Derivation (Shared by both LOCAL and MPC)**:
+- Scrypt (memory-hard KDF, OWASP recommended)
 - Parameters: n=16384, r=8, p=1, dkLen=32
 - Salt: userId (unique per user)
 - Password normalization (Unicode NFC)
+- **LOCAL**: User provides password directly
+- **MPC**: Password retrieved from MPC network via Shamir Secret Sharing
 
-**MPC Security**:
+**MPC Security (Password Distribution)**:
 - Shamir's Secret Sharing (threshold k of n nodes)
 - Share blinding for added security
 - Keccak256 commitments for integrity
 - EIP-712 wallet authentication
 - Ephemeral key encryption for downloads
 - No single point of failure (distributed trust)
+- Retrieved password is used with same Scrypt KDF as LOCAL mode
 
 **Security Features**:
 - Key expiration (TIMED, SESSION, ONE_SHOT)
 - Secure key erasure (`ByteArray.fill(0)`)
 - Platform secure storage (Keychain, EncryptedFile with StrongBox)
 - Hardware-backed encryption when available
+
+---
+
+## 📝 Logging Layer (`logging/`)
+
+**Purpose**: Configurable cross-platform logging with consumer control
+
+The SDK uses [Kermit](https://github.com/touchlab/Kermit) for cross-platform logging, providing platform-appropriate defaults (Logcat on Android, OSLog on iOS, console on JVM) with optional consumer customization.
+
+### Architecture
+
+```kotlin
+┌─────────────────────────────────────────────┐
+│  IdosLogger (Internal)                      │  Internal SDK API
+│  - v(), d(), i(), w(), e()                  │
+│  - Tag-based logging                        │
+│  - Lazy message evaluation                  │
+├─────────────────────────────────────────────┤
+│  Kermit Logger                              │  Cross-platform logger
+│  - StaticConfig (log level, writers)        │
+│  - Platform defaults (Logcat/OSLog/console) │
+├─────────────────────────────────────────────┤
+│  LogSink (Consumer API)                     │  Optional customization
+│  - Custom log destinations                  │
+│  - Filters, formatters, etc.                │
+└─────────────────────────────────────────────┘
+```
+
+### Configuration
+
+```kotlin
+// Default: platform-appropriate logging at INFO level
+val client = IdosClient.create(baseUrl, chainId, signer)
+
+// Custom: configure log level and destinations
+IdosLogger.configure(
+    IdosLogConfig(
+        sdkLogLevel = SdkLogLevel.DEBUG,
+        httpLogLevel = HttpLogLevel.HEADERS,
+        logSinks = listOf(
+            LogSink.Platform,  // Logcat/OSLog/console
+            CustomLogSink()    // Your custom sink
+        )
+    )
+)
+```
+
+### Log Levels
+
+```kotlin
+enum class SdkLogLevel {
+    VERBOSE,  // Very detailed logs (internal state)
+    DEBUG,    // Debugging information
+    INFO,     // General information (default)
+    WARN,     // Warnings
+    ERROR,    // Errors only
+    NONE      // Disable logging
+}
+
+enum class HttpLogLevel {
+    NONE,     // No HTTP logs
+    INFO,     // Basic request info
+    HEADERS,  // Request/response headers
+    BODY,     // Full request/response bodies
+    ALL       // Everything
+}
+```
+
+### Custom Log Sinks
+
+Consumers can provide custom log destinations:
+
+```kotlin
+class CustomLogSink : LogSink {
+    override fun log(severity: SdkLogLevel, tag: String, message: String, throwable: Throwable?) {
+        // Send to your analytics service, file, etc.
+        myAnalytics.track(tag, message)
+    }
+}
+```
+
+### Internal Usage
+
+Throughout the SDK, logging uses lazy evaluation for performance:
+
+```kotlin
+IdosLogger.d("Enclave") { "Unlocking with user ${userId}" }
+IdosLogger.e("Protocol", throwable) { "Transaction failed: ${tx.hash}" }
+```
+
+**Benefits**:
+- ✅ Zero overhead when logging is disabled (lazy evaluation)
+- ✅ Platform-appropriate defaults (no configuration needed)
+- ✅ Optional consumer customization
+- ✅ Tagged logging for easy filtering
+- ✅ Cross-platform (Android, iOS, JVM)
 
 ---
 
@@ -846,12 +1038,13 @@ protocol.authenticate(challenge, signature, signer.accountId())
 // 4. Subsequent requests automatically use cookie
 ```
 
-### Signers
-- **Common**: `Signer` interface
-- **JVM**: `JvmEthSigner` (uses KEthereum)
+### Signers (`crypto/` + `signer/`)
+- **Common**: `Signer` interface (in `org.idos.crypto`)
+- **Common**: `EthSigner` abstract class (in `org.idos.crypto`)
+- **JVM**: `JvmEthSigner` (in `org.idos.signer`, uses KEthereum)
 - **iOS/Android**: Platform-specific implementations
 
-### Signature Types
+### Signature Types (`crypto/SignerType.kt`)
 - `SECP256K1_PERSONAL` - EIP-191 personal sign (Ethereum)
 - `ED25519` - Edwards curve (Solana, etc.)
 
@@ -943,33 +1136,6 @@ All errors extend `Exception` and are automatically converted to Swift errors by
 - HTTP: Ktor Darwin engine
 - Crypto: libsodium XCFramework
 - Value classes not yet supported (use data classes)
-
----
-
-## 🚀 Quick Start
-
-```kotlin
-try {
-    // 1. Create Ethereum signer
-    val signer = JvmEthSigner(ecKeyPair)
-
-    // 2. Create client
-    val client = IdosClient.create(
-        baseUrl = "https://nodes.staging.idos.network",
-        chainId = "idos-testnet",
-        signer = signer
-    )
-
-    // 3. Use grouped APIs
-    val user = client.users.get()
-    println("User: ${user.id}")
-
-    val txHash = client.wallets.add(AddWalletParams(id, address, publicKey, signature))
-    println("Wallet added: $txHash")
-} catch (e: DomainError) {
-    println("Error: ${e.message}")
-}
-```
 
 ---
 
