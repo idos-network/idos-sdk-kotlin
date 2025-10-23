@@ -30,16 +30,6 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Cache Android SDK
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.android/sdk
-            ~/.android/avd
-          key: ${{ runner.os }}-android-sdk-${{ hashFiles('gradle/libs.versions.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-android-sdk-
-
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
