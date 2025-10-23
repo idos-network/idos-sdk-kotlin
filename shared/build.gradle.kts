@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -8,6 +9,8 @@ plugins {
     alias(libs.plugins.kotest)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.mavenPublish)
+    id("co.touchlab.skie") version "0.10.6"
 }
 
 kotlin {
@@ -19,32 +22,93 @@ kotlin {
 
     jvm()
 
-    listOf(
-        iosArm64(),
-        iosSimulatorArm64(),
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
-            baseName = "idos-sdk"
+    // Configure iOS targets with XCFramework support
+    val xcf = XCFramework("idos_sdk")
+    val iosTargets =
+        listOf(
+            iosArm64(),
+            iosSimulatorArm64(),
+        )
+
+    // Common iOS configuration
+    iosTargets.forEach { target ->
+        target.binaries.framework {
+            baseName = "idos_sdk"
             freeCompilerArgs += listOf("-Xbinary=bundleId=org.idos")
             isStatic = true
+            // Add to XCFramework
+            xcf.add(this)
+        }
+    }
+
+    // Configure cinterop for iOS device (arm64) - XCFramework
+    iosArm64().compilations.getByName("main") {
+        cinterops {
+            val libsodium by creating {
+                defFile(project.file("src/iosMain/c_interop/libsodium.def"))
+                compilerOpts("-I$projectDir/libs/libsodium.xcframework/ios-arm64/Headers")
+            }
+        }
+        compileTaskProvider.configure {
+            compilerOptions.freeCompilerArgs.add("-include-binary")
+            compilerOptions.freeCompilerArgs.add("$projectDir/libs/libsodium.xcframework/ios-arm64/libsodium.a")
+        }
+    }
+
+    // Configure cinterop for iOS simulator (arm64) - XCFramework
+    iosSimulatorArm64().compilations.getByName("main") {
+        cinterops {
+            val libsodium by creating {
+                defFile(project.file("src/iosMain/c_interop/libsodium.def"))
+                compilerOpts("-I$projectDir/libs/libsodium.xcframework/ios-arm64_x86_64-simulator/Headers")
+            }
+        }
+        compileTaskProvider.configure {
+            compilerOptions.freeCompilerArgs.add("-include-binary")
+            compilerOptions.freeCompilerArgs.add("$projectDir/libs/libsodium.xcframework/ios-arm64_x86_64-simulator/libsodium.a")
         }
     }
 
     sourceSets {
         commonMain.dependencies {
             implementation(libs.ktor.client.core)
-            implementation("io.ktor:ktor-client-content-negotiation:3.2.3")
-            implementation("io.ktor:ktor-serialization-kotlinx-json:3.2.3")
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.ktor.logger)
+            implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.io)
-            implementation(project.dependencies.platform("org.kotlincrypto.hash:bom:0.7.1"))
-            implementation("org.kotlincrypto.hash:sha2")
+            implementation(project.dependencies.platform(libs.kotlincrypto.hash.bom))
+            implementation(libs.kotlincrypto.hash.sha2)
+            implementation(libs.kermit)
+        }
+
+        androidMain.dependencies {
+            implementation(libs.ktor.client.okhttp)
+            // NaCl for Android
+            implementation("${libs.lazysodium.android.get()}@aar")
+            implementation("${libs.jna.get()}@aar")
+            // AndroidX Security with StrongBox support
+            implementation(libs.security.crypto.ktx)
+            // Bouncy Castle for SCrypt implementation
+            implementation(libs.bcprov.jdk15to18)
         }
 
         jvmMain.dependencies {
-            implementation("com.github.InstantWebP2P:tweetnacl-java:1.1.2")
-            implementation("org.bouncycastle:bcprov-jdk15on:1.70")
-            implementation("com.github.komputing:kethereum:0.86.0")
+            implementation(libs.tweetnacl.java)
+            implementation(libs.bcprov.jdk15on)
+            implementation(libs.kethereum)
+        }
+
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
+//            implementation(libs.multiplatform.crypto.libsodium.bindings)
+        }
+
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotest)
+            implementation(libs.kotest.assert)
+            implementation(libs.kotlinx.coroutines.test)
         }
 
         jvmTest.dependencies {
@@ -54,26 +118,43 @@ kotlin {
             implementation(libs.kotest.runner)
             implementation(libs.kotest.assert)
             implementation(libs.ktor.client.okhttp)
-            implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
+            implementation(libs.dotenv.kotlin)
+        }
+
+        androidUnitTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotest.runner)
+            implementation(libs.kotest.assert)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.androidx.test.core)
+            // Desktop libsodium for unit tests (unit tests run on host JVM, not Android)
+            implementation(libs.lazysodium.java)
+            implementation(libs.jna)
+        }
+
+        iosTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotest.assert)
+            implementation(libs.kotlinx.coroutines.test)
         }
     }
-}
 
-android {
-    namespace = "org.idos"
-    compileSdk =
-        libs.versions.android.compileSdk
-            .get()
-            .toInt()
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-    defaultConfig {
-        minSdk =
-            libs.versions.android.minSdk
+    android {
+        namespace = "org.idos"
+        compileSdk =
+            libs.versions.android.compileSdk
                 .get()
                 .toInt()
+        compileOptions {
+            sourceCompatibility = JavaVersion.VERSION_11
+            targetCompatibility = JavaVersion.VERSION_11
+        }
+        defaultConfig {
+            minSdk =
+                libs.versions.android.minSdk
+                    .get()
+                    .toInt()
+        }
     }
 }
 
@@ -82,6 +163,11 @@ ktlint {
     android.set(false)
     outputToConsole.set(true)
     ignoreFailures.set(false)
+
+    // Exclude generated code from linting
+    filter {
+        exclude { element -> element.file.path.contains("generated/") }
+    }
 }
 
 // detekt configuration
@@ -98,4 +184,41 @@ tasks.withType<Test> {
         junitXml.required.set(true)
     }
     systemProperty("gradle.build.dir", layout.buildDirectory.asFile.get())
+}
+
+// Maven Publishing Configuration
+// Note: The version, group, and artifactId are read from gradle.properties
+mavenPublishing {
+    pom {
+        name.set("idOS SDK for Kotlin Multiplatform")
+        description.set("Kotlin Multiplatform SDK for idOS - Identity Operating System")
+        url.set("https://github.com/idos-network/idos-sdk-kotlin")
+
+        licenses {
+            license {
+                name.set("MIT License")
+                url.set("https://opensource.org/licenses/MIT")
+            }
+        }
+
+        developers {
+            developer {
+                id.set("idos")
+                name.set("idOS Team")
+                email.set("dev@idos.network")
+            }
+        }
+
+        scm {
+            url.set("https://github.com/idos-network/idos-sdk-kotlin")
+            connection.set("scm:git:git://github.com/idos-network/idos-sdk-kotlin.git")
+            developerConnection.set("scm:git:ssh://git@github.com/idos-network/idos-sdk-kotlin.git")
+        }
+    }
+
+    // Publish to Maven Central
+    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL, automaticRelease = true)
+
+    // Sign all publications
+    signAllPublications()
 }

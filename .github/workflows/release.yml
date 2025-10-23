@@ -1,0 +1,152 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g., 0.0.9 or 0.0.9-rc1)'
+        required: true
+        type: string
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      version: ${{ steps.vars.outputs.version }}
+      tag: ${{ steps.vars.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate semver
+        uses: matt-usurp/validate-semver@v2
+        with:
+          version: ${{ inputs.version }}
+
+      - name: Set version variables
+        id: vars
+        run: |
+          VERSION="${{ inputs.version }}"
+          TAG="v$VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Check tag doesn't exist
+        run: |
+          TAG="${{ steps.vars.outputs.tag }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG already exists"
+            exit 1
+          fi
+          echo "Tag $TAG is available"
+
+  build-and-test:
+    name: Build and Test
+    needs: validate
+    uses: ./.github/workflows/build-and-test.yml
+    with:
+      upload-artifacts: true
+    secrets:
+      MNEMONIC_WORDS: ${{ secrets.MNEMONIC_WORDS }}
+      PASSWORD: ${{ secrets.PASSWORD }}
+
+  release:
+    name: Release
+    needs: [validate, build-and-test]
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Download Android AAR artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-aar
+          path: shared/build/outputs/aar/
+
+      - name: Download iOS XCFramework artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-release-xcframework
+          path: shared/build/XCFrameworks/release/idos_sdk.xcframework/
+
+      - name: Zip iOS XCFramework for distribution
+        run: |
+          cd shared/build/XCFrameworks/release
+          zip -r idos_sdk.xcframework.zip idos_sdk.xcframework
+          shasum -a 256 idos_sdk.xcframework.zip > idos_sdk.xcframework.zip.sha256
+
+      - name: Update version files
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          TAG="${{ needs.validate.outputs.tag }}"
+          CHECKSUM=$(cat shared/build/XCFrameworks/release/idos_sdk.xcframework.zip.sha256 | awk '{print $1}')
+
+          # Update gradle.properties
+          sed -i.bak "s/^VERSION=.*/VERSION=$VERSION/" gradle.properties
+          rm gradle.properties.bak
+
+          # Update Package.swift
+          sed -i.bak "s/let version = \".*\"/let version = \"$VERSION\"/" Package.swift
+          sed -i.bak "s|releases/download/v[^/]*/|releases/download/$TAG/|" Package.swift
+          sed -i.bak "s/checksum: \".*\"/checksum: \"$CHECKSUM\"/" Package.swift
+          rm Package.swift.bak
+
+      - name: Commit version and create tag
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          TAG="${{ needs.validate.outputs.tag }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add gradle.properties Package.swift
+          git commit -m "Release $TAG [skip ci]"
+          git tag "$TAG"
+          git push origin main
+          git push origin "$TAG"
+
+      - name: Publish to Maven Central
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+        run: |
+          ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache --stacktrace --no-daemon
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.validate.outputs.tag }}
+          name: ${{ needs.validate.outputs.tag }}
+          files: |
+            shared/build/outputs/aar/*.aar
+            shared/build/XCFrameworks/release/idos_sdk.xcframework.zip
+            shared/build/XCFrameworks/release/idos_sdk.xcframework.zip.sha256
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

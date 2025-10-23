@@ -8,4 +8,9 @@ plugins {
     alias(libs.plugins.kotlinSerialization) apply false
 //    alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.androidApplication) apply false
+    alias(libs.plugins.kotlinCompose) apply false
 }
+
+// Version is managed in gradle.properties and updated by release workflow
+version = findProperty("VERSION") as String? ?: "0.0.0-SNAPSHOT"

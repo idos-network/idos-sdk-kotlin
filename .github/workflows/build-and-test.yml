@@ -1,0 +1,103 @@
+name: Build and Test
+
+on:
+  workflow_call:
+    inputs:
+      upload-artifacts:
+        description: 'Whether to upload build artifacts'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      MNEMONIC_WORDS:
+        required: false
+      PASSWORD:
+        required: false
+
+jobs:
+  build-and-test:
+    name: Build and Test All Platforms
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history needed for git-versioning plugin to find tags
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Cache Kotlin/Native compiler
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: ${{ runner.os }}-konan-${{ hashFiles('**/*.gradle.kts', 'gradle/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-konan-
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v2
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Create .env for tests from GitHub Secrets
+        shell: bash
+        env:
+          MNEMONIC_WORDS: ${{ secrets.MNEMONIC_WORDS }}
+          PASSWORD: ${{ secrets.PASSWORD }}
+        run: |
+          # Write .env used by dotenv-kotlin in tests. Values come from repository secrets.
+          cat > .env <<EOF
+          MNEMONIC_WORDS=$MNEMONIC_WORDS
+          PASSWORD=$PASSWORD
+          EOF
+          echo ".env created with test credentials"
+
+      - name: Lint and Test
+        run: ./gradlew ktlintCheck detekt allTests --stacktrace --no-daemon --no-configuration-cache
+
+      - name: Publish Test Report
+        if: always()
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: '**/test-results/**/TEST-*.xml'
+          require_tests: false
+
+      - name: Upload lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-reports
+          path: |
+            **/build/reports/detekt/*.html
+            **/build/reports/detekt/*.xml
+            **/build/reports/ktlint/*.xml
+          if-no-files-found: ignore
+
+      - name: Build Android Release AAR and iOS XCFramework
+        run: ./gradlew :shared:assembleRelease :shared:assembleIdos_sdkReleaseXCFramework --stacktrace --no-daemon --no-configuration-cache
+
+      - name: Upload Android AAR artifacts
+        if: ${{ inputs.upload-artifacts }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-aar
+          path: shared/build/outputs/aar/*.aar
+          if-no-files-found: error
+
+      - name: Upload iOS XCFramework artifacts
+        if: ${{ inputs.upload-artifacts }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-xcframework
+          path: shared/build/XCFrameworks/release/idos_sdk.xcframework/**
+          if-no-files-found: error

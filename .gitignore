@@ -1,7 +1,7 @@
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
- 
+
 ### IntelliJ IDEA / Android Studio ###
 # Ignore the entire .idea directory, but keep a few project-wide settings if desired
 .idea/
@@ -56,3 +56,18 @@ bin/
 *.jks
 *.p12
 local.properties
+
+### iOS / Xcode ###
+# Xcode user-specific files
+iosApp/*.xcworkspace/xcuserdata/
+iosApp/*.xcodeproj/xcuserdata/
+iosApp/*.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Xcode build products
+iosApp/build/
+iosApp/DerivedData/
+
+### libsodium builds ###
+# Uncomment to ignore XCFramework (if building in CI)
+ shared/libs/libsodium.xcframework/
+# Or commit the XCFramework for easier local development
