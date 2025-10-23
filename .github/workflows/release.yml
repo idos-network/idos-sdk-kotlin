@@ -113,6 +113,14 @@ jobs:
           sed -i.bak "s/checksum: \".*\"/checksum: \"$CHECKSUM\"/" Package.swift
           rm Package.swift.bak
 
+          # Update documentation versions
+          sed -i.bak "s/idos-sdk-kotlin:[0-9]\+\.[0-9]\+\.[0-9]\+/idos-sdk-kotlin:$VERSION/g" README.md
+          sed -i.bak "s/version \`[0-9]\+\.[0-9]\+\.[0-9]\+\`/version \`$VERSION\`/g" README.md
+          sed -i.bak "s/from: \"[0-9]\+\.[0-9]\+\.[0-9]\+\"/from: \"$VERSION\"/g" README.md
+          sed -i.bak "s/version: [0-9]\+\.[0-9]\+\.[0-9]\+/version: $VERSION/g" PUBLISHING.md
+          sed -i.bak "s/v[0-9]\+\.[0-9]\+\.[0-9]\+/v$VERSION/g" PUBLISHING.md
+          rm README.md.bak PUBLISHING.md.bak
+
       - name: Commit version and create tag
         run: |
           VERSION="${{ needs.validate.outputs.version }}"
@@ -121,7 +129,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add gradle.properties Package.swift
+          git add gradle.properties Package.swift README.md PUBLISHING.md
           git commit -m "Release $TAG [skip ci]"
           git tag "$TAG"
           git push origin main

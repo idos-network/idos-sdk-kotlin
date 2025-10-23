@@ -19,16 +19,16 @@ Complete guide for publishing the idOS SDK for Kotlin Multiplatform to Maven Cen
 ### For Your First Release
 
 1. **Complete initial setup** (one-time, see [Initial Setup](#initial-setup))
-2. **Tag and push** (version is automatically derived from tag):
-   ```bash
-   git tag v0.1.0
-   git push origin main
-   git push origin v0.1.0
-   ```
+2. **Trigger manual release** from GitHub UI:
+   - Go to **Actions** → **Release** workflow
+   - Click **Run workflow**
+   - Select branch: `main`
+   - Enter version: `0.0.9` (without `v` prefix)
+   - Click **Run workflow**
 3. **Monitor**: Check https://github.com/idos-network/idos-sdk-kotlin/actions
 4. **Verify**: Check releases and Maven Central
 
-**Note**: Version is now **automatically derived from Git tags** via the `gradle-git-versioning` plugin. No need to manually update `gradle.properties`!
+**Note**: Version is managed in `gradle.properties` and updated automatically by the workflow.
 
 ---
 
@@ -38,9 +38,9 @@ The SDK publishes to multiple channels automatically:
 
 | Channel | Artifacts | Triggered By | Consumer Access |
 |---------|-----------|--------------|-----------------|
-| **Maven Central** | Android AAR, JVM JAR, iOS Klib | Version tag (`v*.*.*`) | `implementation("org.idos:idos-sdk-kotlin:VERSION")` |
-| **GitHub Releases** | AAR, XCFramework.zip | Version tag (`v*.*.*`) | Manual download |
-| **Swift Package Manager** | XCFramework (binary) | Version tag (`v*.*.*`) | Xcode or Package.swift |
+| **Maven Central** | Android AAR, JVM JAR, iOS Klib | Manual workflow dispatch | `implementation("org.idos:idos-sdk-kotlin:VERSION")` |
+| **GitHub Releases** | AAR, XCFramework.zip | Manual workflow dispatch | Manual download |
+| **Swift Package Manager** | XCFramework (binary) | Manual workflow dispatch | Xcode or Package.swift |
 
 ### What Gets Published
 
@@ -153,49 +153,66 @@ ls shared/build/XCFrameworks/release/idos_sdk.xcframework
 
 ### Preparation
 
-1. **Ensure clean state**:
+1. **Ensure main branch is ready**:
    ```bash
+   git checkout main
+   git pull origin main
    git status  # Should be clean
-   ./gradlew clean
    ```
 
 2. **Update changelog** (recommended):
    ```bash
    # Document changes in CHANGELOG.md or release notes
+   # Commit changes to main before releasing
    ```
 
-3. **Check current version** (optional):
+3. **Check current version**:
    ```bash
    ./gradlew properties | grep "version:"
-   # Shows version based on latest tag
+   # Shows current version from gradle.properties
    ```
 
 ### Release Process
 
-```bash
-# 1. Create and push tag (version is automatically derived from tag)
-git tag v0.1.0
-git push origin main
-git push origin v0.1.0
+1. **Go to GitHub Actions**:
+   - Navigate to: https://github.com/idos-network/idos-sdk-kotlin/actions
+   - Select **Release** workflow from the left sidebar
 
-# That's it! No manual version updates needed.
-```
+2. **Run workflow**:
+   - Click **Run workflow** button
+   - Ensure **Use workflow from** is set to `main` branch
+   - Enter version in format: `0.0.9` or `0.0.9-rc1` (without `v` prefix)
+   - Click **Run workflow**
+
+3. **Version validation**:
+   - Workflow validates semantic versioning format
+   - Checks tag `v0.0.9` doesn't already exist
+   - Fails fast if validation fails
 
 ### Automated Workflow
 
-Pushing the tag triggers `.github/workflows/release.yml`:
+The manual release triggers `.github/workflows/release.yml`:
 
-1. **Validate** (5-10 min)
+1. **Validate** (< 1 min)
+   - Validates semver format
+   - Checks tag availability
+   - Ensures running on main branch
+
+2. **Build and Test** (10-15 min)
    - Runs linting (ktlint, detekt)
    - Runs all platform tests (JVM, Android, iOS)
+   - Builds AAR and XCFramework
 
-2. **Build and Publish** (10-15 min)
-   - **Android**: Builds AAR, uploads to GitHub Releases, publishes to Maven Central
-   - **iOS**: KMMBridge builds XCFramework, uploads to GitHub Release, updates Package.swift, and moves tag to include the updated Package.swift
+3. **Release** (5-10 min)
+   - Updates `gradle.properties` and `Package.swift`
+   - Commits to main with version bump
+   - Creates and pushes tag `v0.0.9`
+   - Publishes to Maven Central
+   - Creates GitHub Release with artifacts
 
 **Total time**: ~15-25 minutes
 
-**Note**: iOS publishing uses KMMBridge which automatically handles Package.swift updates and tag management to ensure Swift Package Manager works correctly.
+**Note**: The workflow runs on the main branch for optimal cache performance. Version files are updated, committed, and tagged automatically.
 
 ### Monitor Progress
 
@@ -240,17 +257,21 @@ After workflow completes:
 
 ### Post-Release
 
-**No action needed!** Development versions are automatically SNAPSHOT-based:
+**After a successful release**:
 
+1. The version in `gradle.properties` is updated to the released version (e.g., `0.0.9`)
+2. The tag `v0.0.9` is created and pushed
+3. GitHub Release is created with artifacts
+
+**For next release**:
+- Simply run the workflow again with the next version (e.g., `0.1.0`)
+- No manual file updates needed - workflow handles everything
+
+**Check current version**:
 ```bash
-# On main branch without new tags, version is automatically:
-# <latest-tag>-SNAPSHOT
-
-# Example: After v0.1.0 release, main branch automatically becomes 0.1.0-SNAPSHOT
-# When you tag v0.2.0, it automatically becomes 0.2.0-SNAPSHOT after
-
-# You can verify current version anytime:
 ./gradlew properties | grep "version:"
+# Or:
+grep "^VERSION=" gradle.properties
 ```
 
 ---
@@ -462,45 +483,52 @@ gh release create v0.1.0 \
 
 ## Version Management
 
-### Automatic Versioning from Git Tags
+### Manual Versioning
 
-**The SDK uses automatic versioning** via the `gradle-git-versioning` plugin. Version is derived from Git tags and branches:
+**The SDK uses manual versioning** stored in `gradle.properties`. The release workflow automatically updates this file and creates the corresponding git tag.
 
-| Git State | Version Format | Example |
-|-----------|----------------|---------|
-| On tag `v1.2.3` | `1.2.3` | Exact version from tag |
-| On `main` branch | `<latest-tag>-SNAPSHOT` | `0.1.0-SNAPSHOT` |
-| On `develop` branch | `<latest-tag>-SNAPSHOT` | `0.1.0-SNAPSHOT` |
-| On `feature/foo` branch | `<latest-tag>-feature/foo-SNAPSHOT` | `0.1.0-feature/foo-SNAPSHOT` |
-| Detached HEAD (CI) | `<latest-tag>-<commit-short>` | `0.1.0-a1b2c3d` |
+**How it works**:
+1. Version stored in `gradle.properties`: `VERSION=0.0.8`
+2. Workflow input: `0.0.9`
+3. Workflow updates `gradle.properties` → `VERSION=0.0.9`
+4. Workflow commits and creates tag `v0.0.9`
+5. Maven Central receives version `0.0.9`
 
-**Configuration**: See `build.gradle.kts` (root) for versioning rules.
+**Configuration**: See `gradle.properties` for current version.
 
 ### Semantic Versioning
 
-Follow [semver.org](https://semver.org/) when creating tags:
+Follow [semver.org](https://semver.org/) when releasing:
 
-- **MAJOR** (v1.0.0) - Breaking changes
-- **MINOR** (v0.2.0) - New features, backward compatible
-- **PATCH** (v0.1.1) - Bug fixes, backward compatible
+- **MAJOR** (1.0.0) - Breaking changes
+- **MINOR** (0.2.0) - New features, backward compatible
+- **PATCH** (0.1.1) - Bug fixes, backward compatible
 
 ### Release Types
 
 **Stable Release**:
-```bash
-git tag v0.1.0  # Version automatically becomes 0.1.0
+```
+Workflow input: 0.1.0
+Creates tag: v0.1.0
+Maven version: 0.1.0
 ```
 
-**Pre-release** (use tag naming):
-```bash
-git tag v1.0.0-alpha    # Version automatically becomes 1.0.0-alpha
-git tag v1.0.0-beta.1   # Version automatically becomes 1.0.0-beta.1
-git tag v1.0.0-rc.1     # Version automatically becomes 1.0.0-rc.1
+**Pre-release**:
+```
+Workflow input: 1.0.0-alpha
+Creates tag: v1.0.0-alpha
+Maven version: 1.0.0-alpha
+
+Workflow input: 1.0.0-rc.1
+Creates tag: v1.0.0-rc.1
+Maven version: 1.0.0-rc.1
 ```
 
 **Check Current Version**:
 ```bash
 ./gradlew properties | grep "version:"
+# Or directly:
+grep "^VERSION=" gradle.properties
 ```
 
 ---
@@ -517,8 +545,8 @@ git tag v1.0.0-rc.1     # Version automatically becomes 1.0.0-rc.1
 ./gradlew :shared:assembleRelease
 ./gradlew :shared:assembleIdos_sdkReleaseXCFramework
 
-# Create release
-git tag v0.1.0 && git push origin v0.1.0
+# Create release (via GitHub UI)
+# Actions → Release → Run workflow → Enter version
 
 # Monitor
 gh run watch
@@ -526,11 +554,11 @@ gh run watch
 
 ### Configuration Files
 
-- `build.gradle.kts` (root) - Automatic versioning configuration
-- `gradle.properties` - Group and artifact metadata (no version)
+- `build.gradle.kts` (root) - Version property configuration
+- `gradle.properties` - VERSION, group, and artifact metadata
 - `shared/build.gradle.kts` - Build and publishing config
-- `.github/workflows/release.yml` - Release automation
-- `Package.swift` - Swift Package Manager manifest
+- `.github/workflows/release.yml` - Manual release workflow
+- `Package.swift` - Swift Package Manager manifest (auto-updated)
 
 ### Important URLs
 
