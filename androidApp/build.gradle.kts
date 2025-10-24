@@ -56,10 +56,13 @@ android {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             buildConfigField("String", "MNEMONIC_WORDS", "\"\"")
+            buildConfigField("String", "TEST_PASSWORD", "\"\"")
         }
         debug {
             val devMnemonic = envProps.getProperty("MNEMONIC_WORDS") ?: ""
+            val devPassword = envProps.getProperty("PASSWORD") ?: ""
             buildConfigField("String", "MNEMONIC_WORDS", "\"$devMnemonic\"")
+            buildConfigField("String", "TEST_PASSWORD", "\"$devPassword\"")
         }
     }
     compileOptions {
@@ -125,6 +128,8 @@ dependencies {
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)
+    androidTestImplementation(libs.koin.android)
+    androidTestImplementation(libs.koin.androidx.compose)
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
 }

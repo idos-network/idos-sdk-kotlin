@@ -16,10 +16,11 @@ mkdir -p "$(dirname "$OUTPUT_FILE")"
 
 # Default values
 MNEMONIC_WORDS=""
+PASSWORD=""
 
 # Read .env file if it exists
 if [ -f "$ENV_FILE" ]; then
-    # Parse MNEMONIC_WORDS from .env
+    # Parse values from .env
     while IFS='=' read -r key value; do
         # Skip comments and empty lines
         [[ $key =~ ^#.*$ ]] && continue
@@ -31,6 +32,8 @@ if [ -f "$ENV_FILE" ]; then
 
         if [ "$key" = "MNEMONIC_WORDS" ]; then
             MNEMONIC_WORDS="$value"
+        elif [ "$key" = "PASSWORD" ]; then
+            PASSWORD="$value"
         fi
     done < "$ENV_FILE"
 else
@@ -55,9 +58,13 @@ enum Config {
     #if DEBUG
     /// Development mnemonic from .env file (DEBUG builds only)
     static let developmentMnemonic = "$MNEMONIC_WORDS"
+    /// Development password from .env file (DEBUG builds only)
+    static let developmentPassword = "$PASSWORD"
     #else
     /// Development mnemonic (empty in Release builds)
     static let developmentMnemonic = ""
+    /// Development password (empty in Release builds)
+    static let developmentPassword = ""
     #endif
 }
 EOF

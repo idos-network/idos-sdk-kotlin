@@ -5,7 +5,15 @@ import idos_sdk
 /// Supports both USER (local) and MPC enclave types
 struct KeyGenerationDialog: View {
     @Environment(\.dismiss) var dismiss
-    @State private var password: String = ""
+    @State private var password: String = {
+        #if DEBUG
+        // Auto-fill password from Config when running UI tests
+        if ProcessInfo.processInfo.arguments.contains("UI_TESTING") {
+            return Config.developmentPassword
+        }
+        #endif
+        return ""
+    }()
     @State private var showPassword: Bool = false
     @State private var selectedExpiration: KeyExpiration = .oneWeek
 
