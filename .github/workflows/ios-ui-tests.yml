@@ -26,10 +26,28 @@ jobs:
             EOF
             echo ".env created with test credentials"
 
+      - name: Build Kotlin framework
+        run: ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+        env:
+          CONFIGURATION: Debug
+          SDK_NAME: iphonesimulator
+          ARCHS: arm64
+          TARGET_BUILD_DIR: ${{ github.workspace }}/iosApp/DerivedData/Build/Products/Debug-iphonesimulator
+          FRAMEWORKS_FOLDER_PATH: iosApp.app/Frameworks
+
+      - name: Build for testing
+        run: |
+          cd iosApp
+          xcodebuild build-for-testing \
+            -project iosApp.xcodeproj \
+            -scheme iosAppUITests \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -derivedDataPath DerivedData
+
       - name: Run UI tests
         run: |
           cd iosApp
-          xcodebuild test \
+          xcodebuild test-without-building \
             -project iosApp.xcodeproj \
             -scheme iosAppUITests \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
