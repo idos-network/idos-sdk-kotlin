@@ -49,12 +49,23 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunnerArguments["clearPackageData"] = "true"
+
+        testOptions {
+            // To use Android Test Orchestrator for better test isolation
+            execution = "ANDROIDX_TEST_ORCHESTRATOR"
+        }
+
+        testApplicationId = "org.idos.app.test"
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             buildConfigField("String", "MNEMONIC_WORDS", "\"\"")
             buildConfigField("String", "TEST_PASSWORD", "\"\"")
         }
@@ -130,6 +141,8 @@ dependencies {
     androidTestImplementation(libs.ui.test.junit4)
     androidTestImplementation(libs.koin.android)
     androidTestImplementation(libs.koin.androidx.compose)
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestUtil("androidx.test:orchestrator:1.6.1")
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
 }
