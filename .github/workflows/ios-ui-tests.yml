@@ -19,6 +19,15 @@ jobs:
       - name: List available simulators
         run: xcrun simctl list devices available
 
+      - name: Boot iPhone 16 simulator
+        run: |
+          # Get the UDID of the first iPhone 16 simulator
+          UDID=$(xcrun simctl list devices available | grep "iPhone 16 " | grep "Shutdown" | head -1 | sed -E 's/.*\(([A-F0-9-]+)\).*/\1/')
+          echo "Booting simulator with UDID: $UDID"
+          xcrun simctl boot "$UDID"
+          # Wait for simulator to boot
+          xcrun simctl bootstatus "$UDID"
+
       - name: Create .env for tests from GitHub Secrets
         shell: bash
         env:
