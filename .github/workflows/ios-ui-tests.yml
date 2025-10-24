@@ -26,14 +26,17 @@ jobs:
             EOF
             echo ".env created with test credentials"
 
-      - name: Build Kotlin framework
-        run: ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+      - name: Download latest SDK framework
         env:
-          CONFIGURATION: Debug
-          SDK_NAME: iphonesimulator
-          ARCHS: arm64
-          TARGET_BUILD_DIR: ${{ github.workspace }}/iosApp/DerivedData/Build/Products/Debug-iphonesimulator
-          FRAMEWORKS_FOLDER_PATH: iosApp.app/Frameworks
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LATEST_TAG=$(gh release view --json tagName -q .tagName)
+          echo "Using SDK version: $LATEST_TAG"
+          mkdir -p shared/build/xcode-frameworks/Debug/iphonesimulator
+          cd shared/build/xcode-frameworks/Debug
+          gh release download $LATEST_TAG --pattern "idos_sdk.xcframework.zip"
+          unzip -q idos_sdk.xcframework.zip
+          cp -R idos_sdk.xcframework/ios-arm64-simulator/idos_sdk.framework iphonesimulator/
 
       - name: Build for testing
         run: |
