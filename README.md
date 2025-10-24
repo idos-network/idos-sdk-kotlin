@@ -219,7 +219,7 @@ For real-world usage patterns handling enclave state in a ViewModel, see Credent
 
 ## 🧪 Testing
 
-### Setup Environment
+### Unit Tests & Instrumentation Tests
 
 1. Copy the example environment file:
    ```bash
@@ -234,7 +234,9 @@ For real-world usage patterns handling enclave state in a ViewModel, see Credent
 
 3. Run tests:
    ```bash
-   ./gradlew jvmTest
+   ./gradlew allTest
+   ./gradlew connectedCheck
+   xcodebuild test -project iosApp.xcodeproj -scheme iosApp -destination 'YOUR_DEVICE'
    ```
 
 **Note**: Your mnemonic should be for a wallet that has an idOS profile for integration tests to work.

@@ -6,6 +6,11 @@ import idos_sdk
 struct iosApp: App {
 
     init() {
+        // Handle UI test reset
+        if ProcessInfo.processInfo.arguments.contains("RESET_STATE") {
+            resetAppState()
+        }
+
         // Configure logging
         configureLogging()
 
@@ -15,6 +20,35 @@ struct iosApp: App {
         // Initialize user repository to load stored enclave type
         Task { @MainActor in
             DIContainer.shared.userRepository.initialize()
+        }
+    }
+
+    /// Reset app state for UI testing
+    private func resetAppState() {
+        // Clear UserDefaults
+        if let bundleID = Bundle.main.bundleIdentifier {
+            UserDefaults.standard.removePersistentDomain(forName: bundleID)
+        }
+
+        // Clear Keychain
+        let secItemClasses = [
+            kSecClassGenericPassword,
+            kSecClassInternetPassword,
+            kSecClassCertificate,
+            kSecClassKey,
+            kSecClassIdentity
+        ]
+        for secItemClass in secItemClasses {
+            let dictionary = [kSecClass as String: secItemClass]
+            SecItemDelete(dictionary as CFDictionary)
+        }
+
+        // Clear app files
+        if let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+            try? FileManager.default.removeItem(at: appSupport)
+        }
+        if let cache = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first {
+            try? FileManager.default.removeItem(at: cache)
         }
     }
 

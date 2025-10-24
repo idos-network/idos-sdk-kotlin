@@ -57,6 +57,7 @@ struct CredentialsView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("CredentialCard")
         }
         // Hidden NavigationLink for programmatic navigation
         .background(
