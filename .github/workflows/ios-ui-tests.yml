@@ -38,24 +38,47 @@ jobs:
           unzip -q idos_sdk.xcframework.zip
           cp -R idos_sdk.xcframework/ios-arm64-simulator/idos_sdk.framework iphonesimulator/
 
+      - name: Add xcbeautify
+        run: |
+          brew install xcbeautify
+
       - name: Build for testing
         run: |
           cd iosApp
-          xcodebuild build-for-testing \
+          set -o pipefail && xcodebuild build-for-testing \
             -project iosApp.xcodeproj \
             -scheme iosAppUITests \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
-            -derivedDataPath DerivedData
+            -derivedDataPath DerivedData | xcbeautify
 
       - name: Run UI tests
         run: |
           cd iosApp
-          xcodebuild test-without-building \
+          set -o pipefail && xcodebuild test-without-building \
             -project iosApp.xcodeproj \
             -scheme iosAppUITests \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
             -derivedDataPath DerivedData \
-            -resultBundlePath TestResults
+            -resultBundlePath TestResults | xcbeautify
+
+      - uses: kishikawakatsumi/xcresulttool@v1
+        with:
+          path: iosApp/TestResults.xcresult
+        if: success() || failure()
+
+#      - name: Convert test results to JUnit
+#        if: always()
+#        run: |
+#          brew install chargepoint/xcparse/xcparse
+#          cd iosApp
+#          xcparse junit TestResults.xcresult --output ./test-results
+#
+#      - name: Publish Test Report
+#        if: always()
+#        uses: mikepenz/action-junit-report@v4
+#        with:
+#          report_paths: 'iosApp/test-results/junit.xml'
+#          require_tests: false
 
       - name: Upload test results
         if: always()
