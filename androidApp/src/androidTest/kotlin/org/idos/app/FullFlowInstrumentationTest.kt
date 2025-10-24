@@ -103,7 +103,7 @@ class FullFlowInstrumentationTest {
 
         composeTestRule.onNodeWithText("Generate Wallet").performClick()
 
-        Thread.sleep(500)
+        Thread.sleep(2000)
 
         composeTestRule.waitForIdle()
         composeTestRule
