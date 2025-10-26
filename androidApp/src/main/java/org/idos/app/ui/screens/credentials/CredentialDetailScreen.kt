@@ -9,13 +9,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -142,7 +146,7 @@ private fun CredentialDetailContent(
 
         // JSON content section
         Text(
-            text = "Credential Data",
+            text = "Content",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold,
@@ -171,30 +175,35 @@ private fun EncryptedContentPlaceholder(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
             ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        onClick = onClick,
-        enabled = isEnabled,
     ) {
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.large),
+                    .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
+            Icon(
+                imageVector = Icons.Default.Lock,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "\uD83D\uDD12 Content Encrypted",
+                text = "This credential is encrypted",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Medium,
             )
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
-            Text(
-                text = if (isEnabled) "Enter your password to decrypt" else "Enclave not available",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onClick,
+                enabled = isEnabled,
+            ) {
+                Text("Decrypt Content")
+            }
         }
     }
 }

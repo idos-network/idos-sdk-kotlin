@@ -1,0 +1,91 @@
+appId: ${APP_ID}
+---
+# Reset app state for clean test
+- clearState
+
+# Launch app
+- launchApp
+
+# Wait for welcome screen
+- assertVisible: "Welcome"
+
+# Click Connect Wallet
+- tapOn: "Connect Wallet"
+
+# Wait for import screen
+- assertVisible: "Import Wallet"
+
+# Clear and enter derivation path for USER enclave
+- tapOn: "m/44'/60'/0'/0/47"
+- eraseText
+- inputText: ${DERIVATION_PATH}
+
+# Hide keyboard on iOS to properly click import in next step
+- runFlow:
+    when:
+      visible: "Done"
+    commands:
+      - tapOn: "Done"
+
+# Generate wallet
+- tapOn:
+    text: "Import Wallet"
+    index: 1
+
+# Wait for success dialog
+- assertVisible: "Wallet Imported"
+
+# Dismiss dialog
+- tapOn: "OK"
+
+# Wait for credentials to load
+- waitForAnimationToEnd
+
+# Check if credentials exist
+- runFlow:
+    when:
+      visible: "No credentials found"
+    commands:
+      - stopApp
+      - assertVisible: "This test wallet has no credentials"
+
+# Tap on first credential card
+- tapOn:
+    id: "CredentialCard"
+    index: 0
+
+# Wait for detail screen
+- assertVisible: "This credential is encrypted"
+
+# Tap to decrypt
+- tapOn: "Decrypt Content"
+
+- runFlow:
+    when:
+      visible: "Generate Encryption Key"
+    commands:
+      # Select expiration
+      - tapOn: "1 Week"
+      # Enter password for USER enclave
+      - tapOn: "Password"
+      - inputText: ${PASSWORD}
+
+      # Generate key
+      - tapOn: "Generate Key"
+
+- runFlow:
+    when:
+      visible: "Unlock MPC Enclave"
+    commands:
+      # Select expiration
+      - tapOn: "1 Week"
+      - tapOn: "Unlock"
+
+# Wait for decryption
+- waitForAnimationToEnd
+
+# Verify content is decrypted
+- assertNotVisible: "This credential is encrypted"
+
+# Verify decrypted content contains @context
+- assertVisible: "@context"

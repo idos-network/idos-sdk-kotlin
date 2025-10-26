@@ -1,0 +1,134 @@
+version: '3'
+
+dotenv: ['.env']
+
+vars:
+  ANDROID_APP: androidApp/build/outputs/apk/debug/app-debug.apk
+  IOS_APP: iosApp/build/Build/Products/Debug-iphonesimulator/iosApp.app
+  ANDROID_PACKAGE: org.idos.app
+  IOS_BUNDLE: org.idos.app
+
+tasks:
+  # Android tasks
+  android:build:
+    desc: Build Android debug APK
+    cmds:
+      - ./gradlew :androidApp:assembleDebug
+
+  android:install:
+    desc: Install Android app on emulator/device
+    cmds:
+      - adb install -r {{.ANDROID_APP}}
+
+  # iOS tasks
+  ios:build:
+    desc: Build iOS app for simulator
+    dir: iosApp
+    cmds:
+      - xcodebuild build -scheme iosApp -destination 'platform=iOS Simulator,name=iPhone 16' -derivedDataPath build
+
+  # Maestro tasks
+  maestro:install:
+    desc: Install Maestro CLI
+    cmds:
+      - brew install maestro
+    status:
+      - which maestro
+
+  android:emulator:
+    desc: Start Android emulator if not running
+    cmds:
+      - |
+        if ! adb devices | grep -q "emulator"; then
+          AVD=$($ANDROID_HOME/emulator/emulator -list-avds | head -1)
+          $ANDROID_HOME/emulator/emulator -avd $AVD -no-snapshot-load -no-audio -no-boot-anim &
+          adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
+        fi
+    status:
+      - adb devices | grep -q "emulator"
+
+  maestro:android:user:
+    desc: Run Maestro tests on Android with USER enclave
+    deps: [android:build, android:emulator]
+    cmds:
+      - |
+        maestro test \
+          --format junit \
+          --output maestro-results.xml \
+          --env APP_ID="{{.ANDROID_PACKAGE}}" \
+          --env DERIVATION_PATH="m/44'/60'/0'/0/4" \
+          --env PASSWORD="{{.PASSWORD}}" \
+          maestro-flows/
+
+  maestro:android:mpc:
+    desc: Run Maestro tests on Android with MPC enclave
+    deps: [android:build, android:emulator]
+    cmds:
+      - |
+        maestro test \
+          --format junit \
+          --output maestro-results.xml \
+          --env APP_ID="{{.ANDROID_PACKAGE}}" \
+          --env DERIVATION_PATH="m/44'/60'/0'/0/3" \
+          --env PASSWORD="{{.PASSWORD}}" \
+          maestro-flows/
+
+  maestro:android:
+    desc: Run Maestro tests on Android (both USER and MPC)
+    cmds:
+      - task: maestro:android:user
+      - task: maestro:android:mpc
+
+  maestro:ios:user:
+    desc: Run Maestro tests on iOS with USER enclave
+    deps: [ios:build]
+    cmds:
+      - |
+        xcrun simctl boot "iPhone 16" || true
+        xcrun simctl install booted {{.IOS_APP}}
+        maestro test \
+          --format junit \
+          --output maestro-results.xml \
+          --env APP_ID="{{.IOS_BUNDLE}}" \
+          --env DERIVATION_PATH="m/44'/60'/0'/0/4" \
+          --env PASSWORD="{{.PASSWORD}}" \
+          maestro-flows/
+
+  maestro:ios:mpc:
+    desc: Run Maestro tests on iOS with MPC enclave
+    deps: [ios:build]
+    cmds:
+      - |
+        xcrun simctl boot "iPhone 16" || true
+        xcrun simctl install booted {{.IOS_APP}}
+        maestro test \
+          --format junit \
+          --output maestro-results.xml \
+          --env APP_ID="{{.IOS_BUNDLE}}" \
+          --env DERIVATION_PATH="m/44'/60'/0'/0/3" \
+          --env PASSWORD="{{.PASSWORD}}" \
+          maestro-flows/
+
+  maestro:ios:
+    desc: Run Maestro tests on iOS (both USER and MPC)
+    cmds:
+      - task: maestro:ios:user
+      - task: maestro:ios:mpc
+
+  maestro:all:
+    desc: Run Maestro tests on both platforms
+    cmds:
+      - task: maestro:android
+      - task: maestro:ios
+
+  # Combined shortcuts
+  test:all:
+    desc: Run all tests
+    cmds:
+      - task: maestro:all
+
+  build:all:
+    desc: Build both Android and iOS apps
+    cmds:
+      - task: android:build
+      - task: ios:build

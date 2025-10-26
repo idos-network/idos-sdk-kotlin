@@ -17,9 +17,9 @@ final class FullFlowUITests: XCTestCase {
         runFullFlowTest(derivationPath: userDerivationPath, isUserEnclave: true)
     }
 
-     func testFullFlow_MpcEnclave() throws {
-         runFullFlowTest(derivationPath: mpcDerivationPath, isUserEnclave: false)
-     }
+//     func testFullFlow_MpcEnclave() throws {
+//         runFullFlowTest(derivationPath: mpcDerivationPath, isUserEnclave: false)
+//     }
 
     private func runFullFlowTest(derivationPath: String, isUserEnclave: Bool) {
         XCTAssertTrue(app.staticTexts["Welcome"].waitForExistence(timeout: 5))

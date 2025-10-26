@@ -127,7 +127,7 @@ fun SharedTransitionScope.MnemonicScreen(
                 .padding(MaterialTheme.spacing.medium),
         ) {
             Text(
-                text = "Import BIP39 Mnemonic",
+                text = "Import Wallet",
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 16.dp),
             )
@@ -170,7 +170,7 @@ fun SharedTransitionScope.MnemonicScreen(
                             animatedVisibilityScope = animatedVisibilityScope,
                         ),
             ) {
-                Text("Generate Wallet")
+                Text("Import Wallet")
             }
         }
     }
