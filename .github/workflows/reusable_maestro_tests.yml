@@ -20,7 +20,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: android-debug-apk
-          path: androidApp/build/outputs/apk/debug/
+          path: ./
 
       - name: Enable KVM for hardware acceleration
         run: |
@@ -73,11 +73,9 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
-            maestro test \
-              --format junit \
-              --output maestro-results-android.xml \
-              --env APP_ID="org.idos.app" \
-              maestro-flows/
+            ls -la *.apk
+            adb install -r androidApp-debug.apk
+            maestro test --format junit --output maestro-results-android.xml --env APP_ID="org.idos.app" maestro-flows/
 
       - name: Publish Maestro test results
         if: always()
@@ -100,12 +98,15 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ios-debug-app
-          path: iosApp/build/Build/Products/Debug-iphonesimulator/
+          path: ./
 
       - name: Set up iOS Simulator
         run: |
+          ls -la
+          unzip -q iosApp.app.zip
+          ls -la iosApp.app || echo "iosApp.app not found"
           xcrun simctl boot "iPhone 16" || true
-          xcrun simctl install booted iosApp/build/Build/Products/Debug-iphonesimulator/iosApp.app
+          xcrun simctl install booted iosApp.app
 
       - name: Install Maestro
         run: |
@@ -123,11 +124,7 @@ jobs:
 
       - name: Run Maestro tests
         run: |
-          maestro test \
-            --format junit \
-            --output maestro-results-ios.xml \
-            --env APP_ID="org.idos.app" \
-            maestro-flows/
+          maestro test --format junit --output maestro-results-ios.xml --env APP_ID="org.idos.app" maestro-flows/
 
       - name: Publish Maestro test results
         if: always()

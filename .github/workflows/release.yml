@@ -179,7 +179,7 @@ jobs:
             - `idos_sdk.xcframework.zip` - iOS SDK (for Swift Package Manager)
 
             ## Sample Apps (Debug/Demo)
-            - `app-debug.apk` - Android sample app (installable on devices/emulators)
+            - `androidApp-debug.apk` - Android sample app (installable on devices/emulators)
             - `iosApp-debug.app.zip` - iOS sample app (for simulator testing)
 
             Use the sample apps to verify SDK integration and test functionality.
@@ -187,7 +187,7 @@ jobs:
             shared/build/outputs/aar/*.aar
             shared/build/XCFrameworks/release/idos_sdk.xcframework.zip
             shared/build/XCFrameworks/release/idos_sdk.xcframework.zip.sha256
-            androidApp/build/outputs/apk/debug/app-debug.apk
+            androidApp/build/outputs/apk/debug/androidApp-debug.apk
             iosApp/build/Build/Products/Debug-iphonesimulator/iosApp-debug.app.zip
           draft: false
           prerelease: false

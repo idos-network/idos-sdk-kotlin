@@ -20,8 +20,8 @@ on:
         required: false
 
 jobs:
-  lint-test-and-build-sdk:
-    name: Build and Test All Platforms
+  build-and-test:
+    name: Build and Test All
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -88,8 +88,24 @@ jobs:
             **/build/reports/ktlint/*.xml
           if-no-files-found: ignore
 
-      - name: Build Android Release AAR and iOS XCFramework
+      - name: Build SDK (AAR + XCFramework)
         run: ./gradlew :shared:assembleRelease :shared:assembleIdos_sdkReleaseXCFramework --stacktrace --no-daemon --no-configuration-cache
+
+      - name: Build sample apps (Android + iOS)
+        run: |
+          ./gradlew :androidApp:assembleDebug --no-daemon
+          cd iosApp && xcodebuild build \
+            -scheme iosApp \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -configuration Debug \
+            -derivedDataPath build
+
+      - name: Zip iOS app for artifact upload
+        if: ${{ inputs.upload-artifacts }}
+        run: |
+          cd iosApp/build/Build/Products/Debug-iphonesimulator
+          zip -r iosApp.app.zip iosApp.app
+          ls -lh iosApp.app.zip
 
       - name: Upload Android AAR artifacts
         if: ${{ inputs.upload-artifacts }}
@@ -107,80 +123,20 @@ jobs:
           path: shared/build/XCFrameworks/release/idos_sdk.xcframework/**
           if-no-files-found: error
 
-  build-android-app:
-    name: Build Android Sample App
-    needs: lint-test-and-build-sdk
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: false
-
-      - name: Build Android sample app
-        run: ./gradlew :androidApp:assembleDebug --no-daemon
-
       - name: Upload Android APK
         if: ${{ inputs.upload-artifacts }}
         uses: actions/upload-artifact@v4
         with:
           name: android-debug-apk
-          path: androidApp/build/outputs/apk/debug/app-debug.apk
+          path: androidApp/build/outputs/apk/debug/androidApp-debug.apk
           retention-days: ${{ inputs.retention-days }}
-
-  build-ios-app:
-    name: Build iOS Sample App
-    needs: lint-test-and-build-sdk
-    runs-on: macos-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: false
-
-      - name: Cache Kotlin/Native compiler
-        uses: actions/cache@v4
-        with:
-          path: ~/.konan
-          key: ${{ runner.os }}-konan-${{ hashFiles('**/*.gradle.kts', 'gradle/libs.versions.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-konan-
-
-      - name: Build iOS sample app
-        run: |
-          cd iosApp
-          xcodebuild build \
-            -scheme iosApp \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
-            -configuration Debug \
-            -derivedDataPath build
+          if-no-files-found: error
 
       - name: Upload iOS app
         if: ${{ inputs.upload-artifacts }}
         uses: actions/upload-artifact@v4
         with:
           name: ios-debug-app
-          path: iosApp/build/Build/Products/Debug-iphonesimulator/iosApp.app
+          path: iosApp/build/Build/Products/Debug-iphonesimulator/iosApp.app.zip
           retention-days: ${{ inputs.retention-days }}
+          if-no-files-found: error
