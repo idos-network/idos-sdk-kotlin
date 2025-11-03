@@ -19,13 +19,7 @@ appId: ${APP_ID}
 - tapOn: "m/44'/60'/0'/0/47"
 - eraseText
 - inputText: "m/44'/60'/0'/0/4"
-
-# Hide keyboard on iOS to properly click import in next step
-- runFlow:
-    when:
-      visible: "Done"
-    commands:
-      - tapOn: "Done"
+- hideKeyboard
 
 # Generate wallet
 - tapOn:
@@ -69,6 +63,8 @@ appId: ${APP_ID}
 # Enter password for USER enclave
 - tapOn: "Password"
 - inputText: ${PASSWORD}
+- scroll
+- waitForAnimationToEnd
 
 # Generate key
 - tapOn: "Generate Key"

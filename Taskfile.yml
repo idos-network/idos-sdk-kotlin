@@ -3,7 +3,7 @@ version: '3'
 dotenv: ['.env']
 
 vars:
-  ANDROID_APP: androidApp/build/outputs/apk/debug/app-debug.apk
+  ANDROID_APP: androidApp/build/outputs/apk/debug/androidApp-debug.apk
   IOS_APP: iosApp/build/Build/Products/Debug-iphonesimulator/iosApp.app
   ANDROID_PACKAGE: org.idos.app
   IOS_BUNDLE: org.idos.app
@@ -70,7 +70,7 @@ tasks:
 
   maestro:android:
     desc: Run all Maestro tests on Android
-    deps: [android:build, android:emulator]
+    deps: [android:build, android:emulator, android:install]
     cmds:
       - |
         maestro test \
@@ -85,7 +85,7 @@ tasks:
     deps: [ios:build]
     cmds:
       - |
-        xcrun simctl boot "iPhone 16" || true
+        xcrun simctl boot "iPhone 17" || true
         xcrun simctl install booted {{.IOS_APP}}
         maestro test \
           --format junit \

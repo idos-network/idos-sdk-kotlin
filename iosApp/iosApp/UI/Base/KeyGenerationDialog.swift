@@ -58,7 +58,7 @@ struct KeyGenerationDialog: View {
 
                 // Password field (only for USER enclave)
                 if requiresPassword {
-                    Section(header: Text("Password")) {
+                    Section {
                         HStack {
                             if showPassword {
                                 TextField("Password", text: $password)

@@ -110,6 +110,13 @@ jobs:
           name: ios-debug-app
           path: iosApp/build/Build/Products/Debug-iphonesimulator/
 
+      - name: Extract iOS debug app
+        run: |
+          cd iosApp/build/Build/Products/Debug-iphonesimulator
+          unzip -q iosApp.app.zip
+          rm iosApp.app.zip
+          ls -la
+
       - name: Zip iOS XCFramework for distribution
         run: |
           cd shared/build/XCFrameworks/release

@@ -54,17 +54,10 @@ jobs:
           curl -Ls "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> $GITHUB_PATH
 
-      - name: Create .env for Maestro
-        shell: bash
-        env:
-          PASSWORD: ${{ secrets.PASSWORD }}
-        run: |
-          cat > .env <<EOF
-          PASSWORD=$PASSWORD
-          EOF
-
       - name: Run Maestro tests
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          PASSWORD: ${{ secrets.PASSWORD }}
         with:
           api-level: 34
           target: google_apis
@@ -75,7 +68,15 @@ jobs:
           script: |
             ls -la *.apk
             adb install -r androidApp-debug.apk
-            maestro test --format junit --output maestro-results-android.xml --env APP_ID="org.idos.app" maestro-flows/
+            maestro test --format junit --output maestro-results-android.xml --debug-output maestro-debug-android --flatten-debug-output --env APP_ID="org.idos.app" --env PASSWORD="$PASSWORD" maestro-flows/
+
+      - name: Upload Maestro debug artifacts (Android)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-debug-android
+          path: maestro-debug-android/
+          retention-days: 30
 
       - name: Publish Maestro test results
         if: always()
@@ -113,18 +114,19 @@ jobs:
           brew tap mobile-dev-inc/tap
           brew install maestro
 
-      - name: Create .env for Maestro
-        shell: bash
+      - name: Run Maestro tests
         env:
           PASSWORD: ${{ secrets.PASSWORD }}
         run: |
-          cat > .env <<EOF
-          PASSWORD=$PASSWORD
-          EOF
+          maestro test --format junit --output maestro-results-ios.xml --debug-output maestro-debug-ios --flatten-debug-output --env APP_ID="org.idos.app" --env PASSWORD="$PASSWORD" maestro-flows/
 
-      - name: Run Maestro tests
-        run: |
-          maestro test --format junit --output maestro-results-ios.xml --env APP_ID="org.idos.app" maestro-flows/
+      - name: Upload Maestro debug artifacts (iOS)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-debug-ios
+          path: maestro-debug-ios/
+          retention-days: 30
 
       - name: Publish Maestro test results
         if: always()
