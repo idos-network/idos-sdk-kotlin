@@ -67,6 +67,11 @@ iosApp/*.xcodeproj/project.xcworkspace/xcuserdata/
 iosApp/build/
 iosApp/DerivedData/
 
+### Maestro ###
+maestro-results.xml
+maestro-results/
+.maestro/
+
 ### libsodium builds ###
 # Uncomment to ignore XCFramework (if building in CI)
  shared/libs/libsodium.xcframework/

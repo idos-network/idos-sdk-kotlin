@@ -45,6 +45,8 @@
 		C2974AC62E8DBE5B00AADFBE /* Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AC52E8DBE5700AADFBE /* Strings.swift */; };
 		C2974AD52EA13DF800AADFBE /* Hasher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AD42EA13DF200AADFBE /* Hasher.swift */; };
 		C2974AD72EA672E800AADFBE /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AD62EA672E800AADFBE /* AppLogger.swift */; };
+		C2F289572EAE815E00851DA8 /* JsonViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2F289562EAE815E00851DA8 /* JsonViews.swift */; };
+		C2F289582EAE815E00851DA8 /* JsonViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2F289562EAE815E00851DA8 /* JsonViews.swift */; };
 		C2FCA66F2EA90D830049D57E /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C2FCA66E2EA90D830049D57E /* WalletCore */; };
 		C2FCA6712EA90D830049D57E /* WalletCoreSwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = C2FCA6702EA90D830049D57E /* WalletCoreSwiftProtobuf */; };
 		E59C1A8626654667B9F53641 /* ViewExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3385CFAB0E74F08B498EA46 /* ViewExtensions.swift */; };
@@ -102,6 +104,7 @@
 		C2974AD42EA13DF200AADFBE /* Hasher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hasher.swift; sourceTree = "<group>"; };
 		C2974AD62EA672E800AADFBE /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
 		C2D895AB2EAB838E007120A6 /* iosAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iosAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C2F289562EAE815E00851DA8 /* JsonViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JsonViews.swift; sourceTree = "<group>"; };
 		D3385CFAB0E74F08B498EA46 /* ViewExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewExtensions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -250,6 +253,7 @@
 		C27D81702E8C27A400F6CADF /* Credentials */ = {
 			isa = PBXGroup;
 			children = (
+				C2F289562EAE815E00851DA8 /* JsonViews.swift */,
 				C27D816C2E8C27A400F6CADF /* CredentialDetailView.swift */,
 				C27D816D2E8C27A400F6CADF /* CredentialDetailViewModel.swift */,
 				C27D816E2E8C27A400F6CADF /* CredentialsView.swift */,
@@ -529,6 +533,7 @@
 				C27D818E2E8C27A400F6CADF /* DashboardView.swift in Sources */,
 				C27D818F2E8C27A400F6CADF /* LoginView.swift in Sources */,
 				C27D81902E8C27A400F6CADF /* KeyGenerationDialog.swift in Sources */,
+				C2F289572EAE815E00851DA8 /* JsonViews.swift in Sources */,
 				C27D81912E8C27A400F6CADF /* MnemonicView.swift in Sources */,
 				C2974AAF2E8D274300AADFBE /* WalletRepository.swift in Sources */,
 				C2974AB02E8D274300AADFBE /* UserRepository.swift in Sources */,
@@ -559,6 +564,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C2F289582EAE815E00851DA8 /* JsonViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -764,7 +770,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = io.vander.iosAppUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = org.idos.iosAppUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
@@ -792,7 +798,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = io.vander.iosAppUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = org.idos.iosAppUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;

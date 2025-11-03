@@ -37,24 +37,6 @@
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES">
-      <CommandLineArguments>
-         <CommandLineArgument
-            argument = ""
-            isEnabled = "YES">
-         </CommandLineArgument>
-      </CommandLineArguments>
-      <EnvironmentVariables>
-         <EnvironmentVariable
-            key = "TEST_MNEMONIC"
-            value = "wool belt stumble casual evil seminar truck crush memory hub eyebrow where"
-            isEnabled = "YES">
-         </EnvironmentVariable>
-         <EnvironmentVariable
-            key = "TES_PASSWORD"
-            value = "heslo"
-            isEnabled = "YES">
-         </EnvironmentVariable>
-      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

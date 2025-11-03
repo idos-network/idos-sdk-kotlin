@@ -1,4 +1,4 @@
-name: Build and Test
+name: Build and Test (Reusable)
 
 on:
   workflow_call:
@@ -8,6 +8,11 @@ on:
         required: false
         type: boolean
         default: false
+      retention-days:
+        description: 'How long to keep artifacts (days)'
+        required: false
+        type: number
+        default: 30
     secrets:
       MNEMONIC_WORDS:
         required: false
@@ -15,7 +20,7 @@ on:
         required: false
 
 jobs:
-  build-and-test:
+  lint-test-and-build-sdk:
     name: Build and Test All Platforms
     runs-on: macos-latest
     steps:
@@ -101,3 +106,81 @@ jobs:
           name: ios-release-xcframework
           path: shared/build/XCFrameworks/release/idos_sdk.xcframework/**
           if-no-files-found: error
+
+  build-android-app:
+    name: Build Android Sample App
+    needs: lint-test-and-build-sdk
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Build Android sample app
+        run: ./gradlew :androidApp:assembleDebug --no-daemon
+
+      - name: Upload Android APK
+        if: ${{ inputs.upload-artifacts }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-apk
+          path: androidApp/build/outputs/apk/debug/app-debug.apk
+          retention-days: ${{ inputs.retention-days }}
+
+  build-ios-app:
+    name: Build iOS Sample App
+    needs: lint-test-and-build-sdk
+    runs-on: macos-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Cache Kotlin/Native compiler
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: ${{ runner.os }}-konan-${{ hashFiles('**/*.gradle.kts', 'gradle/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-konan-
+
+      - name: Build iOS sample app
+        run: |
+          cd iosApp
+          xcodebuild build \
+            -scheme iosApp \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -configuration Debug \
+            -derivedDataPath build
+
+      - name: Upload iOS app
+        if: ${{ inputs.upload-artifacts }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-debug-app
+          path: iosApp/build/Build/Products/Debug-iphonesimulator/iosApp.app
+          retention-days: ${{ inputs.retention-days }}

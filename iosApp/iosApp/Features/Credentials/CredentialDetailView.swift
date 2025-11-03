@@ -130,62 +130,64 @@ struct CredentialDetailView: View {
     private func credentialContent(credential: CredentialDetail, content: String) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                // Issuer
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Id")
+                // ID Section
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("ID")
                         .font(.caption)
+                        .fontWeight(.medium)
                         .foregroundColor(.secondary)
                     Text(credential.id)
                         .font(.body)
                 }
 
-                Divider()
-
-                    // JSON Content or Decrypt Button
+                // JSON Content or Decrypt Button
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Content")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.blue)
+
                     if !content.isEmpty {
-                        // Show decrypted content
-                        Text(content.prettyPrintedJSON())
-                            .font(.system(.footnote, design: .monospaced))
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
+                        // Show decrypted content with dynamic JSON rendering
+                        if let jsonValue = content.parseJSON() {
+                            JsonElementDisplay(jsonValue: jsonValue)
+                        } else {
+                            // Fallback to plain text if JSON parsing fails
+                            Text(content)
+                                .font(.system(.footnote, design: .monospaced))
+                                .padding()
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+                        }
                     } else {
                         // Show decrypt button
                         VStack(spacing: 12) {
-                            Image(systemName: "lock.shield")
-                                .font(.system(size: 40))
+                            Image(systemName: "lock")
+                                .font(.system(size: 48))
                                 .foregroundColor(.blue)
-                            
+
                             Text("This credential is encrypted")
                                 .font(.headline)
-                            
+
                             Button(action: {
                                 viewModel.onEvent(.decryptCredential)
                             }) {
-                                HStack {
-                                    Image(systemName: "lock.open.fill")
-                                    Text("Decrypt Content")
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 8)
+                                Text("Decrypt Content")
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 8)
                             }
                             .buttonStyle(.borderedProminent)
                             .disabled(viewModel.state.isDecrypting)
-                            
+
                             if viewModel.state.isDecrypting {
                                 ProgressView()
                                     .padding(.top, 8)
                             }
                         }
                         .frame(maxWidth: .infinity)
-                        .padding()
+                        .padding(32)
                         .background(Color(.systemGray6))
-                        .cornerRadius(12)
+                        .cornerRadius(8)
                     }
                 }
             }

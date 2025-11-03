@@ -14,6 +14,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -27,6 +29,7 @@ fun BaseScreen(
     Scaffold(
         modifier =
             modifier
+                .semantics { testTagsAsResourceId = true }
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.systemBars),
         containerColor = MaterialTheme.colorScheme.background,

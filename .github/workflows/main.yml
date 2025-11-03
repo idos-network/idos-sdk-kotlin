@@ -1,0 +1,23 @@
+name: Main Branch Validation
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    uses: ./.github/workflows/reusable_build_and_test.yml
+    with:
+      upload-artifacts: true
+      retention-days: 30
+    secrets:
+      MNEMONIC_WORDS: ${{ secrets.MNEMONIC_WORDS }}
+      PASSWORD: ${{ secrets.PASSWORD }}
+
+  maestro-tests:
+    name: Maestro UI Tests
+    needs: build-and-test
+    uses: ./.github/workflows/reusable_maestro_tests.yml
+    secrets:
+      PASSWORD: ${{ secrets.PASSWORD }}

@@ -1,0 +1,15 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    uses: ./.github/workflows/reusable_build_and_test.yml
+    with:
+      upload-artifacts: false
+    secrets:
+      MNEMONIC_WORDS: ${{ secrets.MNEMONIC_WORDS }}
+      PASSWORD: ${{ secrets.PASSWORD }}

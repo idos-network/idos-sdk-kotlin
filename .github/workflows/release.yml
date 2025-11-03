@@ -51,16 +51,23 @@ jobs:
   build-and-test:
     name: Build and Test
     needs: validate
-    uses: ./.github/workflows/build-and-test.yml
+    uses: ./.github/workflows/reusable_build_and_test.yml
     with:
       upload-artifacts: true
     secrets:
       MNEMONIC_WORDS: ${{ secrets.MNEMONIC_WORDS }}
       PASSWORD: ${{ secrets.PASSWORD }}
 
+  maestro-tests:
+    name: Maestro UI Tests
+    needs: build-and-test
+    uses: ./.github/workflows/reusable_maestro_tests.yml
+    secrets:
+      PASSWORD: ${{ secrets.PASSWORD }}
+
   release:
     name: Release
-    needs: [validate, build-and-test]
+    needs: [validate, build-and-test, maestro-tests]
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -91,11 +98,28 @@ jobs:
           name: ios-release-xcframework
           path: shared/build/XCFrameworks/release/idos_sdk.xcframework/
 
+      - name: Download Android debug APK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-debug-apk
+          path: androidApp/build/outputs/apk/debug/
+
+      - name: Download iOS debug app
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-debug-app
+          path: iosApp/build/Build/Products/Debug-iphonesimulator/
+
       - name: Zip iOS XCFramework for distribution
         run: |
           cd shared/build/XCFrameworks/release
           zip -r idos_sdk.xcframework.zip idos_sdk.xcframework
           shasum -a 256 idos_sdk.xcframework.zip > idos_sdk.xcframework.zip.sha256
+
+      - name: Zip iOS sample app for distribution
+        run: |
+          cd iosApp/build/Build/Products/Debug-iphonesimulator
+          zip -r iosApp-debug.app.zip iosApp.app
 
       - name: Update version files
         run: |
@@ -149,10 +173,22 @@ jobs:
         with:
           tag_name: ${{ needs.validate.outputs.tag }}
           name: ${{ needs.validate.outputs.tag }}
+          body: |
+            ## SDK Artifacts
+            - `idos_sdk-release.aar` - Android SDK (for Maven/Gradle)
+            - `idos_sdk.xcframework.zip` - iOS SDK (for Swift Package Manager)
+
+            ## Sample Apps (Debug/Demo)
+            - `app-debug.apk` - Android sample app (installable on devices/emulators)
+            - `iosApp-debug.app.zip` - iOS sample app (for simulator testing)
+
+            Use the sample apps to verify SDK integration and test functionality.
           files: |
             shared/build/outputs/aar/*.aar
             shared/build/XCFrameworks/release/idos_sdk.xcframework.zip
             shared/build/XCFrameworks/release/idos_sdk.xcframework.zip.sha256
+            androidApp/build/outputs/apk/debug/app-debug.apk
+            iosApp/build/Build/Products/Debug-iphonesimulator/iosApp-debug.app.zip
           draft: false
           prerelease: false
           generate_release_notes: true

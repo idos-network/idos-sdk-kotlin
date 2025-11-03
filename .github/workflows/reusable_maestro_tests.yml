@@ -1,0 +1,138 @@
+name: Maestro UI Tests (Reusable)
+
+on:
+  workflow_call:
+    secrets:
+      PASSWORD:
+        required: true
+
+jobs:
+  maestro-android:
+    name: Maestro Tests (Android)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-debug-apk
+          path: androidApp/build/outputs/apk/debug/
+
+      - name: Enable KVM for hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: AVD cache
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-34
+
+      - name: Create AVD and generate snapshot for caching
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: echo "Generated AVD snapshot for caching."
+
+      - name: Install Maestro
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      - name: Create .env for Maestro
+        shell: bash
+        env:
+          PASSWORD: ${{ secrets.PASSWORD }}
+        run: |
+          cat > .env <<EOF
+          PASSWORD=$PASSWORD
+          EOF
+
+      - name: Run Maestro tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            maestro test \
+              --format junit \
+              --output maestro-results-android.xml \
+              --env APP_ID="org.idos.app" \
+              maestro-flows/
+
+      - name: Publish Maestro test results
+        if: always()
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: 'maestro-results-android.xml'
+          check_name: 'Maestro Tests (Android)'
+          require_tests: false
+
+  maestro-ios:
+    name: Maestro Tests (iOS)
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download iOS app
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-debug-app
+          path: iosApp/build/Build/Products/Debug-iphonesimulator/
+
+      - name: Set up iOS Simulator
+        run: |
+          xcrun simctl boot "iPhone 16" || true
+          xcrun simctl install booted iosApp/build/Build/Products/Debug-iphonesimulator/iosApp.app
+
+      - name: Install Maestro
+        run: |
+          brew tap mobile-dev-inc/tap
+          brew install maestro
+
+      - name: Create .env for Maestro
+        shell: bash
+        env:
+          PASSWORD: ${{ secrets.PASSWORD }}
+        run: |
+          cat > .env <<EOF
+          PASSWORD=$PASSWORD
+          EOF
+
+      - name: Run Maestro tests
+        run: |
+          maestro test \
+            --format junit \
+            --output maestro-results-ios.xml \
+            --env APP_ID="org.idos.app" \
+            maestro-flows/
+
+      - name: Publish Maestro test results
+        if: always()
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: 'maestro-results-ios.xml'
+          check_name: 'Maestro Tests (iOS)'
+          require_tests: false

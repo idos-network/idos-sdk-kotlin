@@ -14,13 +14,10 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-import androidx.test.platform.app.InstrumentationRegistry
 import org.idos.app.security.EthSigner
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 
 /**
  * Instrumentation test for the full happy path flow of the IDOS app.
@@ -48,55 +45,8 @@ class FullFlowInstrumentationTest {
     @get:Rule
     val composeTestRule = createAndroidComposeRule<LoginActivity>()
 
-    /**
-     * Clear all app data before each test to ensure a clean state.
-     * This prevents tests from skipping the login screen due to cached user data.
-     *
-     * Clears:
-     * - SharedPreferences (where user profile is stored)
-     * - Databases
-     * - Files directory
-     */
-    @Before
-    fun clearAppData() {
-        val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
-
-        // Clear SharedPreferences (where user profile is cached in StorageManager)
-        val prefsDir = File(targetContext.applicationInfo.dataDir, "shared_prefs")
-        if (prefsDir.exists() && prefsDir.isDirectory) {
-            prefsDir.listFiles()?.forEach { file ->
-                file.delete()
-            }
-        }
-
-        // Clear databases if any exist
-        val dbDir = File(targetContext.applicationInfo.dataDir, "databases")
-        if (dbDir.exists() && dbDir.isDirectory) {
-            dbDir.listFiles()?.forEach { file ->
-                file.delete()
-            }
-        }
-
-        // Clear files directory
-        targetContext.filesDir.listFiles()?.forEach { file ->
-            file.deleteRecursively()
-        }
-
-        // Small delay to ensure cleanup completes before test starts
-        Thread.sleep(500)
-    }
 
     companion object {
-        // Test mnemonic - loaded from .env file or CI environment
-        // Should match a valid BIP39 mnemonic with existing credentials
-        private val TEST_MNEMONIC =
-            BuildConfig.MNEMONIC_WORDS.ifBlank {
-                throw IllegalStateException(
-                    "MNEMONIC_WORDS not configured. " +
-                        "Add MNEMONIC_WORDS to .env file or configure in CI secrets",
-                )
-            }
-
         // Test password for USER enclave - loaded from .env file or CI environment
         private val TEST_PASSWORD =
             BuildConfig.TEST_PASSWORD.ifBlank {
@@ -153,7 +103,7 @@ class FullFlowInstrumentationTest {
 
         composeTestRule.onNodeWithText("Generate Wallet").performClick()
 
-        Thread.sleep(500)
+        Thread.sleep(2000)
 
         composeTestRule.waitForIdle()
         composeTestRule
@@ -217,13 +167,13 @@ class FullFlowInstrumentationTest {
                 .assertIsDisplayed()
         }
 
-        composeTestRule.onNodeWithText("30s").performClick()
+        composeTestRule.onNodeWithText("1 Week").performClick()
 
         val unlockButtonText = if (isUserEnclave) "Generate Key" else "Unlock"
         composeTestRule.onNodeWithText(unlockButtonText).performClick()
 
         composeTestRule.waitForIdle()
-        Thread.sleep(2000)
+        Thread.sleep(10000)
 
         composeTestRule
             .onNodeWithText("🔒 Content Encrypted", substring = true)

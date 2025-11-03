@@ -1,0 +1,135 @@
+version: '3'
+
+dotenv: ['.env']
+
+vars:
+  ANDROID_APP: androidApp/build/outputs/apk/debug/app-debug.apk
+  IOS_APP: iosApp/build/Build/Products/Debug-iphonesimulator/iosApp.app
+  ANDROID_PACKAGE: org.idos.app
+  IOS_BUNDLE: org.idos.app
+
+tasks:
+  # Lint & Test
+  lint:
+    desc: Run linting (ktlint + detekt)
+    cmds:
+      - ./gradlew ktlintCheck detekt
+
+  test:unit:
+    desc: Run all unit tests
+    cmds:
+      - ./gradlew allTests
+
+  # Build SDK
+  build:shared:android:
+    desc: Build Android SDK (AAR)
+    cmds:
+      - ./gradlew :shared:assembleRelease
+
+  build:shared:ios:
+    desc: Build iOS SDK (XCFramework)
+    cmds:
+      - ./gradlew :shared:assembleIdos_sdkReleaseXCFramework
+
+  # Build sample apps
+  android:build:
+    desc: Build Android debug APK
+    cmds:
+      - ./gradlew :androidApp:assembleDebug
+
+  android:install:
+    desc: Install Android app on emulator/device
+    cmds:
+      - adb install -r {{.ANDROID_APP}}
+
+  ios:build:
+    desc: Build iOS app for simulator
+    dir: iosApp
+    cmds:
+      - xcodebuild build -scheme iosApp -destination 'platform=iOS Simulator,name=iPhone 16' -derivedDataPath build
+
+  # Maestro tasks
+  maestro:install:
+    desc: Install Maestro CLI
+    cmds:
+      - brew install maestro
+    status:
+      - which maestro
+
+  android:emulator:
+    desc: Start Android emulator if not running
+    cmds:
+      - |
+        if ! adb devices | grep -q "emulator"; then
+          AVD=$($ANDROID_HOME/emulator/emulator -list-avds | head -1)
+          $ANDROID_HOME/emulator/emulator -avd $AVD -no-snapshot-load -no-audio -no-boot-anim &
+          adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
+        fi
+    status:
+      - adb devices | grep -q "emulator"
+
+  maestro:android:
+    desc: Run all Maestro tests on Android
+    deps: [android:build, android:emulator]
+    cmds:
+      - |
+        maestro test \
+          --format junit \
+          --output maestro-results-android.xml \
+          --env APP_ID="{{.ANDROID_PACKAGE}}" \
+          --env PASSWORD="{{.PASSWORD}}" \
+          maestro-flows/
+
+  maestro:ios:
+    desc: Run all Maestro tests on iOS
+    deps: [ios:build]
+    cmds:
+      - |
+        xcrun simctl boot "iPhone 16" || true
+        xcrun simctl install booted {{.IOS_APP}}
+        maestro test \
+          --format junit \
+          --output maestro-results-ios.xml \
+          --env APP_ID="{{.IOS_BUNDLE}}" \
+          --env PASSWORD="{{.PASSWORD}}" \
+          maestro-flows/
+
+  maestro:all:
+    desc: Run Maestro tests on both platforms
+    cmds:
+      - task: maestro:android
+      - task: maestro:ios
+
+  # Combined shortcuts
+  test:all:
+    desc: Run all tests
+    cmds:
+      - task: maestro:all
+
+  build:all:
+    desc: Build both Android and iOS apps
+    cmds:
+      - task: android:build
+      - task: ios:build
+
+  # CI stages
+  ci:pr:
+    desc: PR validation (lint + test + build apps)
+    cmds:
+      - task: lint
+      - task: test:unit
+      - task: android:build
+      - task: ios:build
+
+  ci:master:
+    desc: Master validation (PR + Maestro tests)
+    cmds:
+      - task: ci:pr
+      - task: maestro:all
+
+  ci:release:
+    desc: Release build (master + SDK build)
+    cmds:
+      - task: ci:master
+      - task: build:shared:android
+      - task: build:shared:ios

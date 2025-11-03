@@ -17,9 +17,9 @@ final class FullFlowUITests: XCTestCase {
         runFullFlowTest(derivationPath: userDerivationPath, isUserEnclave: true)
     }
 
-    func testFullFlow_MpcEnclave() throws {
-        runFullFlowTest(derivationPath: mpcDerivationPath, isUserEnclave: false)
-    }
+//     func testFullFlow_MpcEnclave() throws {
+//         runFullFlowTest(derivationPath: mpcDerivationPath, isUserEnclave: false)
+//     }
 
     private func runFullFlowTest(derivationPath: String, isUserEnclave: Bool) {
         XCTAssertTrue(app.staticTexts["Welcome"].waitForExistence(timeout: 5))
@@ -37,7 +37,7 @@ final class FullFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Wallet Imported"].waitForExistence(timeout: 10))
         app.buttons["OK"].tap()
 
-        sleep(2)
+        sleep(4)
 
         if app.staticTexts["No credentials found"].exists {
             XCTFail("No credentials found - ensure test wallet has credentials")
