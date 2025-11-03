@@ -1,5 +1,14 @@
 # Maestro Tests
 
+This directory contains Maestro UI test flows for both Android and iOS sample apps.
+
+## Test Files
+
+- `user-flow.yaml` - Tests USER enclave functionality
+- `mpc-flow.yaml` - Tests MPC enclave functionality
+
+All `.yaml` files in this directory are automatically run by CI.
+
 ## Setup
 
 ```bash
@@ -13,78 +22,73 @@ brew install go-task/tap/go-task
 ## Usage
 
 ```bash
-# Create .env with test credentials
+# Create .env with test password
 cat > .env <<EOF
 PASSWORD="your test password"
 EOF
 
-# Run Android tests (both USER and MPC enclave)
+# Run all tests on Android
 task maestro:android
 
-# Run iOS tests (both USER and MPC enclave)
+# Run all tests on iOS
 task maestro:ios
 
-# Run both platforms
+# Run all tests on both platforms
 task maestro:all
+```
 
-# Run specific enclave type
-task maestro:android:user
-task maestro:android:mpc
-task maestro:ios:user
-task maestro:ios:mpc
+## Manual Execution
+
+### Android
+
+```bash
+# Build app
+./gradlew :androidApp:assembleDebug
+
+# Start emulator (if needed)
+# AVD will be auto-detected from installed emulators
+
+# Run all flows
+maestro test \
+  --env APP_ID="org.idos.app" \
+  --env PASSWORD="..." \
+  maestro-flows/
+```
+
+### iOS
+
+```bash
+# Build app
+cd iosApp && xcodebuild build \
+  -scheme iosApp \
+  -destination 'platform=iOS Simulator,name=iPhone 16' \
+  -derivedDataPath build
+
+# Boot simulator and install app
+xcrun simctl boot "iPhone 16"
+xcrun simctl install booted iosApp/build/Build/Products/Debug-iphonesimulator/iosApp.app
+
+# Run all flows
+maestro test \
+  --env APP_ID="org.idos.app" \
+  --env PASSWORD="..." \
+  maestro-flows/
 ```
 
 ## Environment Variables
 
-The test flow uses these environment variables:
+Tests use these environment variables:
 
-- `APP_ID` - Application package/bundle ID (set automatically by Taskfile)
-- `DERIVATION_PATH` - Wallet derivation path (set automatically: `m/44'/60'/0'/0/4` for USER, `m/44'/60'/0'/0/3` for MPC)
+- `APP_ID` - Application package/bundle ID (set automatically by Task or manually)
 - `PASSWORD` - Password for USER enclave (required in `.env`)
 
-## Manual Execution
+Each test file has its own hardcoded derivation path for the specific enclave type it tests.
 
-```bash
-# Android - USER enclave
-./gradlew :androidApp:assembleDebug
-maestro test \
-  --env APP_ID="org.idos.app" \
-  --env DERIVATION_PATH="m/44'/60'/0'/0/4" \
-  --env PASSWORD="..." \
-  maestro-flows/
+## CI Integration
 
-# Android - MPC enclave
-maestro test \
-  --env APP_ID="org.idos.app" \
-  --env DERIVATION_PATH="m/44'/60'/0'/0/3" \
-  --env PASSWORD="..." \
-  maestro-flows/
+GitHub Actions automatically:
+1. Builds debug apps
+2. Runs all test flows in this directory
+3. Reports results for both Android and iOS
 
-# iOS - USER enclave
-cd iosApp && xcodebuild build -scheme iosApp -destination 'platform=iOS Simulator,name=iPhone 16'
-xcrun simctl boot "iPhone 16"
-xcrun simctl install booted iosApp/build/Build/Products/Debug-iphonesimulator/iosApp.app
-maestro test \
-  --env APP_ID="org.idos.app" \
-  --env DERIVATION_PATH="m/44'/60'/0'/0/4" \
-  --env PASSWORD="..." \
-  maestro-flows/
-
-# iOS - MPC enclave
-maestro test \
-  --env APP_ID="org.idos.app" \
-  --env DERIVATION_PATH="m/44'/60'/0'/0/3" \
-  --env PASSWORD="..." \
-  maestro-flows/
-```
-
-## Test Flow
-
-The single `decrypt-enclave-flow.yaml` handles both USER and MPC enclaves:
-
-1. Imports wallet with derivation path from `DERIVATION_PATH` env var
-2. Opens first credential
-3. Taps "Decrypt Content" button
-4. If "Generate Encryption Key" dialog appears → USER enclave (enters password)
-5. If "Unlock MPC Enclave" dialog appears → MPC enclave (no password needed)
-6. Verifies decrypted content contains `@context`
+No need to filter by enclave type - just add new `.yaml` files and they'll be picked up automatically.

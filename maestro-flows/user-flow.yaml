@@ -18,7 +18,7 @@ appId: ${APP_ID}
 # Clear and enter derivation path for USER enclave
 - tapOn: "m/44'/60'/0'/0/47"
 - eraseText
-- inputText: ${DERIVATION_PATH}
+- inputText: "m/44'/60'/0'/0/4"
 
 # Hide keyboard on iOS to properly click import in next step
 - runFlow:
@@ -60,26 +60,18 @@ appId: ${APP_ID}
 # Tap to decrypt
 - tapOn: "Decrypt Content"
 
-- runFlow:
-    when:
-      visible: "Generate Encryption Key"
-    commands:
-      # Select expiration
-      - tapOn: "1 Week"
-      # Enter password for USER enclave
-      - tapOn: "Password"
-      - inputText: ${PASSWORD}
+# Wait for USER enclave dialog
+- assertVisible: "Generate Encryption Key"
 
-      # Generate key
-      - tapOn: "Generate Key"
+# Select expiration
+- tapOn: "1 Week"
 
-- runFlow:
-    when:
-      visible: "Unlock MPC Enclave"
-    commands:
-      # Select expiration
-      - tapOn: "1 Week"
-      - tapOn: "Unlock"
+# Enter password for USER enclave
+- tapOn: "Password"
+- inputText: ${PASSWORD}
+
+# Generate key
+- tapOn: "Generate Key"
 
 # Wait for decryption
 - waitForAnimationToEnd
