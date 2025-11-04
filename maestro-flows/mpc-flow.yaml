@@ -16,9 +16,10 @@ appId: ${APP_ID}
 - assertVisible: "Import Wallet"
 
 # Clear and enter derivation path for MPC enclave
+# MPC_DERIVATION_PATH: m/44'/60'/0'/0/3 (ARM64), m/44'/60'/0'/0/4 (x86_64)
 - tapOn: "m/44'/60'/0'/0/47"
 - eraseText
-- inputText: "m/44'/60'/0'/0/3"
+- inputText: ${MPC_DERIVATION_PATH}
 
 # Hide keyboard on iOS to properly click import in next step
 - runFlow:

@@ -9,7 +9,7 @@ on:
 jobs:
   maestro-android:
     name: Maestro Tests (Android)
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
@@ -22,6 +22,12 @@ jobs:
           name: android-debug-apk
           path: ./
 
+      - name: Enable KVM for hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
       - name: AVD cache
         uses: actions/cache@v4
         id: avd-cache
@@ -29,7 +35,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-34-arm64
+          key: avd-34-x86_64
 
       - name: Create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
@@ -37,7 +43,7 @@ jobs:
         with:
           api-level: 34
           target: google_apis
-          arch: arm64-v8a
+          arch: x86_64
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
@@ -45,8 +51,8 @@ jobs:
 
       - name: Install Maestro
         run: |
-          brew tap mobile-dev-inc/tap
-          brew install maestro
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
 
       - name: Run Maestro tests
         uses: reactivecircus/android-emulator-runner@v2
@@ -55,14 +61,14 @@ jobs:
         with:
           api-level: 34
           target: google_apis
-          arch: arm64-v8a
+          arch: x86_64
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
             ls -la *.apk
             adb install -r androidApp-debug.apk
-            maestro test --format junit --output maestro-results-android.xml --debug-output maestro-debug-android --flatten-debug-output --env APP_ID="org.idos.app" --env PASSWORD="$PASSWORD" maestro-flows/
+            maestro test --format junit --output maestro-results-android.xml --debug-output maestro-debug-android --flatten-debug-output --env APP_ID="org.idos.app" --env PASSWORD="$PASSWORD" --env USER_DERIVATION_PATH="m/44'/60'/0'/0/5" --env MPC_DERIVATION_PATH="m/44'/60'/0'/0/4" maestro-flows/
 
       - name: Upload Maestro debug artifacts (Android)
         if: always()
@@ -111,8 +117,9 @@ jobs:
       - name: Run Maestro tests
         env:
           PASSWORD: ${{ secrets.PASSWORD }}
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: 120000
         run: |
-          maestro test --format junit --output maestro-results-ios.xml --debug-output maestro-debug-ios --flatten-debug-output --env APP_ID="org.idos.app" --env PASSWORD="$PASSWORD" maestro-flows/
+          maestro test --format junit --output maestro-results-ios.xml --debug-output maestro-debug-ios --flatten-debug-output --env APP_ID="org.idos.app" --env PASSWORD="$PASSWORD" --env USER_DERIVATION_PATH="m/44'/60'/0'/0/4" --env MPC_DERIVATION_PATH="m/44'/60'/0'/0/3" maestro-flows/
 
       - name: Upload Maestro debug artifacts (iOS)
         if: always()

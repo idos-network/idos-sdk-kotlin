@@ -78,6 +78,8 @@ tasks:
           --output maestro-results-android.xml \
           --env APP_ID="{{.ANDROID_PACKAGE}}" \
           --env PASSWORD="{{.PASSWORD}}" \
+          --env USER_DERIVATION_PATH="m/44'/60'/0'/0/4" \
+          --env MPC_DERIVATION_PATH="m/44'/60'/0'/0/3" \
           maestro-flows/
 
   maestro:ios:
@@ -92,6 +94,8 @@ tasks:
           --output maestro-results-ios.xml \
           --env APP_ID="{{.IOS_BUNDLE}}" \
           --env PASSWORD="{{.PASSWORD}}" \
+          --env USER_DERIVATION_PATH="m/44'/60'/0'/0/4" \
+          --env MPC_DERIVATION_PATH="m/44'/60'/0'/0/3" \
           maestro-flows/
 
   maestro:all:
