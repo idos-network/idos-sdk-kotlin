@@ -25,6 +25,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import org.idos.app.ui.screens.base.BaseScreen
@@ -155,7 +156,7 @@ fun SharedTransitionScope.MnemonicScreen(
                 onValueChange = { viewModel.onEvent(MnemonicEvent.UpdateDerivationPath(it)) },
                 label = { Text("Derivation Path") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag("derivationPath"),
             )
 
             Spacer(Modifier.height(24.dp))

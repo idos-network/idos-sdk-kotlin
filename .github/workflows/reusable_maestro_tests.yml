@@ -68,7 +68,7 @@ jobs:
           script: |
             ls -la *.apk
             adb install -r androidApp-debug.apk
-            maestro test --format junit --output maestro-results-android.xml --debug-output maestro-debug-android --flatten-debug-output --env APP_ID="org.idos.app" --env PASSWORD="$PASSWORD" --env USER_DERIVATION_PATH="m/44'/60'/0'/0/5" --env MPC_DERIVATION_PATH="m/44'/60'/0'/0/4" maestro-flows/
+            maestro test --format junit --output maestro-results-android.xml --debug-output maestro-debug-android --flatten-debug-output --env APP_ID="org.idos.app" --env PASSWORD="$PASSWORD" maestro-flows/
 
       - name: Upload Maestro debug artifacts (Android)
         if: always()
@@ -106,8 +106,25 @@ jobs:
           ls -la
           unzip -q iosApp.app.zip
           ls -la iosApp.app || echo "iosApp.app not found"
+
+          # Boot simulator and wait for it to be ready
           xcrun simctl boot "iPhone 16" || true
+
+          # Wait for simulator to fully boot (up to 60 seconds)
+          for i in {1..60}; do
+            if xcrun simctl bootstatus "iPhone 16" 2>&1 | grep -q "Boot status: Booted"; then
+              echo "Simulator booted successfully"
+              break
+            fi
+            echo "Waiting for simulator to boot... ($i/60)"
+            sleep 1
+          done
+
+          # Install app
           xcrun simctl install booted iosApp.app
+
+          # Give the system a moment to settle
+          sleep 5
 
       - name: Install Maestro
         run: |
@@ -117,9 +134,9 @@ jobs:
       - name: Run Maestro tests
         env:
           PASSWORD: ${{ secrets.PASSWORD }}
-          MAESTRO_DRIVER_STARTUP_TIMEOUT: 120000
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: 180000
         run: |
-          maestro test --format junit --output maestro-results-ios.xml --debug-output maestro-debug-ios --flatten-debug-output --env APP_ID="org.idos.app" --env PASSWORD="$PASSWORD" --env USER_DERIVATION_PATH="m/44'/60'/0'/0/4" --env MPC_DERIVATION_PATH="m/44'/60'/0'/0/3" maestro-flows/
+          maestro test --format junit --output maestro-results-ios.xml --debug-output maestro-debug-ios --flatten-debug-output --env APP_ID="org.idos.app" --env PASSWORD="$PASSWORD" maestro-flows/
 
       - name: Upload Maestro debug artifacts (iOS)
         if: always()

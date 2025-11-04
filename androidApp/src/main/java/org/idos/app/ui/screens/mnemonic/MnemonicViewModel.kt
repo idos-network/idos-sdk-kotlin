@@ -7,6 +7,7 @@ import org.idos.app.data.repository.NoProfileException
 import org.idos.app.data.repository.UserRepository
 import org.idos.app.security.EthSigner
 import org.idos.app.security.EthSigner.Companion.mnemonicToKeypair
+import org.idos.app.security.EthSigner.Companion.privateToAddress
 import org.idos.app.security.KeyManager
 import org.idos.app.ui.screens.base.BaseViewModel
 import timber.log.Timber
@@ -119,12 +120,16 @@ class MnemonicViewModel(
 
                 // Success - dialog will auto-dismiss when UserRepository navigates
             } catch (e: NoProfileException) {
-                Timber.w(e, "User profile does not exist")
+                val address =
+                    keyManager.getStoredKey()?.privateToAddress()
+                        ?: "No address found"
+
+                Timber.w(e, "User profile '$address' does not exist")
                 updateState {
                     copy(
                         isLoading = false,
                         isSuccess = false,
-                        error = "Profile not found. Please create your profile first.",
+                        error = "Profile for address: '$address' not found. Please create your profile first.",
                     )
                 }
             } catch (e: Exception) {

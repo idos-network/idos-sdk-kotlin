@@ -16,10 +16,13 @@ appId: ${APP_ID}
 - assertVisible: "Import Wallet"
 
 # Clear and enter derivation path for USER enclave
-# USER_DERIVATION_PATH: m/44'/60'/0'/0/4 (ARM64), m/44'/60'/0'/0/5 (x86_64)
-- tapOn: "m/44'/60'/0'/0/47"
+- tapOn:
+    id: "derivationPath"
 - eraseText
-- inputText: ${USER_DERIVATION_PATH}
+- tapOn:
+    id: "derivationPath"
+- eraseText
+- inputText: "m/44'/60'/0'/0/4"
 - hideKeyboard
 
 # Generate wallet
@@ -64,6 +67,7 @@ appId: ${APP_ID}
 # Enter password for USER enclave
 - tapOn: "Password"
 - inputText: ${PASSWORD}
+- hideKeyboard
 - scroll
 - waitForAnimationToEnd
 

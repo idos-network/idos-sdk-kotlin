@@ -72,6 +72,7 @@ struct MnemonicView: View {
                     )
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
+                    .accessibilityIdentifier("derivationPath")
                 }
 
                 // Import Button
