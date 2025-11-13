@@ -90,12 +90,12 @@ kotlin {
             // AndroidX Security with StrongBox support
             implementation(libs.security.crypto.ktx)
             // Bouncy Castle for SCrypt implementation
-            implementation(libs.bcprov.jdk15to18)
+            implementation(libs.bcprov.jdk18on)
         }
 
         jvmMain.dependencies {
             implementation(libs.tweetnacl.java)
-            implementation(libs.bcprov.jdk15on)
+            implementation(libs.bcprov.jdk18on)
             implementation(libs.kethereum)
         }
 

@@ -19,3 +19,8 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Reown SDK / WalletConnect
+# Disable Beagle logging interceptor which causes issues with WebSocket connections
+-dontwarn com.pandulapeter.beagle.**
+-keep class com.reown.** { *; }

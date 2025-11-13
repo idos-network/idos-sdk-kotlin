@@ -2,6 +2,39 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Query for installed wallet apps -->
+    <queries>
+        <!-- MetaMask -->
+        <package android:name="io.metamask" />
+
+        <!-- Trust Wallet -->
+        <package android:name="com.wallet.crypto.trustapp" />
+
+        <!-- Rainbow -->
+        <package android:name="me.rainbow" />
+
+        <!-- Coinbase Wallet -->
+        <package android:name="org.toshi" />
+
+        <!-- Zerion -->
+        <package android:name="io.zerion.android" />
+
+        <!-- Uniswap Wallet -->
+        <package android:name="com.uniswap.mobile" />
+
+        <!-- Argent -->
+        <package android:name="im.argent.contractwalletclient" />
+
+        <!-- Phantom -->
+        <package android:name="app.phantom" />
+
+        <!-- Exodus -->
+        <package android:name="exodusmovement.exodus" />
+
+        <!-- 1inch Wallet -->
+        <package android:name="io.oneinch.android" />
+    </queries>
+
     <application
         android:name=".App"
         android:allowBackup="true"
@@ -14,11 +47,23 @@
             android:name=".LoginActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.App.Splash">
+            android:theme="@style/Theme.App.Splash"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Deep link for WalletConnect callbacks -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="idos-app"
+                    android:host="request" />
             </intent-filter>
         </activity>
         <activity

@@ -14,8 +14,10 @@ import org.idos.app.data.repository.WalletRepository
 import org.idos.app.data.repository.WalletRepositoryImpl
 import org.idos.app.logging.TimberLogAdapter
 import org.idos.app.navigation.NavigationManager
-import org.idos.app.security.EthSigner
-import org.idos.app.security.KeyManager
+import org.idos.app.BuildConfig
+import org.idos.app.security.local.KeyManager
+import org.idos.app.security.UnifiedSigner
+import org.idos.app.security.external.ReownWalletManager
 import org.idos.app.ui.dashboard.DashboardViewModel
 import org.idos.app.ui.screens.credentials.CredentialDetailViewModel
 import org.idos.app.ui.screens.credentials.CredentialsViewModel
@@ -34,9 +36,8 @@ import org.idos.enclave.mpc.MpcConfig
 import org.idos.logging.HttpLogLevel
 import org.idos.logging.IdosLogConfig
 import org.idos.logging.SdkLogLevel
-import org.idos.signer.Signer
 import org.koin.android.ext.koin.androidContext
-import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 private const val STAGING_URL = "https://nodes.playground.idos.network"
@@ -82,7 +83,7 @@ val networkModule =
     module {
         single { Json { ignoreUnknownKeys = true } }
         single { ApiClient() }
-        single { DataProvider(STAGING_URL, get(), STAGING_CHAIN_ID, get()) }
+        single { DataProvider(STAGING_URL, get<UnifiedSigner>(), STAGING_CHAIN_ID, get()) }
     }
 
 val dataModule =
@@ -101,11 +102,11 @@ val repositoryModule =
 val viewModelModule =
     module {
         viewModel { DashboardViewModel(get()) }
-        viewModel { LoginViewModel(get(), get()) }
+        viewModel { LoginViewModel(get(), get(), get()) }
         viewModel { CredentialsViewModel(get(), get()) }
         viewModel { WalletsViewModel(get()) }
         viewModel { SettingsViewModel(get(), get()) }
-        viewModel { MnemonicViewModel(get(), get()) }
+        viewModel { MnemonicViewModel(get(), get(), get()) }
         viewModel { (savedStateHandle: SavedStateHandle) ->
             CredentialDetailViewModel(
                 credentialsRepository = get(),
@@ -126,14 +127,22 @@ val securityModule =
     module {
         single<Keccak256Hasher> { BouncyCastleKeccak256() }
         single<Encryption> { AndroidEncryption(androidContext()) }
-        single<Signer> { EthSigner(get(), get()) }
         single { KeyManager(androidContext()) }
+        single {
+            ReownWalletManager(
+                application = androidContext().applicationContext as android.app.Application,
+                projectId = BuildConfig.REOWN_PROJECT_ID
+            ).apply {
+                initialize()
+            }
+        }
+        single { UnifiedSigner(get(), get(), get(), get()) }
         single {
             EnclaveOrchestrator.create(
                 get(),
                 get(),
                 MPC_CONFIG,
-                get(),
+                get<UnifiedSigner>(),
                 get(),
             )
         }

@@ -8,13 +8,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.MissingFieldException
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.idos.app.data.model.UserModel
-import org.idos.app.security.KeyManager
-import org.idos.kwil.types.HexString
 import org.kethereum.model.Address
 import timber.log.Timber
 
@@ -56,22 +52,31 @@ class StorageManager(
     /**
      * Initialize storage manager by loading user state from SharedPreferences.
      * Safe to call multiple times - will reload state from disk.
+     *
+     * @param onUserLoaded Optional callback to validate/initialize user before emitting state.
+     *                     Return true to emit ConnectedUser, false to skip emission.
      */
-    suspend fun initialize() {
-        loadUserState()
+    suspend fun initialize(onUserLoaded: (suspend (UserModel) -> Boolean)? = null) {
+        loadUserState(onUserLoaded)
     }
 
     /**
      * Load user state from SharedPreferences on background thread
      */
-    private suspend fun loadUserState() =
+    private suspend fun loadUserState(onUserLoaded: (suspend (UserModel) -> Boolean)?) =
         withContext(Dispatchers.IO) {
             try {
                 val userJson = prefs.getString(KEY_USER_PROFILE, null)
                 if (userJson != null) {
                     val userModel = json.decodeFromString<UserModel>(userJson)
-                    _userState.value = ConnectedUser(userModel)
-                    Timber.d("Loaded user profile: ${userModel.id}")
+
+                    // Allow caller to validate/initialize before emitting state
+                    val shouldEmit = onUserLoaded?.invoke(userModel) ?: true
+
+                    if (shouldEmit) {
+                        _userState.value = ConnectedUser(userModel)
+                        Timber.d("Loaded user profile: ${userModel.id}")
+                    }
                 } else {
                     _userState.value = NoUser
                     Timber.d("No user profile found in storage")

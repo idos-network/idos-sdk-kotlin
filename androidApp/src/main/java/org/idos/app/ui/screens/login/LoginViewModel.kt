@@ -1,6 +1,7 @@
 package org.idos.app.ui.screens.login
 
 import androidx.lifecycle.viewModelScope
+import com.reown.foundation.network.ConnectionState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.idos.app.data.ConnectedUser
@@ -8,10 +9,15 @@ import org.idos.app.data.ConnectedWallet
 import org.idos.app.data.LoadingUser
 import org.idos.app.data.NoUser
 import org.idos.app.data.UserError
+import org.idos.app.data.model.WalletType
 import org.idos.app.data.repository.UserRepository
 import org.idos.app.navigation.NavigationManager
 import org.idos.app.navigation.Screen
+import org.idos.app.security.UnifiedSigner
+import org.idos.app.security.external.ReownDelegate
+import org.idos.app.security.external.ReownWalletManager
 import org.idos.app.ui.screens.base.BaseViewModel
+import com.reown.appkit.client.Modal
 import timber.log.Timber
 
 data class LoginUiState(
@@ -21,15 +27,17 @@ data class LoginUiState(
 )
 
 sealed class LoginEvent {
-    object ConnectWallet : LoginEvent()
+    object ImportMnemonic : LoginEvent()
 }
 
 class LoginViewModel(
     private val userRepository: UserRepository,
     private val navigationManager: NavigationManager,
+    private val unifiedSigner: UnifiedSigner,
 ) : BaseViewModel<LoginUiState, LoginEvent>() {
     init {
         monitorUserState()
+        monitorWalletConnection()
     }
 
     private fun monitorUserState() {
@@ -83,21 +91,56 @@ class LoginViewModel(
 
     override fun initialState(): LoginUiState = LoginUiState()
 
-    override fun onEvent(event: LoginEvent) {
-        when (event) {
-            LoginEvent.ConnectWallet -> connectWallet()
+    private fun monitorWalletConnection() {
+        viewModelScope.launch {
+            ReownDelegate.appKitEvents.collect { event ->
+                Timber.d("AppKit event: $event")
+                // When session is approved, fetch user profile
+                when (event) {
+                    is Modal.Model.ApprovedSession -> {
+                        handleWalletConnected()
+                    }
+                    else -> {
+                        // Ignore other events
+                    }
+                }
+            }
         }
     }
 
-    private fun connectWallet() {
+    override fun onEvent(event: LoginEvent) {
+        when (event) {
+            LoginEvent.ImportMnemonic -> importMnemonic()
+        }
+    }
+
+    private fun importMnemonic() {
         viewModelScope.launch {
             try {
                 // Navigate to mnemonic screen for wallet import/generation
                 navigationManager.navigateTo(Screen.Mnemonic)
             } catch (e: Exception) {
-                Timber.e(e, "Failed to initiate wallet connection")
+                Timber.e(e, "Failed to initiate mnemonic import")
                 updateState {
-                    copy(error = "Failed to connect wallet: ${e.message}")
+                    copy(error = "Failed to import mnemonic: ${e.message}")
+                }
+            }
+        }
+    }
+
+    private fun handleWalletConnected() {
+        viewModelScope.launch {
+            try {
+                // Activate remote signer
+                unifiedSigner.activateRemoteSigner()
+
+                Timber.d("Wallet connected")
+
+                userRepository.fetchAndStoreUser(WalletType.REMOTE)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to handle wallet connection")
+                updateState {
+                    copy(error = "Failed to connect: ${e.message}")
                 }
             }
         }

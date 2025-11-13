@@ -3,12 +3,12 @@ package org.idos.app.ui.screens.mnemonic
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import org.idos.app.BuildConfig
+import org.idos.app.data.model.WalletType
 import org.idos.app.data.repository.NoProfileException
 import org.idos.app.data.repository.UserRepository
-import org.idos.app.security.EthSigner
-import org.idos.app.security.EthSigner.Companion.mnemonicToKeypair
-import org.idos.app.security.EthSigner.Companion.privateToAddress
-import org.idos.app.security.KeyManager
+import org.idos.app.security.local.KeyManager
+import org.idos.app.security.UnifiedSigner
+import org.idos.app.security.local.LocalSigner.Companion.DEFAULT_DERIVATION_PATH
 import org.idos.app.ui.screens.base.BaseViewModel
 import timber.log.Timber
 
@@ -30,7 +30,7 @@ sealed class MnemonicEvent {
 
 data class MnemonicState(
     val mnemonic: String = "",
-    val derivationPath: String = EthSigner.DEFAULT_DERIVATION_PATH,
+    val derivationPath: String = DEFAULT_DERIVATION_PATH,
     val isGenerateButtonEnabled: Boolean = false,
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
@@ -40,6 +40,7 @@ data class MnemonicState(
 class MnemonicViewModel(
     private val keyManager: KeyManager,
     private val userRepository: UserRepository,
+    private val unifiedSigner: UnifiedSigner,
 ) : BaseViewModel<MnemonicState, MnemonicEvent>() {
     override fun initialState(): MnemonicState {
         val initialMnemonic =
@@ -91,6 +92,9 @@ class MnemonicViewModel(
                 keyManager.generateAndStoreKey(mnemonic, derivationPath)
                 Timber.d("Generated wallet with derivation path: $derivationPath")
 
+                // Activate local signer
+                unifiedSigner.activateLocalSigner()
+
                 updateState {
                     copy(
                         isLoading = false,
@@ -112,24 +116,16 @@ class MnemonicViewModel(
     private fun resetSuccess() {
         viewModelScope.launch {
             try {
-                // Keep dialog open and show loading
                 updateState { copy(isLoading = true, error = null) }
 
-                // Fetch user profile - this can throw NoProfileException
-                userRepository.fetchAndStoreUser()
-
-                // Success - dialog will auto-dismiss when UserRepository navigates
+                userRepository.fetchAndStoreUser(WalletType.LOCAL)
             } catch (e: NoProfileException) {
-                val address =
-                    keyManager.getStoredKey()?.privateToAddress()
-                        ?: "No address found"
-
-                Timber.w(e, "User profile '$address' does not exist")
+                Timber.w(e, "User profile '${e.address}' does not exist")
                 updateState {
                     copy(
                         isLoading = false,
                         isSuccess = false,
-                        error = "Profile for address: '$address' not found. Please create your profile first.",
+                        error = "Profile for address: '${e.address}' not found. Please create your profile first.",
                     )
                 }
             } catch (e: Exception) {
