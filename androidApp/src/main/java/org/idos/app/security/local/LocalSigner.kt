@@ -1,10 +1,8 @@
-package org.idos.app.security
+package org.idos.app.security.local
 
-import org.idos.app.data.StorageManager
-import org.idos.crypto.BouncyCastleKeccak256
+import org.idos.crypto.Keccak256Hasher
 import org.idos.crypto.eip712.Eip712Utils
 import org.idos.crypto.eip712.TypedData
-import org.idos.kwil.types.HexString
 import org.kethereum.bip32.toKey
 import org.kethereum.bip39.model.MnemonicWords
 import org.kethereum.bip39.toSeed
@@ -14,19 +12,13 @@ import org.kethereum.crypto.toAddress
 import org.kethereum.crypto.toECKeyPair
 import org.kethereum.crypto.toHex
 import org.kethereum.eip191.signWithEIP191PersonalSign
+import org.kethereum.model.Address
 import org.kethereum.model.PrivateKey
 
-class EthSigner(
+class LocalSigner(
     private val keyManager: KeyManager,
-    private val storageManager: StorageManager,
-) : org.idos.signer.EthSigner(BouncyCastleKeccak256()) {
-    override fun getIdentifier(): HexString {
-        val address = storageManager.getStoredWallet()?.cleanHex
-        requireNotNull(address)
-        return address
-    }
-
-    override suspend fun sign(msg: ByteArray): ByteArray =
+) {
+    suspend fun sign(msg: ByteArray): ByteArray =
         keyManager.getStoredKey()?.run {
             val signature =
                 PrivateKey(this)
@@ -39,22 +31,31 @@ class EthSigner(
             signature
         } ?: byteArrayOf()
 
-    override suspend fun signTypedData(typedData: TypedData): String =
+    suspend fun signTypedData(
+        typedData: TypedData,
+        keccak256: Keccak256Hasher,
+    ): String =
         keyManager.getStoredKey()?.run {
             val keyPair = PrivateKey(this).toECKeyPair()
-
-            // Hash according to EIP-712 using injected utils
             val hash = Eip712Utils.hashTypedData(keccak256, typedData)
-
-            // Sign the raw hash (no personal sign prefix for EIP-712)
             val signature = signMessageHash(hash, keyPair)
-
-            // Clear sensitive data
             this.fill(0)
-
-            // Convert to bytes
             signature.toHex()
         } ?: ""
+
+    suspend fun getActiveAddress(): Address {
+        val privateKey = keyManager.getStoredKey()
+            ?: throw IllegalStateException("No key found")
+
+        val address = privateKey.privateToAddress()
+
+        privateKey.fill(0)
+        return address
+    }
+
+    suspend fun disconnect() {
+        keyManager.clearStoredKeys()
+    }
 
     companion object {
         /**

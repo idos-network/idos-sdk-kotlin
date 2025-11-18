@@ -22,7 +22,7 @@ class KeyManager {
     /// - Throws: KeyManagerError if generation or storage fails
     func generateAndStoreKey(words: String, derivationPath: String) throws -> String {
         // Derive private key from mnemonic
-        var key = try EthSigner.mnemonicToPrivateKey(words, derivationPath: derivationPath)
+        var key = try LocalSigner.mnemonicToPrivateKey(words, derivationPath: derivationPath)
 
         defer {
             // Zero out key data for security (matches Android's key.fill(0))
@@ -30,7 +30,7 @@ class KeyManager {
         }
 
         // Derive address before storing
-        let address = try EthSigner.privateKeyToAddress(key)
+        let address = try LocalSigner.privateKeyToAddress(key)
 
         // Store the key securely
         try deleteKey()

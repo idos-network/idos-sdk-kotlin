@@ -35,7 +35,6 @@ class App : Application() {
         ProcessLifecycleOwner.get().lifecycleScope.launch {
             val userRepository = get<UserRepository>()
             userRepository.initialize()
-            Timber.d("UserRepository initialized")
         }
     }
 }

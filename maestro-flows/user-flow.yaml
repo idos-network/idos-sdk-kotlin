@@ -10,7 +10,7 @@ appId: ${APP_ID}
 - assertVisible: "Welcome"
 
 # Click Connect Wallet
-- tapOn: "Connect Wallet"
+- tapOn: "Import Wallet"
 
 # Wait for import screen
 - assertVisible: "Import Wallet"

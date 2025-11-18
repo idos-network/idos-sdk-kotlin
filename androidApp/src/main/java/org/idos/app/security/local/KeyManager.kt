@@ -1,12 +1,11 @@
-package org.idos.app.security
+package org.idos.app.security.local
 
 import android.content.Context
 import androidx.security.crypto.EncryptedFile
 import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.idos.app.security.EthSigner.Companion.mnemonicToKeypair
-import org.idos.app.security.EthSigner.Companion.privateToAddress
+import org.idos.app.security.local.LocalSigner.Companion.mnemonicToKeypair
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import java.io.File

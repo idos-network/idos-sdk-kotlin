@@ -59,7 +59,8 @@ class DIContainer: ObservableObject {
     let keccak256Hasher: Keccak256Hasher
     let enclaveOrchestrator: EnclaveOrchestrator
     let keyManager: KeyManager
-    let ethSigner: EthSigner
+    let reownWalletManager: ReownWalletManager
+    let unifiedSigner: UnifiedSigner
 
     // MARK: - Data Layer
     let storageManager: StorageManager
@@ -84,21 +85,31 @@ class DIContainer: ObservableObject {
 
         self.storageManager = StorageManager()
 
-        self.ethSigner = EthSigner(keyManager: keyManager, storageManager: storageManager, hasher: keccak256Hasher)
+        // Initialize Reown wallet manager
+        self.reownWalletManager = ReownWalletManager(projectId: Config.reownProjectId)
+        self.reownWalletManager.initialize()
+
+        // Initialize unified signer
+        self.unifiedSigner = UnifiedSigner(
+            storageManager: storageManager,
+            keyManager: keyManager,
+            reownWalletManager: reownWalletManager,
+            hasher: keccak256Hasher
+        )
 
         // Initialize EnclaveOrchestrator with MPC support
         self.enclaveOrchestrator = EnclaveOrchestrator.companion.create(
             encryption: encryption,
             storage: metadataStorage,
             mpcConfig: config.mpcConfig,
-            signer: ethSigner,
+            signer: unifiedSigner,
             hasher: keccak256Hasher
         )
 
         // Initialize network layer with SDK logging configuration
         self.dataProvider = DataProvider(
             url: config.kwilNodeUrl,
-            signer: ethSigner,
+            signer: unifiedSigner,
             chainId: config.chainId,
             logConfig: DIContainer.createLogConfig()
         )
@@ -116,7 +127,8 @@ class DIContainer: ObservableObject {
                 dataProvider: dataProvider,
                 storageManager: storageManager,
                 keyManager: keyManager,
-                enclaveOrchestrator: enclaveOrchestrator
+                enclaveOrchestrator: enclaveOrchestrator,
+                unifiedSigner: unifiedSigner
             )
             self.walletRepository = WalletRepository(dataProvider: dataProvider)
         }
@@ -126,7 +138,8 @@ class DIContainer: ObservableObject {
             dataProvider: dataProvider,
             storageManager: storageManager,
             keyManager: keyManager,
-            enclaveOrchestrator: enclaveOrchestrator
+            enclaveOrchestrator: enclaveOrchestrator,
+            unifiedSigner: unifiedSigner
         )
         self.walletRepository = WalletRepository(dataProvider: dataProvider)
 #endif
@@ -139,16 +152,18 @@ class DIContainer: ObservableObject {
     func makeLoginViewModel() -> LoginViewModel {
         LoginViewModel(
             navigationCoordinator: navigationCoordinator,
-            storageManager: storageManager
+            unifiedSigner: unifiedSigner,
+            userRepository: userRepository,
+            reownWalletManager: reownWalletManager
         )
     }
 
     func makeMnemonicViewModel() -> MnemonicViewModel {
         MnemonicViewModel(
             keyManager: keyManager,
-            storageManager: storageManager,
             userRepository: userRepository,
-            navigationCoordinator: navigationCoordinator
+            navigationCoordinator: navigationCoordinator,
+            unifiedSigner: unifiedSigner
         )
     }
 

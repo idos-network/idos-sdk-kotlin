@@ -5,7 +5,7 @@ import OSLog
 /// Mnemonic state matching Android's MnemonicState
 struct MnemonicState {
     var mnemonic: String = ""
-    var derivationPath: String = EthSigner.defaultDerivationPath
+    var derivationPath: String = LocalSigner.defaultDerivationPath
     var isLoading: Bool = false
     var isSuccess: Bool = false
     var error: String? = nil
@@ -23,20 +23,20 @@ enum MnemonicEvent {
 /// MnemonicViewModel matching Android's MnemonicViewModel
 class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
     private let keyManager: KeyManager
-    private let storageManager: StorageManager
     private let userRepository: UserRepositoryProtocol
     private let navigationCoordinator: NavigationCoordinator
+    private let unifiedSigner: UnifiedSigner
 
     init(
         keyManager: KeyManager,
-        storageManager: StorageManager,
         userRepository: UserRepositoryProtocol,
-        navigationCoordinator: NavigationCoordinator
+        navigationCoordinator: NavigationCoordinator,
+        unifiedSigner: UnifiedSigner
     ) {
         self.keyManager = keyManager
-        self.storageManager = storageManager
         self.userRepository = userRepository
         self.navigationCoordinator = navigationCoordinator
+        self.unifiedSigner = unifiedSigner
 
         // Initialize with development mnemonic if available
         var initialState = MnemonicState()
@@ -105,10 +105,11 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
 
                 Logger.viewModel.info("MnemonicViewModel: Key generated, address: \(address, privacy: .private)")
 
+                // Activate local signer (like Android)
+                unifiedSigner.activateLocalSigner()
+                Logger.viewModel.info("MnemonicViewModel: Local signer activated")
+
                 await MainActor.run {
-                    Logger.viewModel.debug("MnemonicViewModel: Storing wallet address to storage")
-                    // Store the wallet address
-                    storageManager.saveWalletAddress(address)
                     Logger.viewModel.info("MnemonicViewModel: Wallet import complete, showing success dialog")
 
                     updateState {
@@ -116,7 +117,7 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
                         $0.isSuccess = true
                     }
                 }
-            } catch EthSigner.EthSignerError.invalidMnemonic {
+            } catch LocalSigner.LocalSignerError.invalidMnemonic {
                 Logger.viewModel.error("MnemonicViewModel: Invalid mnemonic phrase")
                 await MainActor.run {
                     updateState {
@@ -147,8 +148,8 @@ class MnemonicViewModel: BaseViewModel<MnemonicState, MnemonicEvent> {
 
         Task {
             do {
-                // Fetch user profile from API and store
-                try await userRepository.fetchAndStoreUser()
+                // Fetch user profile from API and store (using local wallet type)
+                try await userRepository.fetchAndStoreUser(walletType: .local)
 
                 Logger.viewModel.info("MnemonicViewModel: User fetched and stored successfully")
                 // Success - dialog will auto-dismiss when UserRepository navigates

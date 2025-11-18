@@ -68,12 +68,15 @@ android {
             )
             buildConfigField("String", "MNEMONIC_WORDS", "\"\"")
             buildConfigField("String", "TEST_PASSWORD", "\"\"")
+            buildConfigField("String", "REOWN_PROJECT_ID", "\"\"")
         }
         debug {
             val devMnemonic = envProps.getProperty("MNEMONIC_WORDS") ?: ""
             val devPassword = envProps.getProperty("PASSWORD") ?: ""
+            val reownProjectId = envProps.getProperty("REOWN_PROJECT_ID") ?: ""
             buildConfigField("String", "MNEMONIC_WORDS", "\"$devMnemonic\"")
             buildConfigField("String", "TEST_PASSWORD", "\"$devPassword\"")
+            buildConfigField("String", "REOWN_PROJECT_ID", "\"$reownProjectId\"")
         }
     }
     compileOptions {
@@ -89,6 +92,13 @@ android {
 kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_11) // Use typed enum instead of string
+    }
+}
+
+// Force BouncyCastle resolution to avoid conflicts between Kethereum and Reown
+configurations.all {
+    resolutionStrategy {
+        force("org.bouncycastle:bcprov-jdk18on:1.82")
     }
 }
 
@@ -117,20 +127,32 @@ dependencies {
     implementation(libs.security.crypto.ktx)
 
     // Splash Screen
-    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation(libs.androidx.core.splashscreen)
 
     implementation(libs.kethereum.model)
     implementation(libs.kethereum.bip32)
     implementation(libs.kethereum.bip39)
-    implementation(libs.kethereum.sign)
+    implementation(libs.kethereum.sign) {
+    }
     implementation(libs.kethereum.crypto)
-    implementation(libs.kethereum.crypto.impl)
+    implementation(libs.kethereum.crypto.impl) {
+        exclude(group = "org.bouncycastle", module = "bcprov-jdk15to18")
+    }
 
     // Koin
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
 
     implementation(libs.kotlinx.serialization.json)
+
+    // Reown AppKit (WalletConnect)
+    implementation(platform(libs.reown.bom))
+    implementation(libs.reown.core) {
+        exclude(group = "com.github.komputing.kethereum", module = "crypto_impl_spongycastle")
+    }
+    implementation(libs.reown.appkit) {
+        exclude(group = "com.github.komputing.kethereum", module = "crypto_impl_spongycastle")
+    }
 
     implementation(project(":shared"))
 
@@ -141,8 +163,8 @@ dependencies {
     androidTestImplementation(libs.ui.test.junit4)
     androidTestImplementation(libs.koin.android)
     androidTestImplementation(libs.koin.androidx.compose)
-    androidTestImplementation("androidx.test:runner:1.7.0")
-    androidTestUtil("androidx.test:orchestrator:1.6.1")
+    androidTestImplementation(libs.androidx.runner)
+    androidTestUtil(libs.androidx.orchestrator)
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
 }

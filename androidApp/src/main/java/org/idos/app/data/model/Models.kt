@@ -12,6 +12,12 @@ import org.idos.kwil.types.HexString
 import org.idos.kwil.types.UuidString
 import org.kethereum.model.Address
 
+@Serializable
+enum class WalletType {
+    LOCAL,
+    REMOTE
+}
+
 data class Credential(
     val id: UuidString,
     val notes: Notes,
@@ -42,6 +48,7 @@ data class UserModel(
     val id: UuidString,
     @Serializable(with = AddressSerializer::class) val walletAddress: Address,
     val enclaveKeyType: EnclaveKeyType?,
+    val walletType: WalletType,
     val lastUpdated: Long = System.currentTimeMillis(),
 )
 

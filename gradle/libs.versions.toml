@@ -1,152 +1,167 @@
 [versions]
+# Build config
 android-compileSdk = "36"
 android-minSdk = "28"
 android-targetSdk = "36"
 
 agp = "8.12.0"
-bcprovJdk15on = "1.76"
-bcprovJdk15to18 = "1.70"
-multiplatformCryptoLibsodiumBindings = "0.9.2"
-testCore = "1.5.0"
 kotlin = "2.2.10"
-kotlinxSerializationJson = "1.7.3"
-ktor = "3.3.0"
+ksp = "2.2.10-2.0.2"
+
+# Shared - JetBrains
 kotlinx = "1.10.2"
-koin = "3.5.3"
+kotlinxSerializationJson = "1.7.3"
 kotlinx-io = "0.8.0"
 kotlinCryptoHash = "0.7.1"
+ktor = "3.3.0"
+# Shared - Other
+koin = "4.1.1"
 kermit = "2.0.4"
+dotenv = "6.4.1"
+kethereum = "0.86.0"
+tweetnacl = "1.1.2"
+bcprovJdk = "1.82"
+
+# Shared-Android
+lazysodium = "5.2.0"
+jna = "5.8.0"
+
+# Android App - AndroidX
+coreKtx = "1.10.1"
+coreSplashscreen = "1.0.1"
+lifecycleRuntimeKtx = "2.6.1"
+lifecycleViewmodelKtx = "2.6.1"
+lifecycleViewmodelCompose = "2.6.1"
+activityCompose = "1.8.0"
+composeBom = "2024.09.00"
+foundation = "1.9.1"
+navigationCompose = "2.7.7"
+securityCrypto = "1.1.0"
+securityCryptoKtx = "1.1.0"
+# Android App - JetBrains
+coroutinesAndroid = "1.10.2"
+# Android App - Other
+reown = "1.4.12"
+timber = "5.0.1"
+
+# Test
+junit = "4.13.2"
+junitVersion = "1.1.5"
 kotest = "6.0.3"
-ksp = "2.2.10-2.0.2"
+espressoCore = "3.5.1"
+testCore = "1.5.0"
+orchestrator = "1.6.1"
+runner = "1.7.0"
+
+# Tooling
 ktlint = "12.1.1"
 detekt = "1.23.6"
 mavenPublish = "0.29.0"
-kmmbridge = "1.2.1"
-gitVersioning = "6.4.4"
-securityCryptoKtx = "1.1.0-alpha06"
-timber = "5.0.1"
-kethereum = "0.86.0"
-tweetnacl = "1.1.2"
-lazysodium = "5.0.1"
-lazysodiumJava = "5.1.4"
-jna = "5.8.0"
-dotenv = "6.4.1"
-
-# android
-coreKtx = "1.10.1"
-junit = "4.13.2"
-junitVersion = "1.1.5"
-espressoCore = "3.5.1"
-appcompat = "1.6.1"
-material = "1.10.0"
-constraintlayout = "2.1.4"
-lifecycleLivedataKtx = "2.6.1"
-lifecycleViewmodelKtx = "2.6.1"
-navigationFragmentKtx = "2.6.0"
-navigationUiKtx = "2.6.0"
-lifecycleRuntimeKtx = "2.6.1"
-activityCompose = "1.8.0"
-composeBom = "2024.09.00"
-navigationCompose = "2.7.7"
-lifecycleViewmodelCompose = "2.6.1"
-securityCrypto = "1.1.0-alpha06"
-coroutinesAndroid = "1.10.2"
-foundation = "1.9.1"
 
 [libraries]
-bcprov-jdk15on = { module = "org.bouncycastle:bcprov-jdk15on", version.ref = "bcprovJdk15to18" }
+# Shared - JetBrains
+kotlinx-io = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinx-io" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+kotlincrypto-hash-bom = { module = "org.kotlincrypto.hash:bom", version.ref = "kotlinCryptoHash" }
+kotlincrypto-hash-sha2 = { module = "org.kotlincrypto.hash:sha2" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-logger = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+# Shared - Koin
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+# Shared - Other
+kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
+dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
+kethereum = { module = "com.github.komputing:kethereum", version.ref = "kethereum" }
+kethereum-bip32 = { module = "com.github.komputing.kethereum:bip32", version.ref = "kethereum" }
+kethereum-bip39 = { module = "com.github.komputing.kethereum:bip39", version.ref = "kethereum" }
+kethereum-crypto = { module = "com.github.komputing.kethereum:crypto", version.ref = "kethereum" }
+kethereum-crypto-impl = { module = "com.github.komputing.kethereum:crypto_impl_bouncycastle", version.ref = "kethereum" }
+kethereum-model = { module = "com.github.komputing.kethereum:model", version.ref = "kethereum" }
+kethereum-sign = { module = "com.github.komputing.kethereum:eip191", version.ref = "kethereum" }
+tweetnacl-java = { module = "com.github.InstantWebP2P:tweetnacl-java", version.ref = "tweetnacl" }
+bcprov-jdk18on = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bcprovJdk" }
+
+# Shared-Android - Goterl
+lazysodium-android = { module = "com.goterl:lazysodium-android", version.ref = "lazysodium" }
+lazysodium-java = { module = "com.goterl:lazysodium-java", version.ref = "lazysodium" }
+# Shared-Android - JNA
+jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+
+# Android App - AndroidX
+activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
+androidx-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "foundation" }
+foundation = { module = "androidx.compose.foundation:foundation" }
+lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "lifecycleRuntimeKtx" }
+lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
+lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
+material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+material3 = { module = "androidx.compose.material3:material3" }
+navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
+security-crypto-ktx = { module = "androidx.security:security-crypto-ktx", version.ref = "securityCryptoKtx" }
+ui = { module = "androidx.compose.ui:ui" }
+ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+# Android App - JetBrains
+coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutinesAndroid" }
+# Android App - Koin
+koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
+koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koin" }
+# Android App - Reown
+reown-appkit = { module = "com.reown:appkit", version.ref = "reown" }
+reown-bom = { module = "com.reown:android-bom", version.ref = "reown" }
+reown-core = { module = "com.reown:android-core", version.ref = "reown" }
+# Android App - Timber
+timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
+
+# Test - JUnit
+junit = { module = "junit:junit", version.ref = "junit" }
+ext-junit = { module = "androidx.test.ext:junit", version.ref = "junitVersion" }
+# Test - JetBrains
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx" }
+# Test - AndroidX
+androidx-orchestrator = { module = "androidx.test:orchestrator", version.ref = "orchestrator" }
+androidx-runner = { module = "androidx.test:runner", version.ref = "runner" }
+androidx-test-core = { module = "androidx.test:core", version.ref = "testCore" }
+espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espressoCore" }
+ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+# Test - Kotest
 kotest = { module = "io.kotest:kotest-framework-engine", version.ref = "kotest" }
-kotest-junit = { module = "io.kotest:kotest-extensions-junitxml", version.ref = "kotest" }
 kotest-assert = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
 kotest-runner = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
 
-kotlinx-io = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinx-io" }
-kotlincrypto-hash-bom = { module = "org.kotlincrypto.hash:bom", version.ref = "kotlinCryptoHash" }
-kotlincrypto-hash-sha2 = { module = "org.kotlincrypto.hash:sha2" }
-kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
-
-multiplatform-crypto-libsodium-bindings = { module = "com.ionspin.kotlin:multiplatform-crypto-libsodium-bindings", version.ref = "multiplatformCryptoLibsodiumBindings" }
-tweetnacl-java = { module = "com.github.InstantWebP2P:tweetnacl-java", version.ref = "tweetnacl" }
-dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
-kethereum = { module = "com.github.komputing:kethereum", version.ref = "kethereum" }
-
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
-ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
-ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
-ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
-ktor-logger = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
-
-# Android
-# shared
-lazysodium-android = { module = "com.goterl:lazysodium-android", version.ref = "lazysodium" }
-lazysodium-java = { module = "com.goterl:lazysodium-java", version.ref = "lazysodiumJava" }
-jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
-bcprov-jdk15to18 = { module = "org.bouncycastle:bcprov-jdk15to18", version.ref = "bcprovJdk15on" }
-androidx-test-core = { module = "androidx.test:core", version.ref = "testCore" }
-
-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
-androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutinesAndroid" }
-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
-foundation = { group = "androidx.compose.foundation", name = "foundation" }
-junit = { group = "junit", name = "junit", version.ref = "junit" }
-kethereum-model = { module = "com.github.komputing.kethereum:model", version.ref = "kethereum" }
-kethereum-bip32 = { module = "com.github.komputing.kethereum:bip32", version.ref = "kethereum" }
-kethereum-bip39 = { module = "com.github.komputing.kethereum:bip39", version.ref = "kethereum" }
-kethereum-sign = { module = "com.github.komputing.kethereum:eip191", version.ref = "kethereum" }
-kethereum-crypto = { module = "com.github.komputing.kethereum:crypto", version.ref = "kethereum" }
-kethereum-crypto-impl = { module = "com.github.komputing.kethereum:crypto_impl_bouncycastle", version.ref = "kethereum" }
-ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
-ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
-lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version.ref = "lifecycleLivedataKtx" }
-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleRuntimeKtx" }
-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
-material = { group = "com.google.android.material", name = "material", version.ref = "material" }
-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
-material3 = { group = "androidx.compose.material3", name = "material3" }
-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigationFragmentKtx" }
-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigationUiKtx" }
-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
-security-crypto-ktx = { module = "androidx.security:security-crypto-ktx", version.ref = "securityCryptoKtx" }
-timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
-ui = { group = "androidx.compose.ui", name = "ui" }
-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
-
-# Koin
-koin-core = { group = "io.insert-koin", name = "koin-core", version.ref = "koin" }
-koin-android = { group = "io.insert-koin", name = "koin-android", version.ref = "koin" }
-koin-androidx-compose = { group = "io.insert-koin", name = "koin-androidx-compose", version.ref = "koin" }
-
 [plugins]
+# Shared - JetBrains
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-
-kotest = { id = "io.kotest", version.ref = "kotest" }
+# Shared - Google
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 
-kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-androidLibrary = { id = "com.android.library", version.ref = "agp" }
+# JVM - JetBrains
 kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 
+# Android App - Android
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+androidLibrary = { id = "com.android.library", version.ref = "agp" }
+# Android App - JetBrains
+kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlinCompose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+
+# Test - Kotest
+kotest = { id = "io.kotest", version.ref = "kotest" }
+
+# Tooling
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
-kmmbridge = { id = "co.touchlab.kmmbridge", version.ref = "kmmbridge" }
-gitVersioning = { id = "me.qoomon.git-versioning", version.ref = "gitVersioning" }
-
-androidApplication = { id = "com.android.application", version.ref = "agp" }
-kotlinCompose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

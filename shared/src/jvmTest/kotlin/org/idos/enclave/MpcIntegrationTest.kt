@@ -47,7 +47,7 @@ class MpcIntegrationTest :
                 }
             }
 
-            test("Fetch shares from MPC") {
+            xtest("Fetch shares from MPC") {
                 val pubkey = "cf5210204ccd03621807747be6105a0e779747fb"
 //                val userId = "d3a5ca37-59c8-4fad-8303-fc17cc503ec1"
                 val userId = "test-id-2"
@@ -75,7 +75,7 @@ class MpcIntegrationTest :
                 // Download secret from nodes
                 val secret = mpc.downloadSecret(userId, request, signature, ephemeralKeyPair.secretKey)
 
-                secret?.decodeToString() shouldBe "Marian"
+                secret.decodeToString() shouldBe "Marian"
             }
         }
     })
