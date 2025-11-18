@@ -1,4 +1,5 @@
 import SwiftUI
+import ReownAppKit
 
 /// LoginView matching Android's LoginScreen
 struct LoginView: View {
@@ -44,11 +45,11 @@ struct LoginView: View {
 
                 Spacer()
 
-                // Connect Wallet Button
+                // Import Mnemonic Button
                 Button(action: {
-                    viewModel.onEvent(.connectWallet)
+                    viewModel.onEvent(.importMnemonic)
                 }) {
-                    Text("Connect Wallet")
+                    Text("Import Wallet")
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -57,6 +58,33 @@ struct LoginView: View {
                         .cornerRadius(12)
                 }
                 .padding(.horizontal, 32)
+
+                // Connect External Wallet Button
+                Button(action: {
+                    viewModel.onEvent(.connectExternalWallet)
+                }) {
+                    Text("Connect Wallet")
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                }
+                .padding(.horizontal, 32)
+
+                if viewModel.state.isLoading {
+                    ProgressView()
+                        .padding()
+                }
+
+                if let error = viewModel.state.error {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                }
 
                 Spacer()
                     .frame(height: 60)

@@ -57,7 +57,7 @@ struct MnemonicView: View {
                         .fontWeight(.medium)
 
                     TextField(
-                        EthSigner.defaultDerivationPath,
+                        LocalSigner.defaultDerivationPath,
                         text: Binding(
                             get: { viewModel.state.derivationPath },
                             set: { viewModel.onEvent(.updateDerivationPath($0)) }

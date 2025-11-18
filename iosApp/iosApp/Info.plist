@@ -44,5 +44,33 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>org.idos.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>idos-app</string>
+			</array>
+		</dict>
+	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>metamask</string>
+		<string>trust</string>
+		<string>rainbow</string>
+		<string>zerion</string>
+		<string>safe</string>
+		<string>uniswap</string>
+		<string>coinbase</string>
+		<string>argent</string>
+		<string>omni</string>
+		<string>imtoken</string>
+	</array>
+	<key>LSApplicationCategoryType</key>
+	<string></string>
 </dict>
 </plist>

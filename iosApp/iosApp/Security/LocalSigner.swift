@@ -2,9 +2,9 @@ import Foundation
 import WalletCore
 import idos_sdk
 
-/// EthSigner provides Ethereum wallet functionality matching Android's EthSigner.kt
+/// LocalSigner provides Ethereum wallet functionality using locally stored private keys
 /// Handles BIP39 mnemonic derivation, key management, and EIP-191 signing
-class EthSigner: idos_sdk.EthSigner {
+class LocalSigner: idos_sdk.EthSigner {
     private let keyManager: KeyManager
     private let storageManager: StorageManager
 
@@ -12,7 +12,7 @@ class EthSigner: idos_sdk.EthSigner {
     /// m/44'/60'/0'/0/47
     static let defaultDerivationPath = "m/44'/60'/0'/0/47"
 
-    enum EthSignerError: Error {
+    enum LocalSignerError: Error {
         case invalidMnemonic
         case invalidPrivateKey
         case keyDerivationFailed
@@ -49,7 +49,7 @@ class EthSigner: idos_sdk.EthSigner {
 
         // Get stored private key
         guard let privateKeyData = try? keyManager.getKey() else {
-            throw EthSignerError.noStoredKey
+            throw LocalSignerError.noStoredKey
         }
 
         defer {
@@ -63,7 +63,7 @@ class EthSigner: idos_sdk.EthSigner {
         }
 
         guard let privateKey = PrivateKey(data: privateKeyData) else {
-            throw EthSignerError.invalidPrivateKey
+            throw LocalSignerError.invalidPrivateKey
         }
 
         // EIP-191 personal sign: "\x19Ethereum Signed Message:\n" + len(message) + message
@@ -76,7 +76,7 @@ class EthSigner: idos_sdk.EthSigner {
 
         // Sign with secp256k1
         guard let signature = privateKey.sign(digest: hash, curve: .secp256k1) else {
-            throw EthSignerError.signingFailed
+            throw LocalSignerError.signingFailed
         }
 
         // Convert signature to KotlinByteArray
@@ -91,7 +91,7 @@ class EthSigner: idos_sdk.EthSigner {
     override func __signTypedData(typedData: TypedData) async throws -> String {
         // Get stored private key
         guard let privateKeyData = try? keyManager.getKey() else {
-            throw EthSignerError.noStoredKey
+            throw LocalSignerError.noStoredKey
         }
 
         defer {
@@ -105,7 +105,7 @@ class EthSigner: idos_sdk.EthSigner {
         }
 
         guard let privateKey = PrivateKey(data: privateKeyData) else {
-            throw EthSignerError.invalidPrivateKey
+            throw LocalSignerError.invalidPrivateKey
         }
 
         // Hash according to EIP-712 spec using shared utils
@@ -114,7 +114,7 @@ class EthSigner: idos_sdk.EthSigner {
 
         // Sign the raw hash (no EIP-191 prefix for EIP-712)
         guard var signature = privateKey.sign(digest: hash, curve: .secp256k1) else {
-            throw EthSignerError.signingFailed
+            throw LocalSignerError.signingFailed
         }
 
         // WalletCore returns v as 0 or 1, but Ethereum expects 27 or 28
@@ -148,19 +148,19 @@ class EthSigner: idos_sdk.EthSigner {
 
         // Validate mnemonic using WalletCore
         guard Mnemonic.isValid(mnemonic: cleanMnemonic) else {
-            throw EthSignerError.invalidMnemonic
+            throw LocalSignerError.invalidMnemonic
         }
 
         // Create HDWallet from mnemonic (BIP39)
         // Note: Using empty passphrase like Android implementation
         guard let wallet = HDWallet(mnemonic: cleanMnemonic, passphrase: "") else {
-            throw EthSignerError.invalidMnemonic
+            throw LocalSignerError.invalidMnemonic
         }
 
         // Derive key using BIP32/BIP44
         // WalletCore uses DerivationPath for path parsing
         guard let derivation = DerivationPath(derivationPath) else {
-            throw EthSignerError.keyDerivationFailed
+            throw LocalSignerError.keyDerivationFailed
         }
 
         let privateKey = wallet.getKey(coin: .ethereum, derivationPath: derivation.description)
@@ -174,11 +174,26 @@ class EthSigner: idos_sdk.EthSigner {
     /// - Returns: Ethereum address with 0x prefix
     static func privateKeyToAddress(_ privateKey: Data) throws -> String {
         guard let privKey = PrivateKey(data: privateKey) else {
-            throw EthSignerError.invalidPrivateKey
+            throw LocalSignerError.invalidPrivateKey
         }
 
         let publicKey = privKey.getPublicKeySecp256k1(compressed: false)
         let address = AnyAddress(publicKey: publicKey, coin: .ethereum)
         return address.description
+    }
+
+    // MARK: - Instance Helper Methods
+
+    /// Get the currently active wallet address
+    func getActiveAddress() -> String {
+        guard let address = storageManager.getStoredWallet() else {
+            fatalError("No wallet address stored")
+        }
+        return address
+    }
+
+    /// Disconnect (clear keys from memory)
+    func disconnect() throws {
+        try keyManager.deleteKey()
     }
 }

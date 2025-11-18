@@ -1,6 +1,8 @@
 package org.idos.crypto.eip712
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 
 /**
@@ -44,4 +46,12 @@ data class TypedData(
     val types: Map<String, List<TypedDataField>>,
     val primaryType: String,
     val message: JsonObject,
-)
+) {
+    /**
+     * Serialize this TypedData to a JSON string.
+     * Useful for passing to external wallets for signing.
+     */
+    fun toJsonString(): String {
+        return Json.encodeToString(this)
+    }
+}

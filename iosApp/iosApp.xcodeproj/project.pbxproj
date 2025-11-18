@@ -33,7 +33,7 @@
 		C27D819B2E8C27A400F6CADF /* CredentialDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D816D2E8C27A400F6CADF /* CredentialDetailViewModel.swift */; };
 		C27D819D2E8C27A400F6CADF /* CredentialsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D816F2E8C27A400F6CADF /* CredentialsViewModel.swift */; };
 		C27D81A22E8C27A500F6CADF /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D81A12E8C27A500F6CADF /* Config.swift */; };
-		C27D81A32E8C27A500F6CADF /* EthSigner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D81A42E8C27A500F6CADF /* EthSigner.swift */; };
+		C27D81A32E8C27A500F6CADF /* LocalSigner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D81A42E8C27A500F6CADF /* LocalSigner.swift */; };
 		C27D81A52E8C27A500F6CADF /* MnemonicViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D81A62E8C27A500F6CADF /* MnemonicViewModel.swift */; };
 		C2974AAF2E8D274300AADFBE /* WalletRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AAE2E8D274300AADFBE /* WalletRepository.swift */; };
 		C2974AB02E8D274300AADFBE /* UserRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AAD2E8D274300AADFBE /* UserRepository.swift */; };
@@ -46,8 +46,19 @@
 		C2974AD52EA13DF800AADFBE /* Hasher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AD42EA13DF200AADFBE /* Hasher.swift */; };
 		C2974AD72EA672E800AADFBE /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2974AD62EA672E800AADFBE /* AppLogger.swift */; };
 		C2F289572EAE815E00851DA8 /* JsonViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2F289562EAE815E00851DA8 /* JsonViews.swift */; };
+		C2F733982ECB58DC00CEF22C /* Web3 in Frameworks */ = {isa = PBXBuildFile; productRef = C2F733972ECB58DC00CEF22C /* Web3 */; };
+		C2F7339A2ECB58DC00CEF22C /* Web3ContractABI in Frameworks */ = {isa = PBXBuildFile; productRef = C2F733992ECB58DC00CEF22C /* Web3ContractABI */; };
+		C2F7339C2ECB58DC00CEF22C /* Web3PromiseKit in Frameworks */ = {isa = PBXBuildFile; productRef = C2F7339B2ECB58DC00CEF22C /* Web3PromiseKit */; };
+		C2F7339F2ECB58F300CEF22C /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = C2F7339E2ECB58F300CEF22C /* Starscream */; };
 		C2FCA66F2EA90D830049D57E /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C2FCA66E2EA90D830049D57E /* WalletCore */; };
 		C2FCA6712EA90D830049D57E /* WalletCoreSwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = C2FCA6702EA90D830049D57E /* WalletCoreSwiftProtobuf */; };
+		C2REOWN32EA90D830049D57E /* ReownAppKit in Frameworks */ = {isa = PBXBuildFile; productRef = C2REOWN22EA90D830049D57E /* ReownAppKit */; };
+		C2REOWN42EA90D830049D57E /* RemoteSigner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2REOWN52EA90D830049D57E /* RemoteSigner.swift */; };
+		C2REOWN62EA90D830049D57E /* ReownDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2REOWN72EA90D830049D57E /* ReownDelegate.swift */; };
+		C2REOWN82EA90D830049D57E /* ReownWalletManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2REOWN92EA90D830049D57E /* ReownWalletManager.swift */; };
+		C2REOWNA2EA90D830049D57E /* UnifiedSigner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2REOWNB2EA90D830049D57E /* UnifiedSigner.swift */; };
+		C2REOWNC2EA90D830049D57E /* DefaultCryptoProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2REOWND2EA90D830049D57E /* DefaultCryptoProvider.swift */; };
+		C2REOWNE2EA90D830049D57E /* DefaultSocketFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2REOWNF2EA90D830049D57E /* DefaultSocketFactory.swift */; };
 		E59C1A8626654667B9F53641 /* ViewExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3385CFAB0E74F08B498EA46 /* ViewExtensions.swift */; };
 /* End PBXBuildFile section */
 
@@ -58,6 +69,7 @@
 		7555FF8B242A565B00829871 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		7555FFAF242A642300829871 /* iosApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = iosApp.swift; sourceTree = "<group>"; };
 		7555FFB3242A642400829871 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		7555FFB4242A642400829871 /* iosApp.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = iosApp.entitlements; sourceTree = "<group>"; };
 		C27D815F2E8C27A400F6CADF /* DIContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DIContainer.swift; sourceTree = "<group>"; };
 		C27D81622E8C27A400F6CADF /* NavigationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationCoordinator.swift; sourceTree = "<group>"; };
 		C27D81642E8C27A400F6CADF /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
@@ -80,7 +92,7 @@
 		C27D81832E8C27A400F6CADF /* KeyGenerationDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyGenerationDialog.swift; sourceTree = "<group>"; };
 		C27D81852E8C27A400F6CADF /* CommonViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonViews.swift; sourceTree = "<group>"; };
 		C27D81A12E8C27A500F6CADF /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
-		C27D81A42E8C27A500F6CADF /* EthSigner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EthSigner.swift; sourceTree = "<group>"; };
+		C27D81A42E8C27A500F6CADF /* LocalSigner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalSigner.swift; sourceTree = "<group>"; };
 		C27D81A62E8C27A500F6CADF /* MnemonicViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MnemonicViewModel.swift; sourceTree = "<group>"; };
 		C2974AAD2E8D274300AADFBE /* UserRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserRepository.swift; sourceTree = "<group>"; };
 		C2974AAE2E8D274300AADFBE /* WalletRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletRepository.swift; sourceTree = "<group>"; };
@@ -93,6 +105,12 @@
 		C2974AD42EA13DF200AADFBE /* Hasher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hasher.swift; sourceTree = "<group>"; };
 		C2974AD62EA672E800AADFBE /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
 		C2F289562EAE815E00851DA8 /* JsonViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JsonViews.swift; sourceTree = "<group>"; };
+		C2REOWN52EA90D830049D57E /* RemoteSigner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteSigner.swift; sourceTree = "<group>"; };
+		C2REOWN72EA90D830049D57E /* ReownDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReownDelegate.swift; sourceTree = "<group>"; };
+		C2REOWN92EA90D830049D57E /* ReownWalletManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReownWalletManager.swift; sourceTree = "<group>"; };
+		C2REOWNB2EA90D830049D57E /* UnifiedSigner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedSigner.swift; sourceTree = "<group>"; };
+		C2REOWND2EA90D830049D57E /* DefaultCryptoProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultCryptoProvider.swift; sourceTree = "<group>"; };
+		C2REOWNF2EA90D830049D57E /* DefaultSocketFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultSocketFactory.swift; sourceTree = "<group>"; };
 		D3385CFAB0E74F08B498EA46 /* ViewExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewExtensions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -101,8 +119,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C2F7339F2ECB58F300CEF22C /* Starscream in Frameworks */,
 				C2FCA66F2EA90D830049D57E /* WalletCore in Frameworks */,
+				C2F733982ECB58DC00CEF22C /* Web3 in Frameworks */,
 				C2FCA6712EA90D830049D57E /* WalletCoreSwiftProtobuf in Frameworks */,
+				C2REOWN32EA90D830049D57E /* ReownAppKit in Frameworks */,
+				C2F7339C2ECB58DC00CEF22C /* Web3PromiseKit in Frameworks */,
+				C2F7339A2ECB58DC00CEF22C /* Web3ContractABI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -139,6 +162,7 @@
 				7555FF82242A565900829871 /* ContentView.swift */,
 				7555FF85242A565B00829871 /* Assets.xcassets */,
 				7555FFB3242A642400829871 /* Info.plist */,
+				7555FFB4242A642400829871 /* iosApp.entitlements */,
 				7555FF8A242A565B00829871 /* Preview Content */,
 			);
 			path = iosApp;
@@ -290,8 +314,14 @@
 			isa = PBXGroup;
 			children = (
 				C2974AD42EA13DF200AADFBE /* Hasher.swift */,
-				C27D81A42E8C27A500F6CADF /* EthSigner.swift */,
 				C27D817E2E8C27A400F6CADF /* KeyManager.swift */,
+				C27D81A42E8C27A500F6CADF /* LocalSigner.swift */,
+				C2REOWN52EA90D830049D57E /* RemoteSigner.swift */,
+				C2REOWN72EA90D830049D57E /* ReownDelegate.swift */,
+				C2REOWN92EA90D830049D57E /* ReownWalletManager.swift */,
+				C2REOWNB2EA90D830049D57E /* UnifiedSigner.swift */,
+				C2REOWND2EA90D830049D57E /* DefaultCryptoProvider.swift */,
+				C2REOWNF2EA90D830049D57E /* DefaultSocketFactory.swift */,
 			);
 			path = Security;
 			sourceTree = "<group>";
@@ -389,6 +419,9 @@
 			mainGroup = 7555FF72242A565900829871;
 			packageReferences = (
 				C2FCA66D2EA90D830049D57E /* XCRemoteSwiftPackageReference "wallet-core" */,
+				C2REOWN12EA90D830049D57E /* XCRemoteSwiftPackageReference "reown-swift" */,
+				C2F733962ECB58DC00CEF22C /* XCRemoteSwiftPackageReference "Web3" */,
+				C2F7339D2ECB58F300CEF22C /* XCRemoteSwiftPackageReference "Starscream" */,
 			);
 			productRefGroup = 7555FF7C242A565900829871 /* Products */;
 			projectDirPath = "";
@@ -494,7 +527,13 @@
 				C27D819B2E8C27A400F6CADF /* CredentialDetailViewModel.swift in Sources */,
 				C27D819D2E8C27A400F6CADF /* CredentialsViewModel.swift in Sources */,
 				C27D81A22E8C27A500F6CADF /* Config.swift in Sources */,
-				C27D81A32E8C27A500F6CADF /* EthSigner.swift in Sources */,
+				C27D81A32E8C27A500F6CADF /* LocalSigner.swift in Sources */,
+				C2REOWN42EA90D830049D57E /* RemoteSigner.swift in Sources */,
+				C2REOWN62EA90D830049D57E /* ReownDelegate.swift in Sources */,
+				C2REOWN82EA90D830049D57E /* ReownWalletManager.swift in Sources */,
+				C2REOWNA2EA90D830049D57E /* UnifiedSigner.swift in Sources */,
+				C2REOWNC2EA90D830049D57E /* DefaultCryptoProvider.swift in Sources */,
+				C2REOWNE2EA90D830049D57E /* DefaultSocketFactory.swift in Sources */,
 				C27D81A52E8C27A500F6CADF /* MnemonicViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -622,6 +661,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
 				DEVELOPMENT_TEAM = 93X9HS5327;
@@ -652,6 +692,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
 				DEVELOPMENT_TEAM = 93X9HS5327;
@@ -702,6 +743,22 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		C2F733962ECB58DC00CEF22C /* XCRemoteSwiftPackageReference "Web3" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Boilertalk/Web3.swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.8.8;
+			};
+		};
+		C2F7339D2ECB58F300CEF22C /* XCRemoteSwiftPackageReference "Starscream" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/daltoniam/Starscream";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.1.2;
+			};
+		};
 		C2FCA66D2EA90D830049D57E /* XCRemoteSwiftPackageReference "wallet-core" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/trustwallet/wallet-core";
@@ -710,9 +767,37 @@
 				minimumVersion = 4.3.19;
 			};
 		};
+		C2REOWN12EA90D830049D57E /* XCRemoteSwiftPackageReference "reown-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/reown-com/reown-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		C2F733972ECB58DC00CEF22C /* Web3 */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C2F733962ECB58DC00CEF22C /* XCRemoteSwiftPackageReference "Web3" */;
+			productName = Web3;
+		};
+		C2F733992ECB58DC00CEF22C /* Web3ContractABI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C2F733962ECB58DC00CEF22C /* XCRemoteSwiftPackageReference "Web3" */;
+			productName = Web3ContractABI;
+		};
+		C2F7339B2ECB58DC00CEF22C /* Web3PromiseKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C2F733962ECB58DC00CEF22C /* XCRemoteSwiftPackageReference "Web3" */;
+			productName = Web3PromiseKit;
+		};
+		C2F7339E2ECB58F300CEF22C /* Starscream */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C2F7339D2ECB58F300CEF22C /* XCRemoteSwiftPackageReference "Starscream" */;
+			productName = Starscream;
+		};
 		C2FCA66E2EA90D830049D57E /* WalletCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C2FCA66D2EA90D830049D57E /* XCRemoteSwiftPackageReference "wallet-core" */;
@@ -722,6 +807,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C2FCA66D2EA90D830049D57E /* XCRemoteSwiftPackageReference "wallet-core" */;
 			productName = WalletCoreSwiftProtobuf;
+		};
+		C2REOWN22EA90D830049D57E /* ReownAppKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C2REOWN12EA90D830049D57E /* XCRemoteSwiftPackageReference "reown-swift" */;
+			productName = ReownAppKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

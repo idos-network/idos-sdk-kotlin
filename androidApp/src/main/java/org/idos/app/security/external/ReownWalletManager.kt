@@ -33,7 +33,6 @@ class ReownWalletManager(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var isInitialized = false
-    private val json = Json { ignoreUnknownKeys = true }
 
     /**
      * Initialize Reown SDK (CoreClient and AppKit).
@@ -113,7 +112,7 @@ class ReownWalletManager(
             ?: throw IllegalStateException("Wallet not connected")
 
         // Serialize TypedData to JSON string
-        val escapedTypedData = json.encodeToString(typedData)
+        val escapedTypedData = typedData.toJsonString()
 
         val requestParams = Request(
             method = "eth_signTypedData_v4",

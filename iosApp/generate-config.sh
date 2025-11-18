@@ -17,6 +17,7 @@ mkdir -p "$(dirname "$OUTPUT_FILE")"
 # Default values
 MNEMONIC_WORDS=""
 PASSWORD=""
+REOWN_PROJECT_ID=""
 
 # Read .env file if it exists
 if [ -f "$ENV_FILE" ]; then
@@ -34,6 +35,8 @@ if [ -f "$ENV_FILE" ]; then
             MNEMONIC_WORDS="$value"
         elif [ "$key" = "PASSWORD" ]; then
             PASSWORD="$value"
+        elif [ "$key" = "REOWN_PROJECT_ID" ]; then
+            REOWN_PROJECT_ID="$value"
         fi
     done < "$ENV_FILE"
 else
@@ -60,11 +63,15 @@ enum Config {
     static let developmentMnemonic = "$MNEMONIC_WORDS"
     /// Development password from .env file (DEBUG builds only)
     static let developmentPassword = "$PASSWORD"
+    /// Reown project ID from .env file (DEBUG builds only)
+    static let reownProjectId = "$REOWN_PROJECT_ID"
     #else
     /// Development mnemonic (empty in Release builds)
     static let developmentMnemonic = ""
     /// Development password (empty in Release builds)
     static let developmentPassword = ""
+    /// Reown project ID (empty in Release builds)
+    static let reownProjectId = ""
     #endif
 }
 EOF

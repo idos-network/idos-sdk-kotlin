@@ -25,7 +25,7 @@ protocol UserRepositoryProtocol: AnyObject {
     var userStatePublisher: AnyPublisher<UserState, Never> { get }
 
     func initialize()
-    func fetchAndStoreUser() async throws -> Void
+    func fetchAndStoreUser(walletType: WalletType) async throws -> Void
     func getStoredUser() -> User?
     func clearUserProfile() async
     func hasStoredProfile() -> Bool
@@ -38,6 +38,7 @@ class UserRepository: UserRepositoryProtocol {
     private let storageManager: StorageManager
     private let keyManager: KeyManager
     private let enclaveOrchestrator: EnclaveOrchestrator
+    private let unifiedSigner: UnifiedSigner
 
     // MARK: - UserRepositoryProtocol
 
@@ -55,12 +56,14 @@ class UserRepository: UserRepositoryProtocol {
         dataProvider: DataProvider,
         storageManager: StorageManager,
         keyManager: KeyManager,
-        enclaveOrchestrator: EnclaveOrchestrator
+        enclaveOrchestrator: EnclaveOrchestrator,
+        unifiedSigner: UnifiedSigner
     ) {
         self.dataProvider = dataProvider
         self.storageManager = storageManager
         self.keyManager = keyManager
         self.enclaveOrchestrator = enclaveOrchestrator
+        self.unifiedSigner = unifiedSigner
     }
 
     // MARK: - Public Methods
@@ -69,7 +72,35 @@ class UserRepository: UserRepositoryProtocol {
     func initialize() {
         Logger.repository.debug("UserRepository: Initializing")
         if let user = getStoredUser() {
-            Logger.repository.info("UserRepository: Found stored user with enclave type: \(user.enclaveKeyType)")
+            Logger.repository.info("UserRepository: Found stored user with enclave type: \(user.enclaveKeyType), wallet type: \(user.walletType.rawValue)")
+
+            // Restore appropriate signer based on wallet type
+            do {
+                switch user.walletType {
+                case .local:
+                    unifiedSigner.activateLocalSigner()
+                    Logger.repository.info("UserRepository: Activated local signer")
+                case .remote:
+                    unifiedSigner.activateRemoteSigner()
+                    Logger.repository.info("UserRepository: Activated remote signer")
+                }
+
+                // Validate that the actual address matches stored address
+                let actualAddress = try unifiedSigner.getActiveAddress()
+                if actualAddress.lowercased() != user.walletAddress.lowercased() {
+                    Logger.repository.warning("UserRepository: Address mismatch, clearing profile")
+                    storageManager.clearUserProfile()
+                    return
+                }
+
+                Logger.repository.info("UserRepository: Signer restored successfully")
+            } catch {
+                Logger.repository.error("UserRepository: Failed to restore signer: \(error.localizedDescription), clearing profile")
+                storageManager.clearUserProfile()
+                return
+            }
+
+            // Initialize enclave
             if let keyType = EnclaveKeyType.companion.getByValue(type: user.enclaveKeyType) {
                 enclaveOrchestrator.initializeType(type: keyType)
                 Logger.repository.info("UserRepository: Enclave initialized with type: \(user.enclaveKeyType)")
@@ -82,22 +113,17 @@ class UserRepository: UserRepositoryProtocol {
     }
 
     /// Fetches user data from the network and stores it
-    func fetchAndStoreUser() async throws -> Void {
-        Logger.repository.debug("UserRepository: Starting fetchAndStoreUser")
+    func fetchAndStoreUser(walletType: WalletType) async throws -> Void {
+        Logger.repository.debug("UserRepository: Starting fetchAndStoreUser with wallet type: \(walletType.rawValue)")
 
-        // 1. Get wallet address from storage
-        guard let address = storageManager.getStoredWallet() else {
-            Logger.repository.error("UserRepository: No wallet address found in storage")
-            throw UserError.noKeyFound
-        }
-        Logger.repository.debug("UserRepository: Using wallet address: \(address, privacy: .private)")
-
-        // 2. Get key from key manager to verify it exists
+        // 1. Get wallet address from unified signer (not storage!)
+        let address: String
         do {
-            _ = try keyManager.getKey()
-            Logger.repository.info("UserRepository: Private key verified in keychain")
+            address = try unifiedSigner.getActiveAddress()
+            storageManager.saveWalletAddress(address)
+            Logger.repository.debug("UserRepository: Got address from unified signer: \(address, privacy: .private)")
         } catch {
-            Logger.repository.error("UserRepository: No key found in keychain")
+            Logger.repository.error("UserRepository: No active signer found")
             throw UserError.noKeyFound
         }
 
@@ -112,10 +138,12 @@ class UserRepository: UserRepositoryProtocol {
             let userModel = User(
                 id: user.id,
                 walletAddress: address,
-                enclaveKeyType: user.encryptionPasswordStore)
+                enclaveKeyType: user.encryptionPasswordStore,
+                walletType: walletType
+            )
 
             await MainActor.run {
-                Logger.repository.debug("UserRepository: Saving user profile with enclave type: \(user.encryptionPasswordStore)")
+                Logger.repository.debug("UserRepository: Saving user profile with enclave type: \(user.encryptionPasswordStore), wallet type: \(walletType.rawValue)")
                 storageManager.saveUserProfile(userModel)
 
                 // Initialize enclave with user's chosen type
@@ -175,7 +203,7 @@ class MockUserRepository: UserRepositoryProtocol {
         // Mock implementation - no-op
     }
 
-    func fetchAndStoreUser() async throws -> Void {
+    func fetchAndStoreUser(walletType: WalletType) async throws -> Void {
         stateSubject.send(.loadingUser)
         try? await Task.sleep(nanoseconds: 1_000_000_000)  // Simulate network delay
 
@@ -183,6 +211,7 @@ class MockUserRepository: UserRepositoryProtocol {
             id: "user123",
             walletAddress: "0x123...",
             enclaveKeyType: "user",
+            walletType: walletType
         )
 
         stateSubject.send(.connectedUser(user: mockUser))

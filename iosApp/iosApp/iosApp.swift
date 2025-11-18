@@ -1,6 +1,7 @@
 import SwiftUI
 import OSLog
 import idos_sdk
+import ReownAppKit
 
 @main
 struct iosApp: App {
@@ -72,6 +73,21 @@ struct iosApp: App {
             ContentView()
                 .environmentObject(DIContainer.shared)
                 .environmentObject(DIContainer.shared.navigationCoordinator)
+                .onOpenURL { url in
+                    handleDeepLink(url)
+                }
         }
+    }
+
+    /// Handle deep link URLs for WalletConnect callbacks
+    private func handleDeepLink(_ url: URL) {
+        Logger.viewModel.debug("Deep link received: \(url.absoluteString)")
+
+        // Forward all deep links to Reown AppKit for processing
+        // AppKit will handle WalletConnect callbacks (idos-app://request)
+        // This supports wallet connection, signing requests, and SIWE auth
+        AppKit.instance.handleDeeplink(url)
+
+        Logger.viewModel.info("Deep link forwarded to Reown AppKit")
     }
 }
