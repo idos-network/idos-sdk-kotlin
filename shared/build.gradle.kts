@@ -22,6 +22,24 @@ kotlin {
 
     jvm()
 
+    // Configure JS target for browser
+    js(IR) {
+        browser {
+            commonWebpackConfig {
+                cssSupport {
+                    enabled.set(true)
+                }
+            }
+            testTask {
+                useKarma {
+                    useChromeHeadless()
+                }
+            }
+        }
+        binaries.executable()
+        generateTypeScriptDefinitions()
+    }
+
     // Configure iOS targets with XCFramework support
     val xcf = XCFramework("idos_sdk")
     val iosTargets =
@@ -99,9 +117,18 @@ kotlin {
             implementation(libs.kethereum)
         }
 
+        jsMain.dependencies {
+            implementation(libs.ktor.client.js)
+            // npm dependencies
+            implementation(npm("scrypt-js", "3.0.1"))
+            implementation(npm("tweetnacl", "1.0.3"))
+            implementation(npm("js-sha3", "0.9.3"))
+            // implementation(npm("libsodium-wrappers-sumo", "0.7.13"))
+            // implementation(npm("ethers", "6.13.0"))
+        }
+
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
-//            implementation(libs.multiplatform.crypto.libsodium.bindings)
         }
 
         commonTest.dependencies {
@@ -133,6 +160,12 @@ kotlin {
         }
 
         iosTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotest.assert)
+            implementation(libs.kotlinx.coroutines.test)
+        }
+
+        jsTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotest.assert)
             implementation(libs.kotlinx.coroutines.test)
@@ -179,11 +212,14 @@ detekt {
 }
 
 tasks.withType<Test> {
-    useJUnitPlatform()
-    reports {
-        junitXml.required.set(true)
+    // Only use JUnit Platform for JVM/Android tests, not for JS tests
+    if (name.contains("jvm", ignoreCase = true) || name.contains("android", ignoreCase = true)) {
+        useJUnitPlatform()
+        reports {
+            junitXml.required.set(true)
+        }
+        systemProperty("gradle.build.dir", layout.buildDirectory.asFile.get())
     }
-    systemProperty("gradle.build.dir", layout.buildDirectory.asFile.get())
 }
 
 // Maven Publishing Configuration

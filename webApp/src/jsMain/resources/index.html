@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>idOS App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Connect Page -->
+    <div id="connect-page" class="page">
+        <div class="container">
+            <div class="logo">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <rect width="32" height="32" rx="6" fill="#00D796"/>
+                    <path d="M10 10h12v12H10z" fill="#0A0E27"/>
+                </svg>
+                <h1>idOS</h1>
+            </div>
+            <div class="connect-card">
+                <h2>Connect Your Wallet</h2>
+                <p>Connect your EVM wallet to access your idOS profile</p>
+                <button id="connect-btn" class="primary-button">
+                    Connect EVM Wallet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Page -->
+    <div id="profile-page" class="page hidden">
+        <div class="container">
+            <!-- Header -->
+            <header class="header">
+                <div class="logo-small">
+                    <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="6" fill="#00D796"/>
+                        <path d="M10 10h12v12H10z" fill="#0A0E27"/>
+                    </svg>
+                    <span>idOS</span>
+                </div>
+                <div class="header-right">
+                    <div class="wallet-info">
+                        <span id="connected-address" class="address">0x7C3...70dE3</span>
+                    </div>
+                    <button id="disconnect-btn" class="disconnect-button">Disconnect</button>
+                </div>
+            </header>
+
+            <!-- Profile Content -->
+            <div class="profile-content">
+                <h1>idOS Profile</h1>
+
+                <!-- Credentials Section -->
+                <section class="card">
+                    <div class="card-header">
+                        <h2>Credentials</h2>
+                    </div>
+                    <div class="table-container">
+                        <table id="credentials-table">
+                            <thead>
+                                <tr>
+                                    <th>Level</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Issuer</th>
+                                    <th>Shares</th>
+                                </tr>
+                            </thead>
+                            <tbody id="credentials-list">
+                                <tr class="loading-row">
+                                    <td colspan="5">Loading credentials...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Wallets Section -->
+                <section class="card">
+                    <div class="card-header">
+                        <h2>Wallets</h2>
+                    </div>
+                    <div class="table-container">
+                        <table id="wallets-table">
+                            <thead>
+                                <tr>
+                                    <th>Address</th>
+                                    <th>Type</th>
+                                </tr>
+                            </thead>
+                            <tbody id="wallets-list">
+                                <tr class="loading-row">
+                                    <td colspan="2">Loading wallets...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enclave Unlock Dialog -->
+    <div id="enclave-dialog" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content enclave-modal">
+            <button id="close-enclave-dialog" class="modal-close">&times;</button>
+
+            <!-- Loading State -->
+            <div id="enclave-loading" class="enclave-state hidden">
+                <div class="enclave-spinner">
+                    <svg class="spinner" width="120" height="120" viewBox="0 0 120 120">
+                        <circle class="spinner-track" cx="60" cy="60" r="54" fill="none" stroke="#2A2D33" stroke-width="4"/>
+                        <circle class="spinner-progress" cx="60" cy="60" r="54" fill="none" stroke="#A6F0C6" stroke-width="4"
+                                stroke-linecap="round" stroke-dasharray="339" stroke-dashoffset="85"/>
+                    </svg>
+                </div>
+                <h2 class="enclave-title">Unlocking...</h2>
+                <p class="enclave-subtitle">Generating your encryption key</p>
+            </div>
+
+            <!-- Password Form -->
+            <div id="enclave-form" class="enclave-state">
+                <h2 id="enclave-title" class="enclave-title">Unlock idOS</h2>
+                <p id="enclave-subtitle" class="enclave-subtitle">Please enter your idOS password below:</p>
+
+                <form id="enclave-unlock-form">
+                    <div id="password-section" class="form-group">
+                        <label for="enclave-password">Password</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="enclave-password" class="password-input" placeholder="Enter password">
+                            <button type="button" id="toggle-password" class="password-toggle">
+                                <span class="eye-icon">👁️</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Remember for:</label>
+                        <div class="radio-group">
+                            <label class="radio-option">
+                                <input type="radio" name="expiration" value="3600000" checked>
+                                <span>1 week</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="expiration" value="2592000000">
+                                <span>1 month</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="enclave-error" class="error-message hidden"></div>
+
+                    <button type="submit" class="unlock-button">
+                        <span class="unlock-icon">🔓</span> Unlock
+                    </button>
+                </form>
+
+                <p class="enclave-hint">Make sure to store it securely — you'll need it to view or share your data later.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="webApp.js"></script>
+</body>
+</html>

@@ -53,56 +53,6 @@ object Uuid {
 
 fun UuidString.isValidUuid(): Boolean = Uuid.isValidUuid(this)
 
-// /**
-// * Hexadecimal string value class.
-// * Validates hex format on construction.
-// */
-// @JvmInline
-// @Serializable(with = HexStringSerializer::class)
-// value class HexString(
-//    override val value: String,
-// ) : StringValue {
-//    val prefixedValue get() = if (value.startsWith("0x")) value else "0x$value"
-//
-//    init {
-//        require(value.isEmpty() || value.matches(Regex("^[0-9a-fA-F]+$"))) { "Invalid hex string" }
-//    }
-//
-//    constructor(bytes: ByteArray) : this(bytes.toHexString())
-//
-//    companion object {
-//        fun withoutPrefix(hexString: String): HexString = HexString(hexString.removePrefix("0x"))
-//
-//        fun String.toHexString(): HexString = withoutPrefix(this)
-//    }
-// }
-
-// /**
-// * UUID string value class.
-// * Validates UUID format on construction.
-// */
-// @JvmInline
-// @Serializable(with = UuidStringSerializer::class)
-// value class UuidString(
-//    override val value: String,
-// ) : StringValue {
-//    init {
-//        require(
-//            isValidUuid(value),
-//        ) { "Invalid UUID string" }
-//    }
-//
-//    companion object {
-//        private val UUID_REGEX =
-//            Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\$")
-//
-//        fun isValidUuid(value: String): Boolean = UUID_REGEX.matches(value)
-//
-//        @OptIn(ExperimentalUuidApi::class)
-//        fun generate(): UuidString = UuidString(Uuid.random().toString())
-//    }
-// }
-
 /**
  * Generic serializer for string value types.
  */

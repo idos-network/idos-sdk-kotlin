@@ -2,8 +2,10 @@
 
 package org.idos.enclave
 
+import getSecrets
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import org.idos.IdosClient
 import org.idos.enclave.crypto.JvmEncryption
 import org.idos.enclave.mpc.DownloadRequest
 import org.idos.enclave.mpc.MpcClient
@@ -11,17 +13,19 @@ import org.idos.enclave.mpc.MpcConfig
 import org.idos.enclave.mpc.PartisiaRpcClient
 import org.idos.enclave.mpc.getFormattedAddress
 import org.idos.enclave.mpc.signMessageAsAuthHeader
+import org.idos.get
 import org.idos.getCurrentTimeMillis
 import org.idos.kwil.types.Base64String
 import org.idos.signer.JvmEthSigner
-import org.kethereum.crypto.toECKeyPair
-import org.kethereum.model.PrivateKey
 
 class MpcIntegrationTest :
     FunSpec({
         context("Partisia chain integration") {
+            val chainId = "kwil-testnet"
+            val api = "https://nodes.playground.idos.network"
+
             val url = "https://partisia-reader-node.playground.idos.network:8080"
-            val address = "025f6d71e82b9396e09e20c93f660d0ae36ebb4a68"
+            val address = "0223996d84146dbf310dd52a0e1d103e91bb8402b3"
 
             test("Get contract state") {
                 val client = PartisiaRpcClient(url, address)
@@ -47,17 +51,16 @@ class MpcIntegrationTest :
                 }
             }
 
-            xtest("Fetch shares from MPC") {
-                val pubkey = "cf5210204ccd03621807747be6105a0e779747fb"
-//                val userId = "d3a5ca37-59c8-4fad-8303-fc17cc503ec1"
-                val userId = "test-id-2"
-                val private = PrivateKey("304ad494f0d59f0c1d48f01dfacda9becbcb0e5cb9f9a460f107eae5f8cc0890".hexToByteArray())
-                val signer = JvmEthSigner(private.toECKeyPair())
-                val encryption = JvmEncryption()
-                val config = MpcConfig(url, address, 4, 2, 2)
-                val mpc = MpcClient(encryption, config)
+            test("Fetch shares from MPC") {
+                val secrets = getSecrets()
 
-                signer.getIdentifier() shouldBe pubkey
+                val signer = JvmEthSigner(secrets.keyPair)
+                val client = IdosClient.create(api, chainId, signer)
+                val encryption = JvmEncryption()
+                val config = MpcConfig(url, address, totalNodes = 6, threshold = 4, maliciousNodes = 2)
+                val mpc = MpcClient(encryption, config)
+                val userId = client.users.get().id
+
 
                 val ephemeralKeyPair = encryption.generateEphemeralKeyPair()
 
@@ -75,7 +78,7 @@ class MpcIntegrationTest :
                 // Download secret from nodes
                 val secret = mpc.downloadSecret(userId, request, signature, ephemeralKeyPair.secretKey)
 
-                secret.decodeToString() shouldBe "Marian"
+                secret.decodeToString() shouldBe "Pkc%#sB2R|Th10>)ASZ9"
             }
         }
     })

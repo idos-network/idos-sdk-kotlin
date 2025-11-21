@@ -12,7 +12,7 @@ data class Secrets(
     val password: String,
 )
 
-val getSecrets = {
+fun getSecrets(path: String = "m/44'/60'/0'/0/3"): Secrets {
     val dotenv =
         dotenv {
             directory = "../"
@@ -34,6 +34,6 @@ val getSecrets = {
     val mnemonic = MnemonicWords(words)
     val seed = mnemonic.toSeed("")
 
-    val key = seed.toKey("m/44'/60'/0'/0/47")
-    Secrets(key.keyPair, password)
+    val key = seed.toKey(path)
+    return Secrets(key.keyPair, password)
 }

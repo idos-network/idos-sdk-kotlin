@@ -16,7 +16,6 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
@@ -98,7 +97,7 @@ internal class NodeClient(
         uploadRequest: Sharing,
         signature: String,
     ): String =
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             val url = "$baseUrl/offchain/$contractAddress/shares/$id"
             val response: HttpResponse =
                 httpClient.put(url) {
@@ -129,7 +128,7 @@ internal class NodeClient(
         downloadRequest: DownloadRequest,
         signature: String,
     ): EncryptedShare =
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             val url = "$baseUrl/offchain/$contractAddress/shares/$id"
             val response: HttpResponse =
                 httpClient.post(url) {
@@ -160,7 +159,7 @@ internal class NodeClient(
         updateRequest: UpdateWalletsRequest,
         signature: String,
     ): String =
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             val url = "$baseUrl/offchain/$contractAddress/shares/$id/wallets"
             val response: HttpResponse =
                 httpClient.patch(url) {
@@ -191,7 +190,7 @@ internal class NodeClient(
         addRequest: AddAddressRequest,
         signature: String,
     ): String =
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             val url = "$baseUrl/offchain/$contractAddress/shares/$id/addresses"
             val response: HttpResponse =
                 httpClient.post(url) {
@@ -222,7 +221,7 @@ internal class NodeClient(
         removeRequest: RemoveAddressRequest,
         signature: String,
     ): String =
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             val url = "$baseUrl/offchain/$contractAddress/shares/$id/addresses"
             val response: HttpResponse =
                 httpClient.patch(url) {

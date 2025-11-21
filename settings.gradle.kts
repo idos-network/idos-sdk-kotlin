@@ -27,3 +27,4 @@ plugins {
 
 include(":shared")
 include(":androidApp")
+include(":webApp")

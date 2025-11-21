@@ -4,8 +4,6 @@ import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.idos.enclave.crypto.KeyDerivation
 
 open class KeyDerivationTest :
@@ -17,12 +15,9 @@ open class KeyDerivationTest :
 
             val expectedHash = "9de171c0abc1cb2e4ff4078605d9edaa7175cb66419b6151fa65c4ab774ff3b6"
 
-            // Test version 0.1 (latest)
             val result =
-                withContext(Dispatchers.Default) {
-                    shouldNotThrowAny {
-                        KeyDerivation.deriveKey(password, salt, 0.1)
-                    }
+                shouldNotThrowAny {
+                    KeyDerivation.deriveKey(password, salt, 0.1)
                 }
 
             result.toHexString() shouldBe expectedHash

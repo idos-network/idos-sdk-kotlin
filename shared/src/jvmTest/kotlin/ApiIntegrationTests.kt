@@ -26,25 +26,28 @@ import org.kethereum.bip32.toKey
 import org.kethereum.bip39.model.MnemonicWords
 import org.kethereum.bip39.toSeed
 import org.kethereum.crypto.toAddress
+import org.kethereum.extensions.toHexString
+import org.kethereum.extensions.toHexStringZeroPadded
 import kotlin.uuid.ExperimentalUuidApi
 
 @OptIn(ExperimentalUuidApi::class)
 class ApiIntegrationTests :
     StringSpec(
         {
-            val chainId = "idos-staging"
+            val chainId = "kwil-testnet"
+            val url = "https://nodes.playground.idos.network"
 
             "should get chain info" {
                 val secret = getSecrets()
                 val signer = JvmEthSigner(secret.keyPair)
-                val protocol = KwilProtocol("https://nodes.staging.idos.network", chainId)
+                val protocol = KwilProtocol(url, chainId)
                 protocol.chainInfo().chainId shouldBe chainId
             }
 
             "should get wallets" {
-                val secrets = getSecrets()
+                val secrets = getSecrets("m/44'/60'/0'/0/4")
                 val signer = JvmEthSigner(secrets.keyPair)
-                val client = IdosClient.create("https://nodes.staging.idos.network", chainId, signer)
+                val client = IdosClient.create(url, chainId, signer)
                 client.users.hasProfile(signer.address.hex) shouldBe true
                 val wallets =
                     client.wallets
@@ -77,13 +80,17 @@ class ApiIntegrationTests :
 
             "should create a new wallet" {
                 val secrets = getSecrets()
-                val client = IdosClient.create("https://nodes.staging.idos.network", chainId, JvmEthSigner(secrets.keyPair))
+                val client = IdosClient.create(url, chainId, JvmEthSigner(secrets.keyPair))
                 val expectedCount = client.wallets.getAll().size
 
                 val newKey =
                     MnemonicWords("artwork teach annual inner muffin slim concert diagram width summer soap scrub")
                         .toSeed()
-                        .toKey("m/44'/60'/0'/0/47")
+                        .toKey("m/44'/60'/0'/0/0")
+                val pubkey = newKey.keyPair.publicKey.key.toHexStringZeroPadded(130)
+                val address = newKey.keyPair.publicKey
+                    .toAddress()
+                    .toString()
                 val signer = JvmEthSigner(newKey.keyPair)
                 val uuid = Uuid.generate()
                 val msg = "Sign this message to prove you own this wallet"
@@ -91,15 +98,15 @@ class ApiIntegrationTests :
                 val add =
                     AddWalletParams(
                         uuid,
-                        newKey.keyPair.publicKey
-                            .toAddress()
-                            .toString(),
-                        newKey.keyPair.publicKey.toString(),
+                        address,
+                        pubkey,
                         msg,
                         sign.toHexString(),
                     )
 
+
                 client.wallets.add(add)
+                client.wallets.getAll()
                 client.wallets.remove(uuid)
 
                 client.wallets.getAll().size shouldBe expectedCount

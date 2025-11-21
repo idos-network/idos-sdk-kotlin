@@ -48,6 +48,28 @@ tasks:
     cmds:
       - xcodebuild build -scheme iosApp -destination 'platform=iOS Simulator,name=iPhone 16' -derivedDataPath build
 
+  # Web app tasks
+  web:build:
+    desc: Build web application
+    cmds:
+      - ./gradlew :webApp:build
+
+  web:dev:
+    desc: Run web app in development mode with hot reload
+    cmds:
+      - ./gradlew :webApp:jsBrowserDevelopmentRun --continuous
+
+  web:serve:
+    desc: Serve production build
+    deps: [web:build]
+    cmds:
+      - npx http-server webApp/build/dist/js/productionExecutable -p 8080 -o
+
+  web:clean:
+    desc: Clean web app build
+    cmds:
+      - ./gradlew :webApp:clean
+
   # Maestro tasks
   maestro:install:
     desc: Install Maestro CLI
@@ -107,10 +129,11 @@ tasks:
       - task: maestro:all
 
   build:all:
-    desc: Build both Android and iOS apps
+    desc: Build Android, iOS, and Web apps
     cmds:
       - task: android:build
       - task: ios:build
+      - task: web:build
 
   # CI stages
   ci:pr:
@@ -120,6 +143,7 @@ tasks:
       - task: test:unit
       - task: android:build
       - task: ios:build
+      - task: web:build
 
   ci:master:
     desc: Master validation (PR + Maestro tests)
