@@ -32,7 +32,7 @@ import kotlin.uuid.ExperimentalUuidApi
 class ApiIntegrationTests :
     StringSpec(
         {
-            val chainId = "idos-staging"
+            val chainId = "kwil-testnet"
 
             "should get chain info" {
                 val secret = getSecrets()

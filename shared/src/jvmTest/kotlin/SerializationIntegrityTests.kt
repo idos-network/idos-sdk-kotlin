@@ -28,8 +28,6 @@ import org.idos.signer.JvmEthSigner
 class SerializationIntegrityTests :
     StringSpec(
         {
-            val chainId = "idos-staging"
-
             "hasProfile should serialize correctly" {
                 val secrets = getSecrets()
                 val signer = JvmEthSigner(secrets.keyPair)
