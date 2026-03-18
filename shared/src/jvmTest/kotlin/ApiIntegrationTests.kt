@@ -78,7 +78,9 @@ class ApiIntegrationTests :
 
             "should create a new wallet" {
                 val secrets = getSecrets()
-                val client = IdosClient.create("https://nodes.staging.idos.network", chainId, JvmEthSigner(secrets.keyPair))
+                val ownerSigner = JvmEthSigner(secrets.keyPair)
+                val client = IdosClient.create("https://nodes.staging.idos.network", chainId, ownerSigner)
+                assumeTrue(client.users.hasProfile(ownerSigner.address.hex))
                 val expectedCount = client.wallets.getAll().size
 
                 val newKey =
