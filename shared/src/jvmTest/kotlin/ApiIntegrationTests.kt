@@ -95,6 +95,7 @@ class ApiIntegrationTests :
                             .toAddress()
                             .toString(),
                         newKey.keyPair.publicKey.toString(),
+                        "EVM",
                         msg,
                         sign.toHexString(),
                     )
