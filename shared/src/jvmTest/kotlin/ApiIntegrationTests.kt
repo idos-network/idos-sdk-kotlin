@@ -89,7 +89,7 @@ class ApiIntegrationTests :
                 val uuid = Uuid.generate()
                 val msg = "Sign this message to prove you own this wallet"
                 val sign = signer.sign(msg.toByteArray())
-                val publicKey = "04${newKey.keyPair.publicKey}"
+                val publicKey = "04${newKey.keyPair.publicKey.key.toString(16).padStart(128, '0')}"
                 val add =
                     AddWalletParams(
                         uuid,
