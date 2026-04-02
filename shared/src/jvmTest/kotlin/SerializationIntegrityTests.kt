@@ -28,8 +28,6 @@ import org.idos.signer.JvmEthSigner
 class SerializationIntegrityTests :
     StringSpec(
         {
-            val chainId = "idos-staging"
-
             "hasProfile should serialize correctly" {
                 val secrets = getSecrets()
                 val signer = JvmEthSigner(secrets.keyPair)
@@ -89,6 +87,7 @@ class SerializationIntegrityTests :
                         id = "550e8400-e29b-41d4-a716-446655440002",
                         address = "0x1234567890abcdef1234567890abcdef12345678",
                         publicKey = "0x04abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+                        walletType = "EVM",
                         message = "Sign this message to add wallet",
                         signature = "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab",
                     )
@@ -99,13 +98,14 @@ class SerializationIntegrityTests :
                 println("  - id: ${params.id}")
                 println("  - address: ${params.address}")
                 println("  - publicKey: ${params.publicKey}")
+                println("  - walletType: ${params.walletType}")
                 println("  - message: ${params.message}")
                 println("  - signature: ${params.signature}")
 
                 message.body.payload shouldNotBe null
                 message.body.payload shouldNotBe ""
                 message.body.payload.value shouldBe
-                    "AAAEAAAAbWFpbgoAAABhZGRfd2FsbGV0AQAFACwAAAAAAA8AAAAAAAAAAAR1dWlkAAAAAAABABEAAAABVQ6EAOKbQdSnFkRmVUQAAkYAAAAAAA8AAAAAAAAAAAR0ZXh0AAAAAAABACsAAAABMHgxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4oAAAAAAADwAAAAAAAAAABHRleHQAAAAAAAEAhQAAAAEweDA0YWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTA7AAAAAAAPAAAAAAAAAAAEdGV4dAAAAAAAAQAgAAAAAVNpZ24gdGhpcyBtZXNzYWdlIHRvIGFkZCB3YWxsZXSgAAAAAAAPAAAAAAAAAAAEdGV4dAAAAAAAAQCFAAAAATB4YWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYg=="
+                    "AAAEAAAAbWFpbgoAAABhZGRfd2FsbGV0AQAGACwAAAAAAA8AAAAAAAAAAAR1dWlkAAAAAAABABEAAAABVQ6EAOKbQdSnFkRmVUQAAkYAAAAAAA8AAAAAAAAAAAR0ZXh0AAAAAAABACsAAAABMHgxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4oAAAAAAADwAAAAAAAAAABHRleHQAAAAAAAEAhQAAAAEweDA0YWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTAfAAAAAAAPAAAAAAAAAAAEdGV4dAAAAAAAAQAEAAAAAUVWTTsAAAAAAA8AAAAAAAAAAAR0ZXh0AAAAAAABACAAAAABU2lnbiB0aGlzIG1lc3NhZ2UgdG8gYWRkIHdhbGxldKAAAAAAAA8AAAAAAAAAAAR0ZXh0AAAAAAABAIUAAAABMHhhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Njc4OTBhYmNkZWYxMjM0NTY3ODkwYWJjZGVmMTIzNDU2Nzg5MGFi"
             }
 
             "createAccessGrant should serialize correctly" {

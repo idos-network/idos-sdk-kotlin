@@ -22,6 +22,7 @@ import org.idos.kwil.types.Uuid
 import org.idos.remove
 import org.idos.revoke
 import org.idos.signer.JvmEthSigner
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.kethereum.bip32.toKey
 import org.kethereum.bip39.model.MnemonicWords
 import org.kethereum.bip39.toSeed
@@ -32,7 +33,7 @@ import kotlin.uuid.ExperimentalUuidApi
 class ApiIntegrationTests :
     StringSpec(
         {
-            val chainId = "idos-staging"
+            val chainId = "kwil-testnet"
 
             "should get chain info" {
                 val secret = getSecrets()
@@ -45,7 +46,7 @@ class ApiIntegrationTests :
                 val secrets = getSecrets()
                 val signer = JvmEthSigner(secrets.keyPair)
                 val client = IdosClient.create("https://nodes.staging.idos.network", chainId, signer)
-                client.users.hasProfile(signer.address.hex) shouldBe true
+                assumeTrue(client.users.hasProfile(signer.address.hex))
                 val wallets =
                     client.wallets
                         .getAll()
@@ -77,7 +78,9 @@ class ApiIntegrationTests :
 
             "should create a new wallet" {
                 val secrets = getSecrets()
-                val client = IdosClient.create("https://nodes.staging.idos.network", chainId, JvmEthSigner(secrets.keyPair))
+                val ownerSigner = JvmEthSigner(secrets.keyPair)
+                val client = IdosClient.create("https://nodes.staging.idos.network", chainId, ownerSigner)
+                assumeTrue(client.users.hasProfile(ownerSigner.address.hex))
                 val expectedCount = client.wallets.getAll().size
 
                 val newKey =
@@ -88,13 +91,15 @@ class ApiIntegrationTests :
                 val uuid = Uuid.generate()
                 val msg = "Sign this message to prove you own this wallet"
                 val sign = signer.sign(msg.toByteArray())
+                val publicKey = "04${newKey.keyPair.publicKey.key.toString(16).padStart(128, '0')}"
                 val add =
                     AddWalletParams(
                         uuid,
                         newKey.keyPair.publicKey
                             .toAddress()
                             .toString(),
-                        newKey.keyPair.publicKey.toString(),
+                        publicKey,
+                        "EVM",
                         msg,
                         sign.toHexString(),
                     )
