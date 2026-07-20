@@ -13,6 +13,7 @@ data class AddWalletParams(
     val id: UuidString,
     val address: String,
     val publicKey: String,
+    val walletType: String,
     val message: String,
     val signature: String,
 )
@@ -29,6 +30,7 @@ object AddWallet : ExecuteAction<AddWalletParams> {
             KwilType.Text(),
             KwilType.Text(),
             KwilType.Text(),
+            KwilType.Text(),
         )
 
     override fun toPositionalParams(input: List<AddWalletParams>): List<PositionalParams> =
@@ -37,6 +39,7 @@ object AddWallet : ExecuteAction<AddWalletParams> {
                 it.id,
                 it.address,
                 it.publicKey,
+                it.walletType,
                 it.message,
                 it.signature,
             )

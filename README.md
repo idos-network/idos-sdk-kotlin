@@ -99,7 +99,7 @@ try {
     val wallets = client.wallets.getAll()
     println("Found ${wallets.size} wallets")
 
-    val txHash = client.wallets.add(AddWalletParams(id, address, publicKey, signature))
+    val txHash = client.wallets.add(AddWalletParams(id, address, publicKey, walletType, message, signature))
     println("Wallet added: $txHash")
 
     // Credential operations
